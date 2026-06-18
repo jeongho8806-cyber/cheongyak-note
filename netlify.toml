@@ -8,3 +8,9 @@
   from = "/api/apt"
   to = "/.netlify/functions/apt"
   status = 200
+
+# 실거래가 함수
+[[redirects]]
+  from = "/api/trade"
+  to = "/.netlify/functions/trade"
+  status = 200
