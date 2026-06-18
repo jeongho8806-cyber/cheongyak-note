@@ -1,0 +1,10 @@
+# netlify.toml — Netlify 배포 설정
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# 함수 호출 경로를 짧게: /api/apt → 실제 함수
+[[redirects]]
+  from = "/api/apt"
+  to = "/.netlify/functions/apt"
+  status = 200
