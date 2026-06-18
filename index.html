@@ -72,9 +72,22 @@
   .hero-spot .info .go{margin-top:10px;font-size:13px;color:var(--brand);font-weight:700}
 
   /* 검색바 */
-  .searchbar{background:var(--paper);border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;gap:10px;padding:13px 18px;margin-bottom:22px;box-shadow:var(--shadow)}
+  .searchbar{background:var(--paper);border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;gap:10px;padding:13px 18px;box-shadow:var(--shadow)}
   .searchbar input{border:none;outline:none;flex:1;font-size:14px;font-family:inherit;background:transparent}
   .searchbar .ico{color:var(--muted)}
+  .searchbar-wrap{position:relative;margin-bottom:22px}
+  .search-clear{color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px}
+  .search-clear:hover{color:var(--ink)}
+  .search-results{position:absolute;top:100%;left:0;right:0;margin-top:6px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px rgba(20,30,50,.14);z-index:40;max-height:380px;overflow-y:auto;display:none}
+  .search-results.on{display:block}
+  .sr-item{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .sr-item:last-child{border-bottom:none}
+  .sr-item:hover{background:var(--brand-soft)}
+  .sr-b{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:5px;color:#fff;flex-shrink:0}
+  .sr-fast{background:var(--brand)}.sr-done{background:#9aa0ab}.sr-live{background:#3a6ff0}
+  .sr-nm{font-size:14px;font-weight:700}
+  .sr-loc{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
+  .sr-empty{padding:18px;text-align:center;color:var(--muted);font-size:13.5px}
 
   /* 본문 그리드 */
   .layout{display:grid;grid-template-columns:1fr 300px;gap:20px;padding-bottom:50px}
@@ -323,9 +336,13 @@
   </div>
 
   <!-- 검색바 -->
-  <div class="searchbar">
-    <span class="ico">🔍</span>
-    <input type="text" id="search" placeholder="단지명·지역 검색 (예: 강남, 부산, 래미안)" onkeyup="if(event.key==='Enter')doSearch()">
+  <div class="searchbar-wrap">
+    <div class="searchbar">
+      <span class="ico">🔍</span>
+      <input type="text" id="search" placeholder="단지명·지역 검색 (예: 강남, 힐스테이트, 자이)" oninput="liveSearch()" onkeyup="if(event.key==='Enter')doSearch()" autocomplete="off">
+      <span class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none">✕</span>
+    </div>
+    <div class="search-results" id="search-results"></div>
   </div>
 
   <!-- 청약 캘린더 -->
@@ -881,12 +898,37 @@ function closeList(){
   window.scrollTo(0,0);
 }
 
+function liveSearch(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  const box=document.getElementById('search-results');
+  const clr=document.getElementById('search-clear');
+  clr.style.display = q ? 'block' : 'none';
+  if(!q){ box.innerHTML=''; box.classList.remove('on'); return; }
+  const hits=allSites().filter(s=>
+    s.name.toLowerCase().includes(q) || (s.d.loc||'').toLowerCase().includes(q) || s.region.includes(q) || (s.d.bd||'').toLowerCase().includes(q)
+  ).slice(0,12);
+  if(!hits.length){
+    box.innerHTML=`<div class="sr-empty">'${document.getElementById('search').value.trim()}' 검색 결과가 없습니다.</div>`;
+    box.classList.add('on'); return;
+  }
+  box.innerHTML=hits.map(s=>{
+    const st=statusOf(s);
+    const badge = st==='fast'?'<span class="sr-b sr-fast">선착순</span>': st==='done'?'<span class="sr-b sr-done">마감</span>':'<span class="sr-b sr-live">예정</span>';
+    return `<div class="sr-item" onclick="openSite('${s.id}')">${badge}<span class="sr-nm">${s.name}</span><span class="sr-loc">${s.d.loc||s.region}</span></div>`;
+  }).join('');
+  box.classList.add('on');
+}
+function clearSearch(){
+  document.getElementById('search').value='';
+  document.getElementById('search-results').innerHTML='';
+  document.getElementById('search-results').classList.remove('on');
+  document.getElementById('search-clear').style.display='none';
+}
 function doSearch(){
   const q=document.getElementById('search').value.trim();
   if(!q)return;
   const hit=allSites().find(s=>s.name.includes(q)||s.d.loc.includes(q)||s.region.includes(q));
   if(hit) openSite(hit.id);
-  else alert(`'${q}' 검색 결과가 없습니다. 관심 지역을 남겨주시면 관련 단지를 안내해 드립니다.`);
 }
 function doSearchRegion(r){
   const list=DATA[r];
@@ -901,6 +943,8 @@ function findSite(id){
 }
 function openSite(id){
   const s=findSite(id); if(!s) return;
+  // 검색 결과 닫기
+  const sr=document.getElementById('search-results'); if(sr){ sr.classList.remove('on'); }
   // 직전 뷰 기억
   PREV_VIEW = document.getElementById('list-view').style.display==='block' ? 'list' : 'home';
   const done=isDone(s.when);
@@ -1195,9 +1239,58 @@ async function loadApplyhome(){
   }
 }
 
+// 주택형별 상세(공급대상 표) 불러와서 단지에 합치기
+// 공고번호(HOUSE_MANAGE_NO) 기준으로 묶음
+let MDL_LOADED = false;
+async function loadApplyhomeMdl(){
+  if(MDL_LOADED) return; MDL_LOADED = true;
+  try{
+    const res = await fetch('/api/apt?type=aptMdl&page=1&perPage=500');
+    const json = await res.json();
+    const rows = (json && json.data) ? json.data : [];
+    // 공고번호별로 그룹
+    const byNo = {};
+    rows.forEach(r=>{
+      const no = r.HOUSE_MANAGE_NO;
+      if(!no) return;
+      (byNo[no] = byNo[no] || []).push(r);
+    });
+    // DATA의 API 단지(id가 api-공고번호)에 주택형 정보 주입
+    for(const rg in DATA){
+      DATA[rg].forEach(s=>{
+        if(!s.fromApi) return;
+        const no = s.id.replace('api-','');
+        const list = byNo[no];
+        if(!list || !list.length) return;
+        // 공급대상(주택형별 일반/특별)
+        s.d.supply = list.map(r=>({
+          ty: (r.HOUSE_TY||'').trim(),
+          area: r.SUPLY_AR || '',
+          general: Number(r.SUPLY_HSHLDCO||0),
+          special: Number(r.SPSPLY_HSHLDCO||0)
+        }));
+        // 특별공급 세부 배분
+        s.d.special = list.map(r=>({
+          ty: (r.HOUSE_TY||'').trim(),
+          multi: Number(r.MNYCH_HSHLDCO||0),          // 다자녀
+          newlywed: Number(r.NWBB_HSHLDCO||0),        // 신혼부부
+          first: Number(r.LFE_FRST_HSHLDCO||0),       // 생애최초
+          elder: Number(r.OLD_PARNTS_SUPORT_HSHLDCO||0), // 노부모부양
+          inst: Number(r.INSTT_RECOMEND_HSHLDCO||0)   // 기관추천
+        }));
+        // 분양가(LTTOT_TOP_AMOUNT)는 데이터로 받되, 화면에는 막아둠(신청 시 제공)
+        s.d.priceLocked = true;
+      });
+    }
+    console.log('주택형별 정보 주입 완료');
+  }catch(e){
+    console.log('주택형별 연동 실패:', e);
+  }
+}
+
 // 먼저 화면을 그리고(수동 데이터), API가 도착하면 다시 그림
 renderAll();
-loadApplyhome().then(()=>renderAll());
+loadApplyhome().then(()=>{ renderAll(); return loadApplyhomeMdl(); }).then(()=>renderAll());
 </script>
 </body>
 </html>
