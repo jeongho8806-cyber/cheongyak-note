@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>청약노트 - 오늘의 청약·분양 한 화면에</title>
+<style>
+  :root{
+    --ink:#1f2430; --muted:#8b92a0; --line:#eceef2; --bg:#f4f6f9;
+    --paper:#ffffff; --brand:#ff6b1a; --brand-dark:#e85d10; --brand-soft:#fff3eb;
+    --navy:#1a2238; --blue:#3a6ff0; --green:#2faa6a; --red:#e2444b;
+    --shadow:0 1px 2px rgba(20,30,50,.04), 0 4px 16px rgba(20,30,50,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+
+  /* 상단 바 */
+  .topnav{background:var(--brand);color:#fff;font-size:12.5px}
+  .topnav .wrap{display:flex;align-items:center;gap:14px;height:34px;overflow:hidden;white-space:nowrap}
+  .topnav b{font-weight:700}
+  .topnav .spot{opacity:.92;transition:opacity .2s}
+  .topnav .tk-link{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+  /* 카톡 공유방 배너 */
+  .kakao-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,#FEE500,#FFD900);border-radius:12px;padding:14px 20px;margin:18px 0 0;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+  .kakao-banner:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.12)}
+  .kb-ico{font-size:22px}
+  .kb-txt{font-size:13.5px;color:#3a2c00;flex:1}
+  .kb-txt b{font-weight:800}
+  .kb-go{font-size:13px;font-weight:800;color:#3a2c00;background:rgba(0,0,0,.08);padding:7px 14px;border-radius:8px;white-space:nowrap}
+  @media(max-width:560px){.kb-txt{font-size:12px}.kb-go{display:none}}
+  /* 목록 뷰 */
+  #list-view{padding:18px 0 50px}
+  .lv-back{display:inline-block;font-size:13.5px;color:var(--muted);font-weight:600;cursor:pointer;margin:8px 0 16px}
+  .lv-back:hover{color:var(--brand)}
+  .lv-head{margin-bottom:20px}
+  .lv-head h2{font-size:24px;font-weight:800;letter-spacing:-.5px}
+  .lv-head p{font-size:13.5px;color:var(--muted);margin-top:4px}
+  .lv-region{margin-bottom:28px}
+  .lv-rgh{font-size:17px;font-weight:800;margin-bottom:12px;padding-left:11px;border-left:4px solid var(--brand);display:flex;align-items:center;gap:8px}
+  .lv-rgh span{font-size:13px;color:var(--muted);font-weight:600}
+  header{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+  .head{display:flex;align-items:center;gap:26px;height:60px}
+  .logo{font-size:21px;font-weight:800;letter-spacing:-.5px}
+  .logo b{color:var(--brand)}
+  .gnb{display:flex;gap:20px;font-size:14.5px;font-weight:600;color:#555}
+  .gnb a{cursor:pointer;padding:4px 0;border-bottom:2px solid transparent}
+  .gnb a:hover{color:var(--brand);border-color:var(--brand)}
+  .head-cta{margin-left:auto;background:var(--brand);color:#fff;padding:9px 18px;border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer}
+  .head-cta:hover{background:var(--brand-dark)}
+  @media(max-width:760px){.gnb{display:none}}
+
+  /* 히어로 */
+  .hero{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin:18px 0}
+  @media(max-width:760px){.hero{grid-template-columns:1fr}}
+  .hero-main{background:linear-gradient(135deg,#1a2238,#2a3556);border-radius:14px;padding:30px 28px;color:#fff;position:relative;overflow:hidden}
+  .hero-main h1{font-size:27px;font-weight:800;letter-spacing:-.8px;margin-bottom:10px;line-height:1.3}
+  .hero-main p{font-size:13.5px;color:#c7cddb;max-width:440px;margin-bottom:22px}
+  .hero-stats{display:flex;gap:10px;flex-wrap:wrap}
+  .hstat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 16px;min-width:84px}
+  .hstat .n{font-size:21px;font-weight:800;color:#fff}
+  .hstat .n b{color:var(--brand);font-size:21px}
+  .hstat .l{font-size:11.5px;color:#aab2c5;margin-top:2px}
+  .hero-spot{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+  .hero-spot .badge{background:var(--brand);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;position:absolute;margin:12px}
+  .hero-spot .img{height:130px;background:linear-gradient(135deg,#4a5878,#788aae);position:relative;display:flex;align-items:flex-end}
+  .hero-spot .img .ph{color:rgba(255,255,255,.5);font-size:12px;padding:10px 14px}
+  .hero-spot .info{padding:14px 16px}
+  .hero-spot .info h3{font-size:16px;font-weight:800;margin-bottom:3px}
+  .hero-spot .info .loc{font-size:12.5px;color:var(--muted)}
+  .hero-spot .info .go{margin-top:10px;font-size:13px;color:var(--brand);font-weight:700}
+
+  /* 검색바 */
+  .searchbar{background:var(--paper);border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;gap:10px;padding:13px 18px;margin-bottom:22px;box-shadow:var(--shadow)}
+  .searchbar input{border:none;outline:none;flex:1;font-size:14px;font-family:inherit;background:transparent}
+  .searchbar .ico{color:var(--muted)}
+
+  /* 본문 그리드 */
+  .layout{display:grid;grid-template-columns:1fr 300px;gap:20px;padding-bottom:50px}
+  @media(max-width:980px){.layout{grid-template-columns:1fr}}
+  /* 청약 캘린더 */
+  .cal-wrap{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:22px;box-shadow:var(--shadow)}
+  .cal-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .cal-title{font-size:17px;font-weight:800}
+  .cal-legend{margin-left:auto;display:flex;gap:14px;flex-wrap:wrap}
+  .cal-legend .lg{font-size:12px;color:#666;display:flex;align-items:center;gap:5px}
+  .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .d-live{background:#3a6ff0}.d-fast{background:var(--brand)}.d-done{background:#9aa0ab}
+  .cal-months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-bottom:18px}
+  @media(max-width:760px){.cal-months{grid-template-columns:repeat(6,1fr)}}
+  .cal-m{padding:10px 4px;text-align:center;font-size:13px;font-weight:700;color:#666;border:1px solid var(--line);border-radius:8px;cursor:pointer;transition:.12s;position:relative}
+  .cal-m:hover{border-color:var(--brand);color:var(--brand)}
+  .cal-m.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .cal-m .mc{display:block;font-size:10.5px;font-weight:600;margin-top:2px;opacity:.8}
+  .cal-panel{min-height:60px}
+  .cal-daygrid{display:grid;grid-template-columns:1fr;gap:8px}
+  .cal-bucket{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .cal-bk-h{padding:9px 14px;font-size:13px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
+  .cal-bk-h.h-live{background:#3a6ff0}.cal-bk-h.h-fast{background:var(--brand)}.cal-bk-h.h-done{background:#9aa0ab}
+  .cal-bk-h .n{margin-left:auto;font-weight:700;opacity:.9}
+  .cal-items{padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px}
+  .cal-chip{font-size:12.5px;padding:7px 11px;border-radius:7px;background:#f6f8fb;border:1px solid var(--line);cursor:pointer;transition:.12s}
+  .cal-chip:hover{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+  .cal-chip .rg{font-size:11px;color:#9aa0ab;margin-left:5px}
+  .cal-empty{padding:24px;text-align:center;color:#aab2c0;font-size:13.5px}
+
+  .block{margin-bottom:30px}
+  .block-h{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .block-h .t{font-size:18px;font-weight:800;letter-spacing:-.4px}
+  .block-h .ico{font-size:18px}
+  .block-h .cnt{font-size:13px;color:var(--muted);font-weight:600}
+  .block-h .more{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:600;cursor:pointer}
+  .block-h .more:hover{color:var(--brand)}
+
+  /* 분양 카드 그리드 */
+  .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:560px){.card-grid{grid-template-columns:1fr}}
+  .pcard{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+  .pcard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,30,50,.1);border-color:#dfe3ea}
+  .pcard .thumb{height:150px;position:relative;display:flex;align-items:flex-end;justify-content:flex-start}
+  .pcard .thumb .ph-txt{color:rgba(255,255,255,.55);font-size:12px;padding:0 0 10px 12px;font-weight:600}
+  .pcard .tags{position:absolute;top:10px;left:10px;display:flex;gap:5px}
+  .pcard .tag{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:5px;color:#fff}
+  .tag-fast{background:var(--brand)}
+  .tag-apt{background:rgba(0,0,0,.55)}
+  .tag-rent{background:var(--green)}
+  .tag-done{background:#9aa0ab}
+  .pcard .body{padding:13px 15px}
+  .pcard .body h3{font-size:15.5px;font-weight:800;margin-bottom:5px;letter-spacing:-.3px}
+  .pcard .body .loc{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+  .pcard .meta{display:flex;gap:14px;font-size:12px;color:#666;border-top:1px solid var(--line);padding-top:8px}
+  .pcard .meta .when{margin-left:auto;color:var(--brand);font-weight:700}
+
+  /* 오늘 마감 */
+  .today-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:560px){.today-grid{grid-template-columns:1fr}}
+  .tcard{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer}
+  .tcard:hover{border-color:var(--brand)}
+  .tcard .tline{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+  .tcard .st{font-size:11px;font-weight:800;padding:2px 8px;border-radius:5px;background:var(--brand-soft);color:var(--brand)}
+  .tcard .ty{font-size:11.5px;color:var(--muted)}
+  .tcard h3{font-size:15px;font-weight:800;margin-bottom:4px}
+  .tcard .desc{font-size:12.5px;color:#666;margin-bottom:10px}
+  .tcard .ddate{text-align:right;font-size:14px;font-weight:800;color:var(--red)}
+
+  /* 이번주 일정 리스트 */
+  .sched-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.sched-grid{grid-template-columns:1fr}}
+  .scard{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);cursor:pointer}
+  .scard:hover{border-color:var(--brand)}
+  .scard .sl{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+  .scard .badge2{font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:4px;background:#eef1f6;color:#5a6377}
+  .scard h4{font-size:14px;font-weight:700;margin-bottom:3px}
+  .scard .de{font-size:12px;color:var(--muted);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .scard .row{display:flex;font-size:11.5px;color:#666;border-top:1px solid var(--line);padding-top:7px;gap:10px}
+  .scard .row .d{margin-left:auto;color:var(--brand);font-weight:700}
+
+  /* 지역별 분포 바 */
+  .region-bars{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:20px 22px;box-shadow:var(--shadow)}
+  .rbar{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+  .rbar .rn{width:46px;font-size:13px;font-weight:700;color:#444}
+  .rbar .track{flex:1;background:#f1f3f7;border-radius:6px;height:22px;position:relative;overflow:hidden}
+  .rbar .fill{height:100%;background:linear-gradient(90deg,#ffcaa3,#ff8c42);border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px}
+  .rbar .fill .v{font-size:11.5px;font-weight:800;color:#7a3a00}
+  .rbar .extra{font-size:11px;font-weight:700;color:var(--brand)}
+
+  /* 사이드바 */
+  .side .swrap{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .side .sh{font-size:14px;font-weight:800;margin-bottom:12px;display:flex;align-items:center;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .side .srow{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;cursor:pointer}
+  .side .srow:hover{color:var(--brand)}
+  .side .srow .rg{font-weight:600;color:#444}
+  .side .srow .ct{color:var(--muted);font-weight:700}
+  .side .srow:hover .ct{color:var(--brand)}
+  .side-sticky{position:sticky;top:76px}
+  .side-cta{background:linear-gradient(135deg,#ff7a2e,#e85d10);border-radius:12px;padding:22px 20px;color:#fff;text-align:center;box-shadow:var(--shadow)}
+  .side-cta h4{font-size:17px;font-weight:800;margin-bottom:8px}
+  .side-cta p{font-size:12.5px;color:#ffe6d6;margin-bottom:14px;line-height:1.6}
+  .side-cta .form input{width:100%;padding:11px 13px;border:none;border-radius:8px;font-size:13.5px;margin-bottom:8px;font-family:inherit}
+  .side-cta .form button{width:100%;padding:12px;border:none;border-radius:8px;background:#1a2238;color:#fff;font-weight:800;font-size:14px;cursor:pointer}
+  .side-cta .form button:hover{background:#0f1626}
+  .side-cta .pv{font-size:10.5px;color:#ffd9c2;margin-top:9px}
+  .side-kakao{display:flex;align-items:center;gap:10px;background:#FEE500;border-radius:12px;padding:13px 16px;margin-top:12px;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+  .side-kakao:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.12)}
+  .sk-ico{font-size:20px}
+  .sk-txt{font-size:12px;color:#3a2c00;line-height:1.4;flex:1}
+  .sk-txt b{font-size:13.5px;font-weight:800}
+  .side-kakao .sk-go{display:none}
+  @media(max-width:980px){.side-sticky{position:static}}
+
+  /* 모집공고 */
+  .notice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.notice-grid{grid-template-columns:1fr}}
+
+  footer{background:var(--navy);color:#9aa3b8;padding:30px 0;font-size:12px}
+  footer .wrap{display:flex;flex-direction:column;gap:6px}
+  footer b{color:#fff;font-size:15px;font-weight:800}
+  footer .small{font-size:11px;color:#6b7689;line-height:1.7;margin-top:6px}
+
+  /* 상세 페이지 */
+  #detail-view{padding:18px 0 50px}
+  .dt-back{display:inline-block;font-size:13.5px;color:var(--muted);font-weight:600;cursor:pointer;margin:8px 0 16px}
+  .dt-back:hover{color:var(--brand)}
+  .dt-hero{border-radius:14px;height:200px;display:flex;align-items:flex-end;overflow:hidden;margin-bottom:8px}
+  .dt-hero-in{padding:24px 26px;color:#fff;width:100%;background:linear-gradient(to top,rgba(0,0,0,.55),transparent)}
+  .dt-badge{display:inline-block;background:var(--brand);color:#fff;font-size:11px;font-weight:800;padding:3px 11px;border-radius:20px;margin-bottom:8px}
+  .dt-badge.done{background:#9aa0ab}
+  .dt-hero-in h1{font-size:26px;font-weight:800;letter-spacing:-.6px;margin-bottom:4px}
+  .dt-hero-in p{font-size:13.5px;color:#e8ebf2}
+  .dt-donebar{background:#f3f3f3;border:1px solid #ddd;border-radius:10px;padding:14px 16px;font-size:13.5px;color:#666;margin:14px 0 0}
+  .dt-section{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px 24px;margin-top:16px;box-shadow:var(--shadow)}
+  .dt-h{font-size:18px;font-weight:800;letter-spacing:-.4px;margin-bottom:16px;padding-left:12px;border-left:4px solid var(--brand)}
+  .dt-table{width:100%;border-collapse:collapse;font-size:13.5px}
+  .dt-table th,.dt-table td{border:1px solid var(--line);padding:11px 14px;text-align:left}
+  .dt-table th{background:#f6f8fb;font-weight:700;width:130px;color:#555}
+  .dt-note{font-size:12.5px;color:var(--muted);margin-top:12px}
+  .dt-note b{color:var(--brand)}
+  .dt-prose{font-size:13.5px;color:#444;line-height:1.7;margin-bottom:14px}
+  .dt-prose b{color:var(--brand)}
+  .dt-subh{font-size:15px;font-weight:800;margin:22px 0 12px;display:flex;align-items:center;gap:8px}
+  .dt-subh span{font-size:12px;font-weight:600;color:#999}
+  .dt-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .dt-table.small{font-size:12.5px;min-width:480px}
+  .dt-table.small th,.dt-table.small td{padding:9px 10px;text-align:center;width:auto}
+  .dt-table.small th{background:#f6f8fb}
+  .dt-table .dt-total td{background:#fff7f2;font-weight:700}
+  .dp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+  @media(max-width:640px){.dp-grid{grid-template-columns:1fr}}
+  .dp-card{background:#faf8f5;border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;gap:12px}
+  .dp-no{font-size:18px;font-weight:800;color:var(--brand);flex-shrink:0}
+  .dp-card b{font-size:14px}
+  .dp-card p{font-size:12.5px;color:#666;margin-top:4px;line-height:1.6}
+  .locked{background:#f7f9fc;border:1px dashed #cfd6e0;border-radius:10px;padding:24px;text-align:center;color:#8b92a0;font-size:13.5px}
+  .locked.map{margin-top:0}
+  .gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media(max-width:640px){.gallery{grid-template-columns:repeat(2,1fr)}}
+  .g-ph{aspect-ratio:4/3;background:#eef1f6;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#c2c9d4}
+  .dtype-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media(max-width:560px){.dtype-grid{grid-template-columns:1fr}}
+  .dtype{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .dtype-h{background:var(--brand);color:#fff;font-weight:800;font-size:16px;padding:12px 16px}
+  .dtype-plan{background:#eef1f6;height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#aab2c0;font-size:14px}
+  .dtype-plan span{font-size:11.5px;margin-top:4px}
+  .dtype-note{padding:11px 16px;font-size:12.5px;color:#666}
+  .dt-cta-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+  @media(max-width:720px){.dt-cta-row{grid-template-columns:1fr}}
+  .dt-cta{background:linear-gradient(135deg,#ff7a2e,#e85d10);border-radius:16px;padding:30px 26px;text-align:center;color:#fff;margin-top:0}
+  .dt-cta h3{font-size:20px;font-weight:800;margin-bottom:8px;line-height:1.35}
+  .dt-cta p{font-size:13px;color:#ffe6d6;margin-bottom:18px}
+  .dt-form{display:flex;gap:10px;max-width:520px;margin:0 auto;flex-wrap:wrap}
+  .dt-form input{flex:1;min-width:130px;padding:13px 15px;border:none;border-radius:9px;font-size:14px;font-family:inherit}
+  .dt-form button{width:100%;padding:15px;border:none;border-radius:10px;background:#1a2238;color:#fff;font-weight:800;font-size:15px;cursor:pointer;margin-top:2px}
+  .dt-form button:hover{background:#0f1626}
+  /* 카톡 공유방 CTA */
+  .dt-cta-kakao{background:linear-gradient(135deg,#FEE500,#f5d800);color:#3a2c00;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:.15s}
+  .dt-cta-kakao:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
+  .dt-cta-kakao h3{color:#3a2c00}
+  .dt-cta-kakao p{color:#6b5800}
+  .dtk-ico{font-size:38px;margin-bottom:10px}
+  .dtk-btn{background:#3a2c00;color:#FEE500;font-weight:800;font-size:15px;padding:14px 28px;border-radius:10px;margin-bottom:14px}
+  .dt-cta-kakao .dt-pv{color:#8a7400}
+  .dt-pv{font-size:10.5px;color:#ffd9c2;margin-top:12px}
+
+  /* 모달 */
+  .modal-bg{position:fixed;inset:0;background:rgba(20,28,46,.55);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-bg.on{display:flex}
+  .modal{background:#fff;border-radius:16px;max-width:440px;width:100%;padding:28px 26px;text-align:center}
+  .modal h3{font-size:20px;font-weight:800;margin-bottom:8px}
+  .modal p{font-size:13.5px;color:#666;margin-bottom:16px}
+  .modal ul{list-style:none;text-align:left;display:inline-block;font-size:13.5px;color:#444;line-height:2;margin-bottom:8px}
+  .modal ul li::before{content:"✓ ";color:var(--brand);font-weight:800}
+  .modal input{width:100%;padding:12px 14px;border:1px solid #d8dce3;border-radius:9px;font-size:14px;margin-bottom:9px;font-family:inherit}
+  .modal .sb{width:100%;padding:14px;border:none;border-radius:10px;background:var(--brand);color:#fff;font-weight:800;font-size:15px;cursor:pointer}
+  .modal .sb:hover{background:var(--brand-dark)}
+  .modal .cl{margin-top:12px;font-size:13px;color:#999;cursor:pointer}
+  .modal .pv{font-size:10.5px;color:#bbb;margin-top:10px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="topnav"><div class="wrap">
+  <b>🔥 선착순 분양</b><span class="spot" id="ticker">단지를 불러오는 중...</span>
+</div></div>
+
+<header><div class="wrap head">
+  <div class="logo">청약<b>노트</b></div>
+  <nav class="gnb">
+    <a onclick="openList('fast')">선착순</a>
+    <a onclick="openList('week')">이번주</a>
+    <a onclick="openList('region')">지역별</a>
+    <a onclick="openList('notice')">모집공고</a>
+  </nav>
+  <div class="head-cta" onclick="openModal('')">상담 받기 →</div>
+</div></header>
+
+<div class="wrap">
+<div id="home-view">
+
+  <!-- 카톡 공유방 배너 -->
+  <a class="kakao-banner" href="#" onclick="openKakaoRoom();return false;">
+    <span class="kb-ico">💬</span>
+    <span class="kb-txt"><b>청약정보 카톡 공유방</b> 실시간 분양·청약 일정과 무순위 정보를 가장 먼저 받아보세요</span>
+    <span class="kb-go">입장하기 →</span>
+  </a>
+
+  <!-- 히어로 -->
+  <div class="hero">
+    <div class="hero-main">
+      <h1>오늘의 청약·분양,<br>한 화면에</h1>
+      <p>전국 아파트·오피스텔의 최신 모집공고를 자동 정리. 단지명·일정·세대수를 빠르게 확인하고, 중요한 청약 일정을 놓치지 마세요.</p>
+      <div class="hero-stats" id="hero-stats"></div>
+    </div>
+    <div class="hero-spot">
+      <div class="badge">SPOTLIGHT</div>
+      <div class="thumb-spot img" style="background:linear-gradient(135deg,#4a5878,#788aae)"><span class="ph">📷 단지 이미지</span></div>
+      <div class="info">
+        <h3 id="spot-name">엄궁역 트라비스 하늘채</h3>
+        <div class="loc" id="spot-loc">부산 사상구 엄궁동 · 진행예정</div>
+        <div class="go" onclick="openModal('엄궁역 트라비스 하늘채')">자세히 보기 →</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 검색바 -->
+  <div class="searchbar">
+    <span class="ico">🔍</span>
+    <input type="text" id="search" placeholder="단지명·지역 검색 (예: 강남, 부산, 래미안)" onkeyup="if(event.key==='Enter')doSearch()">
+  </div>
+
+  <!-- 청약 캘린더 -->
+  <div class="cal-wrap" id="b-cal">
+    <div class="cal-top">
+      <span class="cal-title">📅 2026 청약 캘린더</span>
+      <span class="cal-legend">
+        <span class="lg"><i class="dot d-live"></i>진행예정</span>
+        <span class="lg"><i class="dot d-fast"></i>선착순·무순위</span>
+        <span class="lg"><i class="dot d-done"></i>청약완료</span>
+      </span>
+    </div>
+    <div class="cal-months" id="cal-months"></div>
+    <div class="cal-panel" id="cal-panel"></div>
+  </div>
+
+  <div class="layout">
+    <div class="main-col">
+
+      <!-- 선착순/주요 분양 -->
+      <div class="block" id="b-fast">
+        <div class="block-h"><span class="ico">🔥</span><span class="t">선착순 분양</span><span class="cnt" id="fast-cnt"></span><span class="more" onclick="openModal('')">전체 보기 →</span></div>
+        <div class="card-grid" id="fast-grid"></div>
+      </div>
+
+      <!-- 오늘 마감 -->
+      <div class="block" id="b-today">
+        <div class="block-h"><span class="ico">⏰</span><span class="t">오늘 마감</span><span class="cnt" id="today-cnt"></span></div>
+        <div class="today-grid" id="today-grid"></div>
+      </div>
+
+      <!-- 이번주 청약 일정 -->
+      <div class="block" id="b-sched">
+        <div class="block-h"><span class="ico">📅</span><span class="t">이번주 청약 일정</span><span class="cnt" id="sched-cnt"></span><span class="more" onclick="openModal('')">전체 보기 →</span></div>
+        <div class="sched-grid" id="sched-grid"></div>
+      </div>
+
+      <!-- 지역별 분포 -->
+      <div class="block" id="b-region">
+        <div class="block-h"><span class="ico">📊</span><span class="t">지역별 분양 한눈에</span><span class="more" onclick="openModal('')">전체 지역 →</span></div>
+        <div class="region-bars" id="region-bars"></div>
+      </div>
+
+      <!-- 최근 모집공고 -->
+      <div class="block" id="b-notice">
+        <div class="block-h"><span class="ico">📋</span><span class="t">최근 모집공고</span><span class="more" onclick="openModal('')">월별 보기 →</span></div>
+        <div class="notice-grid" id="notice-grid"></div>
+      </div>
+
+      <!-- 청약 종료 단지 -->
+      <div class="block" id="b-done">
+        <div class="block-h"><span class="ico">✅</span><span class="t">청약 종료 단지</span><span class="cnt" id="done-cnt"></span></div>
+        <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 12px">이미 청약이 끝난 단지도 정보를 확인할 수 있습니다. 무순위·잔여세대나 유사 단지 안내를 받아보세요.</p>
+        <div class="card-grid" id="done-grid"></div>
+      </div>
+
+    </div>
+
+    <!-- 사이드바 -->
+    <aside class="side">
+      <div class="swrap">
+        <div class="sh">📍 지역별 분양</div>
+        <div id="side-region"></div>
+      </div>
+      <div class="side-sticky">
+        <div class="side-cta">
+          <h4>관심 단지 정보<br>무료로 받기</h4>
+          <p>로얄층·동호수별 분양가, 주변시세 대비 안전마진 분석까지 보내드립니다.</p>
+          <div class="form">
+            <input type="text" id="side-name" placeholder="이름">
+            <input type="tel" id="side-phone" placeholder="연락처 (- 없이)">
+            <button onclick="sideSubmit()">분양정보 받기</button>
+          </div>
+          <p class="pv">제출 시 개인정보 수집·이용에 동의하는 것으로 간주됩니다.</p>
+        </div>
+        <a class="side-kakao" href="#" onclick="openKakaoRoom();return false;">
+          <span class="sk-ico">💬</span>
+          <span class="sk-txt"><b>청약정보 공유방</b><br>실시간 분양·무순위 정보</span>
+          <span class="sk-go">바로 입장하기 →</span>
+        </a>
+      </div>
+    </aside>
+  </div>
+</div><!-- /home-view -->
+
+<div id="detail-view" style="display:none"></div>
+<div id="list-view" style="display:none"></div>
+
+</div><!-- /wrap -->
+
+<footer><div class="wrap">
+  <b>청약노트</b>
+  <span>전국 청약·분양 정보를 한 자리에</span>
+  <span class="small">본 사이트는 분양 정보를 제공하며, 청약 결과·당첨을 보장하지 않습니다. 분양 일정은 사업 주체 사정에 따라 변경될 수 있습니다.</span>
+</div></footer>
+
+<!-- 상담 모달 -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="m-title">분양정보 받기</h3>
+    <p>접수하신 분께 아래 자료를 바로 보내드립니다.</p>
+    <ul>
+      <li>로얄층·로얄호실 추천</li>
+      <li>동·호수별 분양가 자료</li>
+      <li>주변시세 대비 안전마진 분석</li>
+    </ul>
+    <input type="hidden" id="m-site">
+    <input type="text" id="m-name" placeholder="이름">
+    <input type="tel" id="m-phone" placeholder="연락처 (- 없이)">
+    <button class="sb" onclick="modalSubmit()">분양정보 무료로 받기 ▶</button>
+    <div class="cl" onclick="closeModal()">닫기</div>
+    <p class="pv">입력하신 정보는 분양 정보 안내 목적으로만 사용되며, 안내 후 파기됩니다.</p>
+  </div>
+</div>
+
+<script>
+/* ===== DB 연결 (미설정 시 테스트) ===== */
+const FORM_ENDPOINT = "";
+const GFORM_FIELDS = { name:"", phone:"", site:"" };
+const KAKAO_ROOM = "https://open.kakao.com/여기에카톡오픈채팅주소";
+const TODAY = new Date(2026,5,18);
+
+/* ===== 현장 데이터 (카페 사이트와 동일 구조) ===== */
+const DATA = {
+  "서울시":[
+    {id:"bangbae13",name:"방배포레스트자이 (방배13구역)",when:"2026.06 분양예정",d:{loc:"서울 서초구 방배동",hh:"547세대 분양",bd:"GS건설",type:"APT",
+      points:[["입지","방배 재건축 라인 핵심, 강남 생활권 접근성"],["가치","주변 대장아파트 시세 대비 안전마진 분석 제공"],["일정","청약 일정 확정 시 신청자 우선 안내"]],
+      types:[{ty:"59㎡",note:"실속형"},{ty:"84㎡",note:"4베이 선호 평형"}]}},
+    {id:"banghwa",name:"방화동 신축",when:"2026.02 청약완료",d:{loc:"서울 강서구 방화동",hh:"557세대",bd:"-",type:"APT"}},
+    {id:"wolgye",name:"월계 중흥S클래스 리비에르",when:"2026.06 분양예정",d:{loc:"서울 노원구 월계동",hh:"-",bd:"중흥건설",type:"APT"}},
+    {id:"daejo1",name:"힐스테이트 메디알레",when:"2026.10 입주예정",d:{loc:"서울 은평구 대조동",hh:"2,451세대",bd:"현대건설",type:"APT"}},
+    {id:"acro-seocho",name:"아크로 드 서초 (서초 신동아)",when:"2026.03 청약완료",d:{loc:"서울 서초구 서초동",hh:"1,161세대 중 56세대 분양",bd:"DL이앤씨",type:"APT"}},
+    {id:"cheongdam",name:"청담르엘 (청담삼익 재건축)",when:"2026.02 청약완료",d:{loc:"서울 강남구 청담동",hh:"1,261세대",bd:"롯데건설",type:"APT"}},
+    {id:"otier-banpo",name:"오티에르 반포",when:"2026.05 분양예정",d:{loc:"서울 서초구 잠원동",hh:"-",bd:"HDC현대산업개발",type:"APT"}},
+    {id:"banpo-dh",name:"반포 디에이치 클래스트 (반포주공1단지)",when:"2026.08 분양예정",d:{loc:"서울 서초구 반포동",hh:"5,007세대",bd:"현대건설",type:"APT"}},
+    {id:"bangbae14",name:"방배르엘 (방배14구역)",when:"2026.06 분양예정",d:{loc:"서울 서초구 방배동",hh:"-",bd:"롯데건설",type:"APT"}},
+    {id:"jangwi-prugio",name:"장위 푸르지오 마크원",when:"2026.06 분양예정",d:{loc:"서울 성북구 장위동",hh:"-",bd:"대우건설",type:"APT"}},
+    {id:"dpine-artia",name:"드파인 아르티아 (노량진)",when:"2026.06 분양예정",d:{loc:"서울 동작구 노량진동",hh:"-",bd:"DL이앤씨",type:"APT"}},
+    {id:"mokdong-yunseul",name:"목동 윤슬자이",when:"2026.06 분양예정",d:{loc:"서울 양천구 신정동",hh:"-",bd:"GS건설",type:"APT"}},
+    {id:"dongjak-central",name:"동작 센트럴 동문디이스트",when:"2026.06 분양예정",d:{loc:"서울 동작구 사당동",hh:"-",bd:"동문건설",type:"APT"}},
+    {id:"sinkil-thesharp",name:"더샵 센트럴시티 (신길)",when:"2026.02 청약완료",d:{loc:"서울 영등포구 신길동",hh:"2,054세대",bd:"포스코이앤씨",type:"APT"}},
+    {id:"dpine-yeonhui",name:"드파인 연희",when:"2026.01 청약완료",d:{loc:"서울 서대문구 연희동",hh:"-",bd:"DL이앤씨",type:"APT"}},
+    {id:"sinhang2-jangwi",name:"장위11-2구역 가로주택",when:"2026.07 분양예정",d:{loc:"서울 성북구 장위동",hh:"-",bd:"-",type:"APT"}},
+    {id:"summit-clavion",name:"써밋 클라비온",when:"2026.06 분양예정",d:{loc:"서울 동작구 노량진동",hh:"-",bd:"대우건설",type:"APT"}},
+    {id:"raemian-trinione",name:"래미안 반포 트리니원 (반포3주구)",when:"2026.08 입주예정",d:{loc:"서울 서초구 반포동",hh:"2,091세대",bd:"삼성물산",type:"APT"}},
+    {id:"dh-bangbae",name:"디에이치 방배 (방배5구역)",when:"2026.09 입주예정",d:{loc:"서울 서초구 방배동",hh:"3,064세대",bd:"현대건설",type:"APT"}},
+    {id:"jamsil-lele",name:"잠실 르엘",when:"2026.01 입주예정",d:{loc:"서울 송파구 신천동",hh:"1,865세대",bd:"롯데건설",type:"APT"}},
+    {id:"cheongnyangni-lotte",name:"청량리 롯데캐슬 하이루체",when:"2026.04 입주예정",d:{loc:"서울 동대문구 청량리동",hh:"761세대",bd:"롯데건설",type:"APT"}},
+    {id:"junghwa-laon",name:"중화역 라온프라이빗 센트로",when:"2026.06 분양예정",d:{loc:"서울 중랑구 중화동",hh:"-",bd:"라온건설",type:"APT"}},
+  ],
+  "경기도":[
+    {id:"gjlotte",name:"경기광주역 롯데캐슬 시그니처",when:"무순위 청약중",fast:true,d:{loc:"경기 광주시 양벌동",hh:"1,077세대",bd:"롯데건설",type:"APT"}},
+    {id:"sosa",name:"e편한세상 부천 어반스퀘어",when:"분양중",fast:true,d:{loc:"경기 부천시 소사동",hh:"1,649세대",bd:"DL이앤씨",type:"APT"}},
+    {id:"changneung",name:"고양 창릉 공공분양 (S01~04)",when:"2026년 순차분양",d:{loc:"경기 고양시 창릉",hh:"3,881세대",bd:"LH",type:"공공"}},
+    {id:"wangsuk",name:"남양주 왕숙 공공분양",when:"2026년 순차분양",d:{loc:"경기 남양주 왕숙",hh:"1,489세대",bd:"LH",type:"공공"}},
+    {id:"godeok",name:"평택 고덕 공공분양",when:"2026.04 청약완료",d:{loc:"경기 평택 고덕",hh:"2,122세대",bd:"LH",type:"공공"}},
+    {id:"guri-hinity",name:"구리역 하이니티 리버파크",when:"2026.02 청약완료",d:{loc:"경기 구리시 수택동",hh:"3,022세대 중 1,530세대 분양",bd:"동부건설",type:"APT"}},
+    {id:"wangsuk-atera",name:"왕숙 아테라 (A-1블록)",when:"2026.03 청약완료",d:{loc:"경기 남양주 왕숙2지구",hh:"-",bd:"LH 민간참여",type:"공공"}},
+    {id:"hanam-gyosan",name:"하남 교산 공공분양",when:"2026년 순차분양",d:{loc:"경기 하남시 교산신도시",hh:"-",bd:"LH",type:"공공"}},
+    {id:"bucheon-daejang",name:"부천 대장 공공분양",when:"2026년 순차분양",d:{loc:"경기 부천시 대장신도시",hh:"-",bd:"LH",type:"공공"}},
+    {id:"nakseng-a1",name:"성남 낙생 A1",when:"2026.05 청약완료",d:{loc:"경기 성남시 분당구",hh:"933세대",bd:"LH",type:"공공"}},
+    {id:"sangdaewon2",name:"성남 상대원2구역 재개발",when:"2026.10 분양예정",d:{loc:"경기 성남시 중원구",hh:"4,882세대 중 1,886세대 분양",bd:"-",type:"APT"}},
+    {id:"gwanggyo-a17",name:"수원 광교 A17",when:"2026.10 분양예정",d:{loc:"경기 수원시 영통구",hh:"600세대",bd:"LH",type:"공공"}},
+    {id:"gwanyang",name:"안양 관양지구",when:"2026년 분양예정",d:{loc:"경기 안양시 동안구 관양동",hh:"-",bd:"-",type:"APT"}},
+    {id:"cheolsan-zai",name:"철산자이 브리에르",when:"2026.01 입주예정",d:{loc:"경기 광명시 철산동",hh:"1,490세대",bd:"GS건설",type:"APT"}},
+    {id:"hoeryong",name:"힐스테이트 회룡역 파크뷰",when:"2026.04 입주예정",d:{loc:"경기 의정부시 호원동",hh:"1,816세대",bd:"현대건설",type:"APT"}},
+    {id:"indeogwon",name:"인덕원 퍼스비엘",when:"2026.06 입주예정",d:{loc:"경기 의왕시 내손동",hh:"2,180세대",bd:"대우·GS·롯데",type:"APT"}},
+    {id:"seosuwon-epit",name:"서수원 에피트 센트럴마크",when:"분양중",fast:true,d:{loc:"경기 수원시 권선구",hh:"-",bd:"HL디앤아이한라",type:"APT"}},
+  ],
+  "인천시":[
+    {id:"gyeyang",name:"인천 계양 공공분양",when:"2026년 순차분양",d:{loc:"인천 계양테크노밸리",hh:"318세대",bd:"LH",type:"공공"}},
+    {id:"geomdan",name:"더샵 검단레이크파크 AB22BL",when:"2026.06 분양예정",d:{loc:"인천 서구 검단신도시",hh:"1,454세대",bd:"포스코이앤씨",type:"APT"}},
+    {id:"geomdan2",name:"더샵 검단레이크파크 AB23BL",when:"2026.06 분양예정",d:{loc:"인천 서구 검단신도시",hh:"1,403세대",bd:"포스코이앤씨",type:"APT"}},
+    {id:"yeongjong",name:"영종 대방디에트르 (RC3)",when:"2026.07 분양예정",d:{loc:"인천 중구 영종도",hh:"1,292세대",bd:"대방건설",type:"주상"}},
+    {id:"geomam",name:"검암역세권 유승한내들",when:"2026년 분양예정",d:{loc:"인천 서구 검암동",hh:"601세대",bd:"유승종합건설",type:"APT"}},
+    {id:"forena-incheon",name:"포레나더샵 인천시청역",when:"2026.02 청약완료",d:{loc:"인천 남동구 간석1동",hh:"2,568세대 중 735세대 분양",bd:"한화·포스코이앤씨",type:"APT"}},
+    {id:"doosan-dongin",name:"인천두산위브 더센트럴",when:"2026.01 입주예정",d:{loc:"인천 동구 송림동",hh:"1,321세대",bd:"두산건설",type:"APT"}},
+    {id:"geomdan-summit",name:"검단신도시 AB19블록 호반써밋",when:"2026.03 입주예정",d:{loc:"인천 서구 불로동",hh:"856세대",bd:"호반건설",type:"APT"}},
+    {id:"cheongna-후속",name:"청라지구 후속 단지",when:"2026년 분양예정",d:{loc:"인천 서구 청라동",hh:"-",bd:"-",type:"APT"}},
+  ],
+  "부산시":[
+    {id:"eomgung",name:"엄궁역 트라비스 하늘채",when:"2026.06 분양예정",d:{loc:"부산 사상구 엄궁동",hh:"1,065세대",bd:"코오롱글로벌",type:"APT",
+      points:[["교통","엄궁역(예정) 도보권 + 사상~하단선 개통 시 도심 접근성 개선"],["학군","인근 초·중·고 도보 통학권, 학원가 형성된 주거 밀집지"],["생활","낙동강·삼락생태공원 인접, 대형마트·전통시장 생활 인프라"]],
+      types:[{ty:"59㎡ A",note:"실속형 3룸 구조"},{ty:"59㎡ B",note:"판상형 맞통풍"},{ty:"84㎡ A",note:"4베이 선호 평형"},{ty:"84㎡ B",note:"펜트리 확장형"}]}},
+    {id:"onhc",name:"온천장 하늘채 엘리시움",when:"2026.03 청약완료",d:{loc:"부산 동래구 온천동",hh:"-",bd:"코오롱글로벌",type:"APT"}},
+    {id:"dangri",name:"한화포레나 부산당리",when:"2026.03 청약완료",d:{loc:"부산 사하구 당리동",hh:"-",bd:"한화",type:"APT"}},
+    {id:"daeyeon",name:"한화포레나 부산대연",when:"무순위 청약중",fast:true,d:{loc:"부산 남구 대연동",hh:"-",bd:"한화",type:"APT"}},
+    {id:"daesin2",name:"대신 해모로 센트럴 2차",when:"2026.07 분양예정",d:{loc:"부산 서구 서대신동",hh:"-",bd:"한진중공업",type:"APT"}},
+    {id:"beomcheon",name:"범천1-1구역 재개발",when:"2026.09 분양예정",d:{loc:"부산 부산진구 범천동",hh:"-",bd:"포스코이앤씨",type:"APT"}},
+    {id:"guseo-daum",name:"구서 다움포레",when:"2026.03 청약완료",d:{loc:"부산 금정구 구서동",hh:"-",bd:"-",type:"APT"}},
+    {id:"banyeo4",name:"반여4구역 재건축",when:"2026.05 청약완료",d:{loc:"부산 해운대구 반여동",hh:"-",bd:"-",type:"APT"}},
+    {id:"eco-lga",name:"에코델타시티 엘가 로제비앙",when:"2026.03 청약완료",d:{loc:"부산 강서구 강동동",hh:"-",bd:"라인건설",type:"APT"}},
+    {id:"choryang3",name:"초량3구역 재개발",when:"2026.3분기 분양예정",d:{loc:"부산 동구 초량동",hh:"-",bd:"GS건설",type:"APT"}},
+    {id:"myeongji2",name:"부산 명지2단계 A5",when:"2026.08 분양예정",d:{loc:"부산 강서구 명지동",hh:"-",bd:"-",type:"APT"}},
+    {id:"doosan-uam",name:"두산위브더제니스 오션시티",when:"2026.01 입주예정",d:{loc:"부산 남구 우암동",hh:"3,048세대",bd:"두산건설",type:"APT"}},
+  ],
+  "대구시":[
+    {id:"dongin",name:"동인동1가 주상복합",when:"2026.01 청약완료",d:{loc:"대구 중구 동인동1가",hh:"314세대",bd:"포스코이앤씨",type:"주상"}},
+    {id:"gamsam",name:"감삼동 주상복합",when:"2026년 분양예정",d:{loc:"대구 달서구 감삼동",hh:"463세대",bd:"서한",type:"주상"}},
+    {id:"beomeo-zai",name:"범어자이",when:"2026.02 입주예정",d:{loc:"대구 수성구 범어동",hh:"399세대",bd:"GS건설",type:"주상"}},
+    {id:"daemyeong-hillstate",name:"힐스테이트 대명 센트럴 2차",when:"2026.02 입주예정",d:{loc:"대구 남구 대명동",hh:"977세대",bd:"현대건설",type:"주상"}},
+    {id:"chilseong-opera",name:"힐스테이트 칠성 더오페라",when:"2026.02 입주예정",d:{loc:"대구 북구 칠성동2가",hh:"577세대",bd:"현대건설",type:"주상"}},
+    {id:"daemyeong-zai",name:"대명자이 그랜드시티",when:"2026.04 입주예정",d:{loc:"대구 남구 대명동",hh:"2,023세대",bd:"GS건설",type:"APT"}},
+  ],
+  "대전시":[
+    {id:"dunsan",name:"둔산 자이 아이파크",when:"2026.06 분양예정",d:{loc:"대전 서구 둔산권",hh:"-",bd:"GS·HDC",type:"APT"}},
+    {id:"doan2-9",name:"대전 도안2-9",when:"2026.07 분양예정",d:{loc:"대전 서구 도안동",hh:"-",bd:"-",type:"APT"}},
+    {id:"doma3",name:"도마변동3구역",when:"2026.10 분양예정",d:{loc:"대전 서구 도마동",hh:"-",bd:"두산건설",type:"APT"}},
+    {id:"yucheon-wise",name:"힐스테이트 유천 더와이즈",when:"2026.12 분양예정",d:{loc:"대전 중구 유천동",hh:"-",bd:"현대건설",type:"APT"}},
+    {id:"jungang1",name:"대전중앙1구역",when:"2026년 분양예정",d:{loc:"대전 동구 중앙동",hh:"-",bd:"-",type:"APT"}},
+    {id:"centum-sky",name:"대전 경남아너스빌 센텀스카이",when:"2026년 하반기 분양예정",d:{loc:"대전 중구",hh:"-",bd:"SM경남기업",type:"APT"}},
+  ],
+  "광주시":[
+    {id:"seonun",name:"선운 다사로움",when:"무순위 청약중",fast:true,d:{loc:"광주 광산구 선운지구",hh:"잔여 20세대",bd:"광주도시공사",type:"공공"}},
+    {id:"unam",name:"운암자이포레나퍼스티체 2단지",when:"2026.04 입주예정",d:{loc:"광주 북구 운암동",hh:"1,486세대",bd:"GS·한화",type:"APT"}},
+    {id:"unam1",name:"운암자이포레나퍼스티체 1단지",when:"2026.04 입주예정",d:{loc:"광주 북구 운암동",hh:"-",bd:"GS·한화",type:"APT"}},
+    {id:"gwangju-newtown",name:"광주 재개발 신규분양",when:"2026년 분양예정",d:{loc:"광주 남구·서구 일원",hh:"-",bd:"-",type:"APT"}},
+  ],
+  "울산시":[
+    {id:"yaeum",name:"야음동 아이에스동서",when:"2026.01 청약완료",d:{loc:"울산 남구 야음동",hh:"310세대",bd:"아이에스동서",type:"APT"}},
+    {id:"seosari",name:"울주 범서 서사리",when:"2026.01 청약완료",d:{loc:"울산 울주군 범서읍",hh:"507세대",bd:"대성건설",type:"APT"}},
+    {id:"jungsan",name:"울산 북구 중산동 신규",when:"2026년 분양예정",d:{loc:"울산 북구 중산동",hh:"-",bd:"-",type:"APT"}},
+    {id:"ktx-woobang",name:"울산KTX 우방아이유쉘 퍼스트",when:"2026.06 입주예정",d:{loc:"울산 울주군 삼남읍",hh:"344세대",bd:"우방",type:"APT"}},
+    {id:"munsuro-prugio",name:"문수로 푸르지오 어반피스",when:"2026.06 입주예정",d:{loc:"울산 남구 신정동",hh:"339세대",bd:"대우건설",type:"APT"}},
+    {id:"munsuro-lotte",name:"문수로 롯데캐슬 그랑파르크",when:"2026.08 입주예정",d:{loc:"울산 남구 신정동",hh:"193세대",bd:"롯데건설",type:"APT"}},
+  ],
+  "세종시":[
+    {id:"sejong-new",name:"세종 신규 공공분양",when:"2026년 분양예정",d:{loc:"세종특별자치시",hh:"-",bd:"LH",type:"공공"}},
+  ],
+  "강원도":[
+    {id:"richmond-soyang",name:"더 리치먼드 리버센트 소양",when:"2026.06 분양예정",d:{loc:"강원 춘천시 소양로1가 102-5 일원",hh:"178세대",bd:"-",type:"APT",
+      tel:"1551-5767",
+      schedule:{ notice:"2026-05-22", special:"2026-06-01", first:"2026-06-02", second:"2026-06-04", win:"2026-06-10", contract:"2026-06-22 ~ 06-24" },
+      supply:[
+        {ty:"84.92A",area:"114.5091",general:12,special:14},
+        {ty:"84.71B",area:"113.0126",general:12,special:13},
+        {ty:"84.93C",area:"114.3368",general:11,special:14},
+        {ty:"84.98D",area:"115.7249",general:12,special:13},
+        {ty:"84.89E",area:"112.8072",general:12,special:13},
+        {ty:"84.97F",area:"112.9879",general:12,special:14},
+        {ty:"84.98G",area:"114.5597",general:12,special:14}
+      ],
+      special:[
+        {ty:"84.92A",multi:2,newlywed:6,first:2,elder:1,inst:3},
+        {ty:"84.71B",multi:3,newlywed:5,first:3,elder:0,inst:2},
+        {ty:"84.93C",multi:3,newlywed:6,first:2,elder:1,inst:2},
+        {ty:"84.98D",multi:3,newlywed:6,first:2,elder:0,inst:2},
+        {ty:"84.89E",multi:2,newlywed:6,first:2,elder:1,inst:2},
+        {ty:"84.97F",multi:2,newlywed:6,first:2,elder:1,inst:3},
+        {ty:"84.98G",multi:2,newlywed:5,first:3,elder:1,inst:3}
+      ]
+    }},
+    {id:"chuncheon",name:"춘천 신규분양",when:"2026년 분양예정",d:{loc:"강원 춘천시",hh:"-",bd:"-",type:"APT"}},
+    {id:"wonju",name:"원주 신규분양",when:"2026년 분양예정",d:{loc:"강원 원주시",hh:"-",bd:"-",type:"APT"}},
+    {id:"gangneung",name:"강릉 신규분양",when:"2026년 분양예정",d:{loc:"강원 강릉시",hh:"-",bd:"-",type:"APT"}},
+  ],
+  "경상남도":[
+    {id:"triven",name:"트리븐 김해",when:"분양중",fast:true,d:{loc:"경남 김해시 내동",hh:"398세대",bd:"두산에너빌리티",type:"APT"}},
+    {id:"changwon",name:"창원 신규분양",when:"2026년 분양예정",d:{loc:"경남 창원시",hh:"-",bd:"-",type:"APT"}},
+    {id:"gimhae",name:"김해 신규분양",when:"2026년 분양예정",d:{loc:"경남 김해시",hh:"-",bd:"-",type:"APT"}},
+    {id:"jinju",name:"진주 신규분양",when:"2026년 분양예정",d:{loc:"경남 진주시",hh:"-",bd:"-",type:"APT"}},
+  ],
+  "경상북도":[
+    {id:"pohang",name:"포항 신규분양",when:"2026년 분양예정",d:{loc:"경북 포항시",hh:"-",bd:"-",type:"APT"}},
+    {id:"gumi",name:"구미 신규분양",when:"2026년 분양예정",d:{loc:"경북 구미시",hh:"-",bd:"-",type:"APT"}},
+    {id:"gyeongsan",name:"경산 신규분양",when:"2026년 분양예정",d:{loc:"경북 경산시",hh:"-",bd:"-",type:"APT"}},
+  ],
+  "전라남도":[
+    {id:"yeosu",name:"여수 신규분양",when:"2026년 분양예정",d:{loc:"전남 여수시",hh:"-",bd:"-",type:"APT"}},
+    {id:"suncheon",name:"순천 신규분양",when:"2026년 분양예정",d:{loc:"전남 순천시",hh:"-",bd:"-",type:"APT"}},
+    {id:"mokpo",name:"목포 신규분양",when:"2026년 분양예정",d:{loc:"전남 목포시",hh:"-",bd:"-",type:"APT"}},
+  ],
+  "전라북도":[
+    {id:"jeonju",name:"전주 신규분양",when:"2026년 분양예정",d:{loc:"전북 전주시",hh:"-",bd:"-",type:"APT"}},
+    {id:"gunsan",name:"군산 신규분양",when:"2026년 분양예정",d:{loc:"전북 군산시",hh:"-",bd:"-",type:"APT"}},
+    {id:"iksan",name:"익산 신규분양",when:"2026년 분양예정",d:{loc:"전북 익산시",hh:"-",bd:"-",type:"APT"}},
+  ],
+  "충청남도":[
+    {id:"cheonan",name:"천안 신규분양",when:"2026년 분양예정",d:{loc:"충남 천안시",hh:"-",bd:"-",type:"APT"}},
+    {id:"asan",name:"아산 신규분양",when:"2026년 분양예정",d:{loc:"충남 아산시",hh:"-",bd:"-",type:"APT"}},
+    {id:"asan-baebang",name:"아산 배방4 신규",when:"2026년 분양예정",d:{loc:"충남 아산시 배방읍",hh:"-",bd:"LH",type:"공공"}},
+  ],
+  "충청북도":[
+    {id:"cheongju",name:"청주 신규분양",when:"2026년 분양예정",d:{loc:"충북 청주시",hh:"-",bd:"-",type:"APT"}},
+    {id:"chungju",name:"충주 신규분양",when:"2026년 분양예정",d:{loc:"충북 충주시",hh:"-",bd:"-",type:"APT"}},
+  ],
+  "제주도":[
+    {id:"jeju-new",name:"제주 신규분양",when:"2026년 분양예정",d:{loc:"제주특별자치도",hh:"-",bd:"-",type:"APT"}},
+  ],
+};
+
+/* 썸네일용 그라데이션 (단지마다 다르게) */
+const GRADS=["#4a5878,#788aae","#5a6b8a,#8a9bc0","#6b5878,#9b88b0","#587888,#88aab0","#785868,#b088a0","#588868,#88b0a0","#886858,#b09888","#585a88,#8890b0"];
+function gradOf(id){let s=0;for(const c of id)s+=c.charCodeAt(0);return GRADS[s%GRADS.length];}
+
+function isDone(when){
+  if(/청약완료|마감/.test(when))return true;
+  if(/분양중|청약중|무순위/.test(when))return false;
+  const q=(when||"").match(/(\d{4}).*?([1-4])분기/);
+  if(q){const d=new Date(+q[1],+q[2]*3-1,28);return d<TODAY;}
+  const m=(when||"").match(/(\d{4})\.(\d{1,2})/);
+  if(m){const d=new Date(+m[1],+m[2]-1,28);return d<TODAY;}
+  return false;
+}
+/* 전체 현장 평탄화 */
+function allSites(){
+  const arr=[];
+  for(const rg in DATA){ DATA[rg].forEach(s=>arr.push({...s,region:rg})); }
+  return arr;
+}
+
+/* 분양 '월' 추출 (1~12). 월 못 찾으면 0 = 시기미정 */
+function monthOf(when){
+  if(/분양중|청약중|무순위/.test(when)) return 6; // 현재 진행중 → 이번달로
+  const q=(when||"").match(/([1-4])분기/);
+  if(q) return +q[1]*3; // 분기 → 분기말 월
+  const m=(when||"").match(/(\d{4})\.(\d{1,2})/);
+  if(m) return +m[2];
+  return 0;
+}
+/* 단지 상태 분류: fast > done > live */
+function statusOf(s){
+  if(s.fast) return 'fast';
+  if(isDone(s.when)) return 'done';
+  return 'live';
+}
+
+/* ===== 렌더 ===== */
+function renderAll(){
+  const sites=allSites();
+  const live=sites.filter(s=>!isDone(s.when));
+  const regions=Object.keys(DATA);
+
+  renderCalendar();
+  startTicker();
+
+  // 히어로 통계
+  document.getElementById('hero-stats').innerHTML=`
+    <div class="hstat"><div class="n">${sites.length}<b>건</b></div><div class="l">등록 단지</div></div>
+    <div class="hstat"><div class="n"><b>${live.length}</b>건</div><div class="l">진행예정</div></div>
+    <div class="hstat"><div class="n">${sites.length-live.length}<b>건</b></div><div class="l">청약마감</div></div>
+    <div class="hstat"><div class="n">${regions.length}<b>곳</b></div><div class="l">지역</div></div>`;
+
+  // 선착순/주요 분양 카드 (선착순 우선, 그다음 진행예정)
+  const fastFirst=sites.filter(s=>s.fast);
+  const rest=live.filter(s=>!s.fast);
+  const fast=[...fastFirst,...rest,...sites.filter(s=>isDone(s.when))].slice(0,12);
+  document.getElementById('fast-cnt').textContent=`(${fast.length})`;
+  document.getElementById('fast-grid').innerHTML=fast.map(s=>{
+    const done=isDone(s.when);
+    let tag='';
+    if(s.fast) tag='<span class="tag tag-fast">선착순</span>';
+    else if(done) tag='<span class="tag tag-done">청약마감</span>';
+    else tag='<span class="tag tag-fast" style="background:#3a6ff0">분양예정</span>';
+    return `<div class="pcard" onclick="openSite('${s.id}')">
+      <div class="thumb" style="background:linear-gradient(135deg,${gradOf(s.id)})">
+        <div class="tags">
+          ${tag}
+          <span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span>
+        </div>
+        <span class="ph-txt">📷 ${s.d.bd==="-"?s.d.type:s.d.bd}</span>
+      </div>
+      <div class="body">
+        <h3>${s.name}</h3>
+        <div class="loc">${s.d.loc}</div>
+        <div class="meta"><span>${s.d.hh}</span><span class="when">${s.when}</span></div>
+      </div></div>`;
+  }).join('');
+
+  // 오늘 마감 (마감된 것 중 최근 2개를 "오늘 마감"으로 시연)
+  const done=sites.filter(s=>isDone(s.when)).slice(0,2);
+  document.getElementById('today-cnt').textContent=`(${done.length})`;
+  document.getElementById('today-grid').innerHTML=done.map(s=>`
+    <div class="tcard" onclick="openSite('${s.id}')">
+      <div class="tline"><span class="st">접수 중</span><span class="ty">${s.d.type} · ${s.d.bd}</span></div>
+      <h3>${s.name}</h3>
+      <div class="desc">${s.d.loc} · ${s.d.hh}</div>
+      <div class="ddate">접수 마감 ${TODAY.getFullYear()}-06-18</div>
+    </div>`).join('') || '<p style="color:#aaa;font-size:13px">오늘 마감 단지가 없습니다.</p>';
+
+  // 이번주 일정 (진행예정 6개)
+  const sched=live.slice(0,6);
+  document.getElementById('sched-cnt').textContent=`(${sched.length})`;
+  document.getElementById('sched-grid').innerHTML=sched.map(s=>`
+    <div class="scard" onclick="openSite('${s.id}')">
+      <div class="sl"><span class="badge2">접수예정</span><span class="badge2">${s.d.type}</span></div>
+      <h4>${s.name}</h4>
+      <div class="de">${s.d.loc}</div>
+      <div class="row"><span>${s.d.hh}</span><span>${s.region}</span><span class="d">${s.when.replace(' 분양예정','').replace(' 순차분양','')}</span></div>
+    </div>`).join('');
+
+  // 지역별 분포 바
+  const counts=regions.map(r=>({r,n:DATA[r].length})).sort((a,b)=>b.n-a.n);
+  const max=Math.max(...counts.map(c=>c.n));
+  document.getElementById('region-bars').innerHTML=counts.slice(0,10).map(c=>{
+    const liveN=DATA[c.r].filter(s=>!isDone(s.when)).length;
+    return `<div class="rbar"><span class="rn">${c.r.replace('시','').replace('도','')}</span>
+      <div class="track"><div class="fill" style="width:${Math.max(12,c.n/max*100)}%"><span class="v">${c.n}</span></div></div>
+      ${liveN?`<span class="extra">예정 ${liveN}</span>`:''}</div>`;
+  }).join('');
+
+  // 사이드바 지역 리스트
+  document.getElementById('side-region').innerHTML=counts.map(c=>`
+    <div class="srow" onclick="doSearchRegion('${c.r}')"><span class="rg">${c.r}</span><span class="ct">${c.n}건</span></div>`).join('');
+
+  // 최근 모집공고 (전체 최근 6개)
+  const notice=sites.slice(0,6);
+  document.getElementById('notice-grid').innerHTML=notice.map(s=>`
+    <div class="scard" onclick="openSite('${s.id}')">
+      <div class="sl"><span class="badge2">${isDone(s.when)?'마감':'접수예정'}</span><span class="badge2">${s.d.type}</span></div>
+      <h4>${s.name}</h4>
+      <div class="de">${s.d.loc} · ${s.d.bd}</div>
+      <div class="row"><span>${s.d.hh}</span><span class="d">${s.when}</span></div>
+    </div>`).join('');
+
+  // 청약 종료 단지
+  const doneSites=sites.filter(s=>isDone(s.when));
+  document.getElementById('done-cnt').textContent=`(${doneSites.length})`;
+  document.getElementById('done-grid').innerHTML=doneSites.map(s=>`
+    <div class="pcard" onclick="openSite('${s.id}')">
+      <div class="thumb" style="background:linear-gradient(135deg,${gradOf(s.id)});filter:grayscale(.4)">
+        <div class="tags">
+          <span class="tag tag-done">청약마감</span>
+          <span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span>
+        </div>
+        <span class="ph-txt">📷 ${s.d.bd==="-"?s.d.type:s.d.bd}</span>
+      </div>
+      <div class="body">
+        <h3>${s.name}</h3>
+        <div class="loc">${s.d.loc}</div>
+        <div class="meta"><span>${s.d.hh}</span><span class="when" style="color:#9aa0ab">${s.when}</span></div>
+      </div></div>`).join('') || '<p style="color:#aaa;font-size:13px">종료된 단지가 없습니다.</p>';
+}
+
+/* ===== 청약 캘린더 ===== */
+let CAL_MONTH = 6; // 기본 6월(오늘 기준)
+function renderCalendar(){
+  const sites=allSites();
+  // 월별 카운트
+  const monthBox={};
+  for(let i=1;i<=12;i++) monthBox[i]=[];
+  sites.forEach(s=>{ const mo=monthOf(s.when); if(mo>=1&&mo<=12) monthBox[mo].push(s); });
+  // 월 탭
+  let tabs='';
+  for(let i=1;i<=12;i++){
+    const c=monthBox[i].length;
+    tabs+=`<div class="cal-m ${i===CAL_MONTH?'on':''}" onclick="selectMonth(${i})">${i}월<span class="mc">${c?c+'건':'-'}</span></div>`;
+  }
+  document.getElementById('cal-months').innerHTML=tabs;
+  drawMonthPanel(monthBox[CAL_MONTH]);
+}
+function selectMonth(m){ CAL_MONTH=m; renderCalendar(); document.getElementById('b-cal').scrollIntoView({behavior:'smooth'}); }
+function drawMonthPanel(list){
+  const panel=document.getElementById('cal-panel');
+  if(!list || !list.length){ panel.innerHTML=`<div class="cal-empty">${CAL_MONTH}월에 등록된 청약 단지가 없습니다. 다른 달을 선택해 보세요.</div>`; return; }
+  const buckets={fast:[],live:[],done:[]};
+  list.forEach(s=>buckets[statusOf(s)].push(s));
+  const order=[['fast','선착순·무순위','h-fast'],['live','진행예정','h-live'],['done','청약완료','h-done']];
+  let html='<div class="cal-daygrid">';
+  order.forEach(([key,label,cls])=>{
+    if(!buckets[key].length) return;
+    html+=`<div class="cal-bucket"><div class="cal-bk-h ${cls}">${label}<span class="n">${buckets[key].length}건</span></div><div class="cal-items">`;
+    html+=buckets[key].map(s=>`<span class="cal-chip" onclick="openSite('${s.id}')">${s.name}<span class="rg">${s.region.replace('시','').replace('도','')}</span></span>`).join('');
+    html+=`</div></div>`;
+  });
+  html+='</div>';
+  panel.innerHTML=html;
+}
+
+/* ===== 상단 선착순 티커 (자동 롤링) ===== */
+let tickerIdx=0, tickerTimer=null;
+function startTicker(){
+  const fastSites=allSites().filter(s=>s.fast);
+  const el=document.getElementById('ticker');
+  if(!el) return;
+  if(!fastSites.length){ el.textContent="현재 선착순 단지를 준비 중입니다."; return; }
+  function show(){
+    const s=fastSites[tickerIdx % fastSites.length];
+    el.style.opacity=0;
+    setTimeout(()=>{
+      el.innerHTML=`<span class="tk-link" onclick="openSite('${s.id}')">${s.name} · ${s.region.replace('시','').replace('도','')} / ${s.d.hh}</span>`;
+      el.style.opacity=1;
+    },200);
+    tickerIdx++;
+  }
+  show();
+  if(tickerTimer) clearInterval(tickerTimer);
+  tickerTimer=setInterval(show, 3000);
+}
+
+/* ===== 카톡 공유방 ===== */
+function openKakaoRoom(){ window.open(KAKAO_ROOM,'_blank'); }
+
+/* ===== 분야별 목록 뷰 ===== */
+function openList(kind){
+  const sites=allSites();
+  let title, items, sub='';
+  if(kind==='fast'){
+    title='🔥 선착순·무순위 분양';
+    sub='청약통장 없이도 신청 가능한 선착순·무순위 단지입니다.';
+    items=sites.filter(s=>s.fast);
+  }else if(kind==='week'){
+    title='📅 이번주·진행예정 청약';
+    sub='곧 청약이 진행되는 단지입니다.';
+    items=sites.filter(s=>!isDone(s.when)&&!s.fast);
+  }else if(kind==='region'){
+    title='📍 지역별 분양 단지';
+    sub='지역별로 분양 단지를 확인하세요.';
+    items=sites;
+  }else{ // notice
+    title='📋 전체 모집공고';
+    sub='등록된 전체 분양 단지입니다.';
+    items=sites;
+  }
+
+  let body;
+  if(kind==='region'){
+    // 지역별 그룹핑
+    body='';
+    for(const rg in DATA){
+      const list=DATA[rg]; if(!list.length) continue;
+      body+=`<div class="lv-region"><h3 class="lv-rgh">${rg} <span>${list.length}건</span></h3><div class="card-grid">`;
+      body+=list.map(s=>listCard({...s,region:rg})).join('');
+      body+=`</div></div>`;
+    }
+  }else{
+    body=`<div class="card-grid">${items.map(s=>listCard(s)).join('')}</div>`;
+  }
+
+  document.getElementById('list-view').innerHTML=`
+    <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
+    <div class="lv-head"><h2>${title}</h2><p>${sub} · 총 ${items.length}건</p></div>
+    ${body}`;
+  document.getElementById('home-view').style.display='none';
+  document.getElementById('detail-view').style.display='none';
+  document.getElementById('list-view').style.display='block';
+  window.scrollTo(0,0);
+}
+function listCard(s){
+  const done=isDone(s.when);
+  let tag = s.fast?'<span class="tag tag-fast">선착순</span>' : done?'<span class="tag tag-done">청약마감</span>':'<span class="tag tag-fast" style="background:#3a6ff0">분양예정</span>';
+  return `<div class="pcard" onclick="openSite('${s.id}')">
+    <div class="thumb" style="background:linear-gradient(135deg,${gradOf(s.id)})${done?';filter:grayscale(.4)':''}">
+      <div class="tags">${tag}<span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span></div>
+      <span class="ph-txt">📷 ${s.d.bd==="-"?s.d.type:s.d.bd}</span>
+    </div>
+    <div class="body"><h3>${s.name}</h3><div class="loc">${s.d.loc}</div>
+      <div class="meta"><span>${s.d.hh}</span><span class="when">${s.when}</span></div></div></div>`;
+}
+function closeList(){
+  document.getElementById('list-view').style.display='none';
+  document.getElementById('home-view').style.display='block';
+  window.scrollTo(0,0);
+}
+
+function doSearch(){
+  const q=document.getElementById('search').value.trim();
+  if(!q)return;
+  const hit=allSites().find(s=>s.name.includes(q)||s.d.loc.includes(q)||s.region.includes(q));
+  if(hit) openSite(hit.id);
+  else alert(`'${q}' 검색 결과가 없습니다. 관심 지역을 남겨주시면 관련 단지를 안내해 드립니다.`);
+}
+function doSearchRegion(r){
+  const list=DATA[r];
+  if(list && list.length) openSite(list[0].id);
+}
+
+/* ===== 상세 페이지 ===== */
+let PREV_VIEW='home';
+function findSite(id){
+  for(const rg in DATA){ const f=DATA[rg].find(s=>s.id===id); if(f) return {...f,region:rg}; }
+  return null;
+}
+function openSite(id){
+  const s=findSite(id); if(!s) return;
+  // 직전 뷰 기억
+  PREV_VIEW = document.getElementById('list-view').style.display==='block' ? 'list' : 'home';
+  const done=isDone(s.when);
+  const d=s.d;
+  const bdTxt = (!d.bd||d.bd==='-') ? '정보 준비중' : d.bd;
+  const hhTxt = (!d.hh||d.hh==='-') ? '정보 준비중' : d.hh;
+  // 입지 장점
+  const points = d.points && d.points.length ? d.points : [
+    ["입지","교통·학군·생활 인프라 상세 분석 자료는 신청 시 제공됩니다."],
+    ["가치","주변 대장아파트 시세 대비 안전마진 분석을 함께 안내합니다."],
+    ["일정","청약 일정 확정 시 신청자분들께 가장 먼저 안내해 드립니다."]
+  ];
+  const pointCards = points.map((p,i)=>`
+    <div class="dp-card"><div class="dp-no">0${i+1}</div><div><b>${p[0]}</b><p>${p[1]}</p></div></div>`).join('');
+  // 평형
+  const types = d.types && d.types.length ? d.types : null;
+  const typeBlock = types ? `
+    <div class="dtype-grid">${types.map(t=>`
+      <div class="dtype">
+        <div class="dtype-h">${t.ty}</div>
+        <div class="dtype-plan">📐 평면도<br><span>신청 시 제공</span></div>
+        <div class="dtype-note">${t.note||''}</div>
+      </div>`).join('')}</div>`
+    : `<div class="locked">📐 평형별 평면도와 분양가는 신청자분들께 우선 제공됩니다.</div>`;
+
+  // 청약일정 표 (schedule 데이터 있으면 실제 표, 없으면 추후공지 틀)
+  const sc = d.schedule;
+  let scheduleBlock;
+  if(sc){
+    scheduleBlock = `
+      <table class="dt-table">
+        <tr><th>입주자모집공고</th><td colspan="3">${sc.notice||'추후 공지'}</td></tr>
+        <tr><th>특별공급 접수</th><td>${sc.special||'추후 공지'}</td><th>1순위 접수</th><td>${sc.first||'추후 공지'}</td></tr>
+        <tr><th>2순위 접수</th><td>${sc.second||'추후 공지'}</td><th>당첨자 발표</th><td>${sc.win||'추후 공지'}</td></tr>
+        <tr><th>계약일</th><td colspan="3">${sc.contract||'추후 공지'}</td></tr>
+      </table>`;
+  } else {
+    scheduleBlock = `
+      <table class="dt-table">
+        <tr><th>입주자모집공고</th><td>추후 공지</td><th>특별공급 접수</th><td>추후 공지</td></tr>
+        <tr><th>1순위 접수</th><td>추후 공지</td><th>2순위 접수</th><td>추후 공지</td></tr>
+        <tr><th>당첨자 발표</th><td>추후 공지</td><th>계약일</th><td>추후 공지</td></tr>
+      </table>`;
+  }
+
+  // 공급대상(주택형별) + 특별공급 배분 표
+  let supplyBlock = '';
+  if(d.supply && d.supply.length){
+    const totG=d.supply.reduce((a,r)=>a+r.general,0);
+    const totS=d.supply.reduce((a,r)=>a+r.special,0);
+    const rowsSupply=d.supply.map(r=>`<tr><td>${r.ty}</td><td>${r.area}㎡</td><td>${r.general}</td><td>${r.special}</td><td><b>${r.general+r.special}</b></td></tr>`).join('');
+    let specialTbl='';
+    if(d.special && d.special.length){
+      const rowsSp=d.special.map(r=>{
+        const sum=(r.multi||0)+(r.newlywed||0)+(r.first||0)+(r.elder||0)+(r.inst||0);
+        return `<tr><td>${r.ty}</td><td>${r.multi||0}</td><td>${r.newlywed||0}</td><td>${r.first||0}</td><td>${r.elder||0}</td><td>${r.inst||0}</td><td><b>${sum}</b></td></tr>`;
+      }).join('');
+      specialTbl=`
+        <h3 class="dt-subh">특별공급 세부 배분 <span>(단위: 세대)</span></h3>
+        <div class="dt-scroll"><table class="dt-table small">
+          <tr><th>주택형</th><th>다자녀</th><th>신혼부부</th><th>생애최초</th><th>노부모</th><th>기관추천</th><th>계</th></tr>
+          ${rowsSp}
+        </table></div>`;
+    }
+    supplyBlock = `
+      <div class="dt-section">
+        <h2 class="dt-h">공급 대상</h2>
+        <div class="dt-scroll"><table class="dt-table small">
+          <tr><th>주택형</th><th>공급면적</th><th>일반</th><th>특별</th><th>계</th></tr>
+          ${rowsSupply}
+          <tr class="dt-total"><td>합계</td><td>-</td><td>${totG}</td><td>${totS}</td><td><b>${totG+totS}</b></td></tr>
+        </table></div>
+        ${specialTbl}
+        <p class="dt-note">공급세대수는 사업주체 최초 모집공고 기준이며, 특별공급 미달 시 일반공급으로 전환될 수 있습니다.</p>
+      </div>`;
+  }
+
+  document.getElementById('detail-view').innerHTML = `
+    <div class="dt-back" onclick="closeSite()">‹ 목록으로</div>
+
+    <div class="dt-hero" style="background:linear-gradient(135deg,${gradOf(s.id)})">
+      <div class="dt-hero-in">
+        ${done?'<span class="dt-badge done">청약마감</span>':'<span class="dt-badge">분양예정</span>'}
+        <h1>${s.name}</h1>
+        <p>${d.loc} · ${d.type} · ${bdTxt}</p>
+      </div>
+    </div>
+
+    ${done?`<div class="dt-donebar">이 단지는 청약이 마감되었습니다. 무순위·잔여세대 정보나 유사 단지 안내를 원하시면 아래로 신청해 주세요.</div>`:''}
+
+    <div class="dt-section">
+      <h2 class="dt-h">사업 개요</h2>
+      <table class="dt-table">
+        <tr><th>구분</th><td>${d.type}</td><th>건설사</th><td>${bdTxt}</td></tr>
+        <tr><th>위치</th><td>${d.loc}</td><th>세대수</th><td>${hhTxt}</td></tr>
+        <tr><th>분양시기</th><td colspan="3">${s.when}</td></tr>
+      </table>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">견본주택</h2>
+      <div class="locked">🏠 견본주택(모델하우스) 위치 및 관람 안내는 개관 일정 확정 후 업데이트됩니다.<br>사전 관람 예약을 원하시면 아래 '분양정보 받기'로 신청해 주세요.</div>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">일반/특별 공통 안내</h2>
+      <p class="dt-prose">청약 신청 전 반드시 확인해야 할 공통 사항입니다. <b>청약통장</b> 가입 기간과 예치금, <b>무주택 기간</b>, 거주지 요건을 충족해야 1순위 자격이 주어집니다. 자세한 자격 진단은 아래 폼으로 신청 시 1:1로 안내해 드립니다.</p>
+      <table class="dt-table">
+        <tr><th>청약통장</th><td>주택청약종합저축 가입자 (지역·면적별 예치금 충족)</td></tr>
+        <tr><th>거주요건</th><td>해당 지역 거주자 우선공급 적용 (모집공고일 기준)</td></tr>
+        <tr><th>재당첨제한</th><td>당첨 이력에 따라 일정 기간 제한될 수 있음</td></tr>
+      </table>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">일반공급</h2>
+      <p class="dt-prose">가점제와 추첨제로 나뉘어 공급됩니다. <b>가점제</b>는 무주택기간·부양가족수·청약통장 가입기간을 합산(최고 84점)하여 높은 순으로 당첨자를 선정합니다. 추첨제 비율과 가점제 비율은 단지·면적에 따라 달라지므로, 해당 단지 기준은 신청 시 안내해 드립니다.</p>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">특별공급</h2>
+      <p class="dt-prose">무주택 실수요자를 위한 우선 공급 제도입니다. 유형별로 자격과 소득·자산 기준이 다릅니다.</p>
+      <table class="dt-table">
+        <tr><th>신혼부부</th><td>혼인 7년 이내 또는 예비신혼부부, 소득·자산 기준 충족</td></tr>
+        <tr><th>생애최초</th><td>세대 구성원 모두 과거 주택 소유 사실이 없는 경우</td></tr>
+        <tr><th>다자녀</th><td>미성년 자녀 2명 이상 (개정 기준 적용)</td></tr>
+        <tr><th>노부모부양</th><td>만 65세 이상 직계존속을 3년 이상 부양</td></tr>
+        <tr><th>기관추천</th><td>국가유공자·장애인·중소기업 근로자 등</td></tr>
+      </table>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">입지 분석</h2>
+      <div class="dp-grid">${pointCards}</div>
+      <div class="locked map">🗺️ 단지 위치·교통망 상세 지도는 신청 시 제공됩니다.</div>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">단지 전경 · 입지 사진</h2>
+      <div class="gallery">
+        ${[1,2,3,4].map(()=>`<div class="g-ph">📷</div>`).join('')}
+      </div>
+      <p class="dt-note">실제 조감도·입지 사진은 자료 확보 시 업데이트됩니다.</p>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">평형 안내</h2>
+      ${typeBlock}
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">분양일정</h2>
+      ${scheduleBlock}
+      <p class="dt-note">분양시기: <b>${s.when}</b> — 정확한 청약 일정이 확정되는 즉시 신청자분들께 가장 먼저 안내해 드립니다.</p>
+    </div>
+
+    ${supplyBlock}
+
+    <div class="dt-section">
+      <h2 class="dt-h">분양가</h2>
+      <div class="locked">💰 동·호수별 분양가 및 납부 일정 자료는 공개 시점에 신청자분들께 우선 제공됩니다.<br>아래 '분양정보 받기'로 신청하시면 로얄층·로얄호실 추천과 함께 받아보실 수 있습니다.</div>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">주변시세 및 대장아파트</h2>
+      <p class="dt-prose">이 단지의 분양가가 합리적인지는 <b>주변 대장아파트 시세</b>와 비교해야 알 수 있습니다. 인근 대표 단지의 최근 실거래가를 참고하세요.</p>
+      <div class="locked">📈 주변 대장아파트 실거래가와 인근 단지 시세 비교 자료는 신청자분들께 우선 제공됩니다.<br>분양가 대비 <b>예상 시세차익(안전마진)</b>까지 함께 분석해 드립니다.</div>
+    </div>
+
+    <div class="dt-section">
+      <h2 class="dt-h">단지 배치도 · 동호수</h2>
+      <div class="locked">🏗️ 단지 배치도와 동·호수별 로얄동 추천은 신청자분들께만 제공됩니다.</div>
+    </div>
+
+    <div class="dt-cta-row">
+      <div class="dt-cta">
+        <h3>${s.name}<br>분양정보 받기</h3>
+        <p>로얄층·동호수별 분양가 + 주변시세 안전마진 분석을 바로 보내드립니다.</p>
+        <input type="hidden" id="dt-site" value="${s.name}">
+        <div class="dt-form">
+          <input type="text" id="dt-name" placeholder="이름">
+          <input type="tel" id="dt-phone" placeholder="연락처 (- 없이)">
+          <button onclick="dtSubmit()">분양정보 무료로 받기 ▶</button>
+        </div>
+        <p class="dt-pv">입력하신 정보는 분양 정보 안내 목적으로만 사용되며, 안내 후 파기됩니다.</p>
+      </div>
+      <div class="dt-cta dt-cta-kakao" onclick="openKakaoRoom()">
+        <div class="dtk-ico">💬</div>
+        <h3>${s.name}<br>청약정보 공유방</h3>
+        <p>이 단지의 청약 일정·경쟁률·무순위 소식을 실시간으로 받아보세요.</p>
+        <div class="dtk-btn">카톡 공유방 입장하기 ▶</div>
+        <p class="dt-pv">단지별 오픈채팅방에서 같은 단지 청약자들과 정보를 나눠요.</p>
+      </div>
+    </div>
+
+    <div class="dt-back" onclick="closeSite()">‹ 목록으로</div>`;
+
+  document.getElementById('home-view').style.display='none';
+  document.getElementById('list-view').style.display='none';
+  document.getElementById('detail-view').style.display='block';
+  window.scrollTo(0,0);
+}
+function closeSite(){
+  document.getElementById('detail-view').style.display='none';
+  if(PREV_VIEW==='list'){ document.getElementById('list-view').style.display='block'; }
+  else { document.getElementById('home-view').style.display='block'; }
+  window.scrollTo(0,0);
+}
+function dtSubmit(){ send(document.getElementById('dt-name').value.trim(),document.getElementById('dt-phone').value.trim(),document.getElementById('dt-site').value,['dt-name','dt-phone']); }
+
+/* ===== 모달/폼 ===== */
+function openModal(site){
+  document.getElementById('m-site').value=site||"";
+  document.getElementById('m-title').textContent= site? site+" 분양정보 받기" : "분양정보 받기";
+  document.getElementById('modal').classList.add('on');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('on'); }
+function send(name,phone,site,ids){
+  if(!name||!phone){alert("이름과 연락처를 입력해주세요.");return;}
+  if(!/^[0-9]{9,11}$/.test(phone)){alert("연락처를 숫자만 정확히 입력해주세요.");return;}
+  if(FORM_ENDPOINT){
+    const fd=new FormData();
+    if(GFORM_FIELDS.name){fd.append(GFORM_FIELDS.name,name);fd.append(GFORM_FIELDS.phone,phone);if(GFORM_FIELDS.site)fd.append(GFORM_FIELDS.site,site);}
+    else{fd.append("name",name);fd.append("phone",phone);fd.append("site",site);}
+    fetch(FORM_ENDPOINT,{method:"POST",body:fd,mode:"no-cors"})
+      .then(()=>{alert("신청이 완료되었습니다! 곧 분양정보를 보내드리겠습니다.");ids.forEach(i=>{const e=document.getElementById(i);if(e)e.value="";});closeModal();})
+      .catch(()=>alert("전송 중 오류가 발생했습니다. 다시 시도해주세요."));
+  }else{
+    alert("[테스트 모드]\n이름: "+name+"\n연락처: "+phone+"\n관심단지: "+(site||"(미지정)")+"\n\n실제 수집하려면 FORM_ENDPOINT를 설정하세요.");
+    closeModal();
+  }
+}
+function modalSubmit(){ send(document.getElementById('m-name').value.trim(),document.getElementById('m-phone').value.trim(),document.getElementById('m-site').value,['m-name','m-phone']); }
+function sideSubmit(){ send(document.getElementById('side-name').value.trim(),document.getElementById('side-phone').value.trim(),"(사이드바 신청)",['side-name','side-phone']); }
+
+/* ===== 청약홈 API 자동 연동 ===== */
+// 지역명(SUBSCRPT_AREA_CODE_NM) → 우리 DATA의 지역 키 매핑
+const AREA_MAP = {
+  "서울":"서울시","경기":"경기도","인천":"인천시","부산":"부산시","대구":"대구시",
+  "대전":"대전시","광주":"광주시","울산":"울산시","세종":"세종시","강원":"강원도",
+  "경남":"경상남도","경북":"경상북도","전남":"전라남도","전북":"전라북도",
+  "충남":"충청남도","충북":"충청북도","제주":"제주도"
+};
+function safeDate(s){ return (s && s!=='null' && s!=='') ? s : ''; }
+// API 1건 → 우리 단지 객체로 변환
+function mapApiItem(it){
+  const region = AREA_MAP[it.SUBSCRPT_AREA_CODE_NM] || "기타";
+  const pblancDe = safeDate(it.RCRIT_PBLANC_DE);
+  let when = "2026년 분양예정";
+  if(pblancDe){ const m=pblancDe.match(/(\d{4})-(\d{2})/); if(m) when = `${m[1]}.${m[2]} 분양`; }
+  const hh = it.TOT_SUPLY_HSHLDCO ? (Number(it.TOT_SUPLY_HSHLDCO).toLocaleString()+"세대") : "-";
+  return {
+    id: "api-"+it.HOUSE_MANAGE_NO,
+    name: it.HOUSE_NM || "(이름미상)",
+    when: when,
+    region: region,
+    fromApi: true,
+    d: {
+      loc: it.HSSPLY_ADRES || region,
+      hh: hh,
+      bd: it.CNSTRCT_ENTRPS_NM || "-",
+      type: it.HOUSE_SECD_NM === "APT" ? "APT" : (it.HOUSE_SECD_NM||"APT"),
+      tel: (it.MDHS_TELNO||"").replace(/(\d{2,4})(\d{3,4})(\d{4})/,"$1-$2-$3"),
+      url: it.PBLANC_URL || "",
+      schedule: {
+        notice: safeDate(it.RCRIT_PBLANC_DE),
+        special: safeDate(it.SPSPLY_RCEPT_BGNDE),
+        first: safeDate(it.GNRL_RNK1_CRSPAREA_RCPTDE),
+        second: safeDate(it.GNRL_RNK2_CRSPAREA_RCPTDE),
+        win: safeDate(it.PRZWNER_PRESNATN_DE),
+        contract: safeDate(it.CNTRCT_CNCLS_BGNDE) + (it.CNTRCT_CNCLS_ENDDE? " ~ "+safeDate(it.CNTRCT_CNCLS_ENDDE):"")
+      }
+    }
+  };
+}
+// 청약홈 단지를 DATA에 합치기
+async function loadApplyhome(){
+  try{
+    const res = await fetch('/api/apt?type=apt&page=1&perPage=300');
+    const json = await res.json();
+    const list = (json && json.data) ? json.data : [];
+    let added=0;
+    list.forEach(it=>{
+      const s = mapApiItem(it);
+      if(!DATA[s.region]) return;
+      const exists = DATA[s.region].some(x=>x.name===s.name);
+      if(!exists){ DATA[s.region].push(s); added++; }
+    });
+    console.log('청약홈 단지 '+added+'건 추가됨 (전체 '+ (json.totalCount||'?') +'건 중)');
+  }catch(e){
+    console.log('청약홈 연동 실패, 기존 데이터로 표시:', e);
+  }
+}
+
+// 먼저 화면을 그리고(수동 데이터), API가 도착하면 다시 그림
+renderAll();
+loadApplyhome().then(()=>renderAll());
+</script>
+</body>
+</html>
