@@ -72,10 +72,11 @@
   .hero-spot .info .go{margin-top:10px;font-size:13px;color:var(--brand);font-weight:700}
 
   /* 검색바 */
-  .searchbar{background:var(--paper);border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;gap:10px;padding:13px 18px;box-shadow:var(--shadow)}
-  .searchbar input{border:none;outline:none;flex:1;font-size:14px;font-family:inherit;background:transparent}
-  .searchbar .ico{color:var(--muted)}
+  .searchbar{background:var(--paper);border:2px solid var(--brand);border-radius:14px;display:flex;align-items:center;gap:12px;padding:18px 22px;box-shadow:0 4px 20px rgba(255,107,26,.15)}
+  .searchbar input{border:none;outline:none;flex:1;font-size:16px;font-family:inherit;background:transparent;font-weight:500}
+  .searchbar .ico{color:var(--brand);font-size:20px}
   .searchbar-wrap{position:relative;margin-bottom:22px}
+  .search-title{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px}
   .search-clear{color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px}
   .search-clear:hover{color:var(--ink)}
   .search-results{position:absolute;top:100%;left:0;right:0;margin-top:6px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px rgba(20,30,50,.14);z-index:40;max-height:380px;overflow-y:auto;display:none}
@@ -337,6 +338,7 @@
 
   <!-- 검색바 -->
   <div class="searchbar-wrap">
+    <div class="search-title">🔎 단지 검색 — 전국 청약 단지를 이름·지역으로 찾아보세요</div>
     <div class="searchbar">
       <span class="ico">🔍</span>
       <input type="text" id="search" placeholder="단지명·지역 검색 (예: 강남, 힐스테이트, 자이)" oninput="liveSearch()" onkeyup="if(event.key==='Enter')doSearch()" autocomplete="off">
@@ -947,6 +949,14 @@ function openSite(id){
   const sr=document.getElementById('search-results'); if(sr){ sr.classList.remove('on'); }
   // 직전 뷰 기억
   PREV_VIEW = document.getElementById('list-view').style.display==='block' ? 'list' : 'home';
+  // API 단지면 주택형 정보를 먼저 불러온 뒤 다시 그림 (한 번만)
+  if(s.fromApi && !s.d._mdlLoaded){
+    fetchMdlFor(s).then(()=>{ if(document.getElementById('detail-view').style.display==='block') renderSite(s); });
+  }
+  renderSite(s);
+}
+function renderSite(s){
+  const id=s.id;
   const done=isDone(s.when);
   const d=s.d;
   const bdTxt = (!d.bd||d.bd==='-') ? '정보 준비중' : d.bd;
@@ -1142,10 +1152,11 @@ function openSite(id){
 
     <div class="dt-back" onclick="closeSite()">‹ 목록으로</div>`;
 
+  const wasOpen = document.getElementById('detail-view').style.display==='block';
   document.getElementById('home-view').style.display='none';
   document.getElementById('list-view').style.display='none';
   document.getElementById('detail-view').style.display='block';
-  window.scrollTo(0,0);
+  if(!wasOpen) window.scrollTo(0,0);
 }
 function closeSite(){
   document.getElementById('detail-view').style.display='none';
@@ -1239,58 +1250,34 @@ async function loadApplyhome(){
   }
 }
 
-// 주택형별 상세(공급대상 표) 불러와서 단지에 합치기
-// 공고번호(HOUSE_MANAGE_NO) 기준으로 묶음
-let MDL_LOADED = false;
-async function loadApplyhomeMdl(){
-  if(MDL_LOADED) return; MDL_LOADED = true;
+// 특정 단지의 주택형 정보를 불러와 표 채우기 (상세 열 때 호출)
+async function fetchMdlFor(site){
+  if(!site.fromApi) return;          // API 단지만
+  if(site.d._mdlLoaded) return;      // 이미 불러왔으면 스킵
+  const no = site.id.replace('api-','');
   try{
-    const res = await fetch('/api/apt?type=aptMdl&page=1&perPage=500');
+    const res = await fetch('/api/apt?type=aptMdl&perPage=50&pblancNo='+encodeURIComponent(no));
     const json = await res.json();
-    const rows = (json && json.data) ? json.data : [];
-    // 공고번호별로 그룹
-    const byNo = {};
-    rows.forEach(r=>{
-      const no = r.HOUSE_MANAGE_NO;
-      if(!no) return;
-      (byNo[no] = byNo[no] || []).push(r);
-    });
-    // DATA의 API 단지(id가 api-공고번호)에 주택형 정보 주입
-    for(const rg in DATA){
-      DATA[rg].forEach(s=>{
-        if(!s.fromApi) return;
-        const no = s.id.replace('api-','');
-        const list = byNo[no];
-        if(!list || !list.length) return;
-        // 공급대상(주택형별 일반/특별)
-        s.d.supply = list.map(r=>({
-          ty: (r.HOUSE_TY||'').trim(),
-          area: r.SUPLY_AR || '',
-          general: Number(r.SUPLY_HSHLDCO||0),
-          special: Number(r.SPSPLY_HSHLDCO||0)
-        }));
-        // 특별공급 세부 배분
-        s.d.special = list.map(r=>({
-          ty: (r.HOUSE_TY||'').trim(),
-          multi: Number(r.MNYCH_HSHLDCO||0),          // 다자녀
-          newlywed: Number(r.NWBB_HSHLDCO||0),        // 신혼부부
-          first: Number(r.LFE_FRST_HSHLDCO||0),       // 생애최초
-          elder: Number(r.OLD_PARNTS_SUPORT_HSHLDCO||0), // 노부모부양
-          inst: Number(r.INSTT_RECOMEND_HSHLDCO||0)   // 기관추천
-        }));
-        // 분양가(LTTOT_TOP_AMOUNT)는 데이터로 받되, 화면에는 막아둠(신청 시 제공)
-        s.d.priceLocked = true;
-      });
+    const list = (json && json.data) ? json.data : [];
+    if(list.length){
+      site.d.supply = list.map(r=>({
+        ty:(r.HOUSE_TY||'').trim(), area:r.SUPLY_AR||'',
+        general:Number(r.SUPLY_HSHLDCO||0), special:Number(r.SPSPLY_HSHLDCO||0)
+      }));
+      site.d.special = list.map(r=>({
+        ty:(r.HOUSE_TY||'').trim(),
+        multi:Number(r.MNYCH_HSHLDCO||0), newlywed:Number(r.NWBB_HSHLDCO||0),
+        first:Number(r.LFE_FRST_HSHLDCO||0), elder:Number(r.OLD_PARNTS_SUPORT_HSHLDCO||0),
+        inst:Number(r.INSTT_RECOMEND_HSHLDCO||0)
+      }));
     }
-    console.log('주택형별 정보 주입 완료');
-  }catch(e){
-    console.log('주택형별 연동 실패:', e);
-  }
+    site.d._mdlLoaded = true;
+  }catch(e){ console.log('주택형 조회 실패:', e); }
 }
 
 // 먼저 화면을 그리고(수동 데이터), API가 도착하면 다시 그림
 renderAll();
-loadApplyhome().then(()=>{ renderAll(); return loadApplyhomeMdl(); }).then(()=>renderAll());
+loadApplyhome().then(()=>renderAll());
 </script>
 </body>
 </html>
