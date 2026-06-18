@@ -1,7 +1,8 @@
 // netlify/functions/apt.js
 // 청약홈(한국부동산원) 분양정보 odcloud API 중계 함수
-// 호출: /api/apt?type=apt&page=1&perPage=100
-//   type: apt(아파트) | aptMdl(아파트 주택형별) | remain(잔여세대) | urban(오피스텔 등)
+// 호출 예:
+//   /api/apt?type=apt&page=1&perPage=300           (아파트 목록)
+//   /api/apt?type=aptMdl&pblancNo=2026000248        (특정 단지 주택형)
 
 const ENDPOINTS = {
   apt:    "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail",
@@ -15,12 +16,17 @@ exports.handler = async function (event) {
   const type = p.type || "apt";
   const page = p.page || "1";
   const perPage = p.perPage || "100";
+  const pblancNo = p.pblancNo || ""; // 특정 공고번호로 필터링
 
   const base = ENDPOINTS[type] || ENDPOINTS.apt;
-  const KEY = process.env.APPLYHOME_KEY; // Netlify 환경변수에 저장
+  const KEY = process.env.APPLYHOME_KEY;
   if (!KEY) return resp(500, { error: "APPLYHOME_KEY 환경변수가 설정되지 않았습니다." });
 
-  const url = base + "?page=" + encodeURIComponent(page) + "&perPage=" + encodeURIComponent(perPage) + "&serviceKey=" + encodeURIComponent(KEY);
+  let url = base + "?page=" + encodeURIComponent(page) + "&perPage=" + encodeURIComponent(perPage) + "&serviceKey=" + encodeURIComponent(KEY);
+  // 공고번호 필터 (특정 단지의 주택형만 조회할 때)
+  if (pblancNo) {
+    url += "&cond%5BPBLANC_NO%3A%3AEQ%5D=" + encodeURIComponent(pblancNo);
+  }
 
   try {
     const r = await fetch(url, { headers: { Accept: "application/json" } });
