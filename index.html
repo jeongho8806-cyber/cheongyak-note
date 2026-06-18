@@ -158,6 +158,7 @@
   .cal-chip{font-size:12.5px;padding:7px 11px;border-radius:7px;background:#f6f8fb;border:1px solid var(--line);cursor:pointer;transition:.12s}
   .cal-chip:hover{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
   .cal-chip .rg{font-size:11px;color:#9aa0ab;margin-left:5px}
+  .cal-chip.cal-more{background:var(--brand-soft);border-color:var(--brand);color:var(--brand);font-weight:800}
   .cal-empty{padding:24px;text-align:center;color:#aab2c0;font-size:13.5px}
 
   .block{margin-bottom:30px}
@@ -895,15 +896,35 @@ function drawMonthPanel(list){
   const buckets={fast:[],live:[],done:[]};
   list.forEach(s=>buckets[statusOf(s)].push(s));
   const order=[['fast','선착순·무순위','h-fast'],['live','진행예정','h-live'],['done','청약완료','h-done']];
+  const LIMIT=15;
   let html='<div class="cal-daygrid">';
   order.forEach(([key,label,cls])=>{
     if(!buckets[key].length) return;
-    html+=`<div class="cal-bucket"><div class="cal-bk-h ${cls}">${label}<span class="n">${buckets[key].length}건</span></div><div class="cal-items">`;
-    html+=buckets[key].map(s=>`<span class="cal-chip" onclick="openSite('${s.id}')">${s.name}<span class="rg">${s.region.replace('시','').replace('도','')}</span></span>`).join('');
+    const arr=buckets[key];
+    const shown=arr.slice(0,LIMIT);
+    const rest=arr.length-LIMIT;
+    html+=`<div class="cal-bucket"><div class="cal-bk-h ${cls}">${label}<span class="n">${arr.length}건</span></div><div class="cal-items" id="cal-items-${key}">`;
+    html+=shown.map(s=>`<span class="cal-chip" onclick="openSite('${s.id}')">${s.name}<span class="rg">${s.region.replace('시','').replace('도','')}</span></span>`).join('');
+    if(rest>0){
+      // 나머지는 숨겨두고 더보기 버튼으로 펼침
+      html+=`<span class="cal-chip cal-more" onclick="expandBucket('${key}')">+${rest}개 더 보기</span>`;
+      html+=`<span class="cal-hidden" id="cal-hidden-${key}" style="display:none">`;
+      html+=arr.slice(LIMIT).map(s=>`<span class="cal-chip" onclick="openSite('${s.id}')">${s.name}<span class="rg">${s.region.replace('시','').replace('도','')}</span></span>`).join('');
+      html+=`</span>`;
+    }
     html+=`</div></div>`;
   });
   html+='</div>';
   panel.innerHTML=html;
+}
+function expandBucket(key){
+  const hidden=document.getElementById('cal-hidden-'+key);
+  const items=document.getElementById('cal-items-'+key);
+  if(!hidden||!items) return;
+  // 숨긴 칩들을 펼치고, 더보기 버튼 숨김
+  hidden.style.display='contents';
+  const moreBtn=items.querySelector('.cal-more');
+  if(moreBtn) moreBtn.style.display='none';
 }
 
 /* ===== 상단 선착순 티커 (자동 롤링) ===== */
@@ -1282,6 +1303,24 @@ function renderSite(s){
       </div>`;
   }
 
+  // 분양가 블록: 주택형별 분양 최고가(LTTOT_TOP_AMOUNT) 있으면 표로 표시
+  let priceBlock;
+  if(d.price && d.price.length && d.price.some(p=>p.amount>0)){
+    const rows=d.price.filter(p=>p.amount>0).map(p=>{
+      const eok=(p.amount/10000); // 만원 → 억
+      const eokTxt = eok>=1 ? eok.toFixed(2).replace(/\.?0+$/,'')+'억' : p.amount.toLocaleString()+'만원';
+      return `<tr><td>${p.ty}</td><td>${Number(p.amount).toLocaleString()}만원</td><td>${eokTxt}</td></tr>`;
+    }).join('');
+    priceBlock = `
+      <div class="dt-scroll"><table class="dt-table small">
+        <tr><th>주택형</th><th>분양가 (최고가 기준)</th><th>환산</th></tr>
+        ${rows}
+      </table></div>
+      <p class="dt-note">※ 위 금액은 해당 주택형의 <b>최고가 기준</b>이며, 동·호수·층별로 실제 분양가는 달라집니다. 층별 세부 금액과 납부 일정은 '분양정보 받기'로 신청하시면 안내해 드립니다.</p>`;
+  } else {
+    priceBlock = `<div class="locked">💰 동·호수별 분양가 및 납부 일정 자료는 공개 시점에 신청자분들께 우선 제공됩니다.<br>아래 '분양정보 받기'로 신청하시면 로얄층·로얄호실 추천과 함께 받아보실 수 있습니다.</div>`;
+  }
+
   document.getElementById('detail-view').innerHTML = `
     <div class="dt-back" onclick="closeSite()">‹ 목록으로</div>
 
@@ -1343,19 +1382,6 @@ function renderSite(s){
     </div>
 
     <div class="dt-section">
-      <h2 class="dt-h">단지 전경 · 입지 사진</h2>
-      <div class="gallery">
-        ${[1,2,3,4].map(()=>`<div class="g-ph">📷</div>`).join('')}
-      </div>
-      <p class="dt-note">실제 조감도·입지 사진은 자료 확보 시 업데이트됩니다.</p>
-    </div>
-
-    <div class="dt-section">
-      <h2 class="dt-h">평형 안내</h2>
-      ${typeBlock}
-    </div>
-
-    <div class="dt-section">
       <h2 class="dt-h">분양일정</h2>
       ${scheduleBlock}
       <p class="dt-note">분양시기: <b>${s.when}</b> — 정확한 청약 일정이 확정되는 즉시 신청자분들께 가장 먼저 안내해 드립니다.</p>
@@ -1365,7 +1391,7 @@ function renderSite(s){
 
     <div class="dt-section">
       <h2 class="dt-h">분양가</h2>
-      <div class="locked">💰 동·호수별 분양가 및 납부 일정 자료는 공개 시점에 신청자분들께 우선 제공됩니다.<br>아래 '분양정보 받기'로 신청하시면 로얄층·로얄호실 추천과 함께 받아보실 수 있습니다.</div>
+      ${priceBlock}
     </div>
 
     <div class="dt-section">
@@ -1624,6 +1650,11 @@ async function fetchMdlFor(site){
       site.d.supply = list.map(r=>({
         ty:(r.HOUSE_TY||'').trim(), area:(r.SUPLY_AR&&r.SUPLY_AR!=='null')?r.SUPLY_AR:'',
         general:Number(r.SUPLY_HSHLDCO||0), special:Number(r.SPSPLY_HSHLDCO||0)
+      }));
+      // 분양가(주택형별 최고가)
+      site.d.price = list.map(r=>({
+        ty:(r.HOUSE_TY||'').trim(),
+        amount:Number(r.LTTOT_TOP_AMOUNT||0)
       }));
       // 일반분양만 특공 배분 표 (무순위는 특공 없음)
       if(!site.isRemain){
