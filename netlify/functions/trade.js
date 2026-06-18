@@ -1,12 +1,19 @@
 // netlify/functions/trade.js
-// 국토교통부 아파트 매매 실거래가 상세자료(XML) 중계 함수
-// 주요 지역들의 이번 달(+지난 달) 거래를 모아 가격순 TOP으로 반환
-// 호출 예: /api/trade            (주요지역 신고가 TOP)
-//          /api/trade?lawd=11680&ymd=202606  (특정 지역/월)
+// 국토교통부 실거래가(XML) 중계 함수 — 매매/전세/분양권
+// 호출 예:
+//   /api/trade                         매매 신고가 TOP (주요지역)
+//   /api/trade?kind=rent               전월세 신고가 TOP (보증금 기준)
+//   /api/trade?kind=silv               분양권 신고가 TOP
+//   /api/trade?lawd=11680&ymd=202606   특정 지역/월 (매매)
+//   /api/trade?lawd=11680&apt=은마      특정 단지 거래이력 (매매)
 
-const ENDPOINT = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev";
+const ENDPOINTS = {
+  trade: "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev",
+  rent:  "https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent",
+  silv:  "https://apis.data.go.kr/1613000/RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade",
+};
 
-// 주요 지역(법정동 시군구 코드 5자리) — 신고가가 잘 나오는 서울 주요구 + 핵심 지역
+// 주요 지역(법정동 시군구 코드 5자리)
 const MAJOR_REGIONS = [
   { code: "11680", name: "강남구" },
   { code: "11650", name: "서초구" },
@@ -17,41 +24,90 @@ const MAJOR_REGIONS = [
   { code: "41135", name: "성남분당" },
   { code: "41210", name: "광명시" },
 ];
+// 분양권은 수도권 신도시/택지 위주로 (분양권 전매가 활발한 곳)
+const SILV_REGIONS = [
+  { code: "28260", name: "인천서구" },
+  { code: "41590", name: "화성시" },
+  { code: "41220", name: "평택시" },
+  { code: "41630", name: "양주시" },
+  { code: "41280", name: "고양덕양" },
+  { code: "41271", name: "안양만안" },
+  { code: "11680", name: "강남구" },
+  { code: "11650", name: "서초구" },
+];
 
-// 거래년월 문자열(YYYYMM) 만들기
 function ymd(offset) {
   const d = new Date();
   d.setMonth(d.getMonth() + offset);
   return "" + d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0");
 }
 
-// XML에서 <item>...</item> 블록들을 파싱해 객체 배열로 변환
-function parseItems(xml, regionName) {
-  const items = [];
-  const blocks = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
-  for (const b of blocks) {
-    const get = (tag) => {
-      const m = b.match(new RegExp("<" + tag + ">([\\s\\S]*?)</" + tag + ">"));
-      return m ? m[1].trim() : "";
-    };
-    const amountStr = get("dealAmount").replace(/[^0-9]/g, "");
-    const amount = amountStr ? parseInt(amountStr, 10) : 0; // 만원
-    if (!amount) continue;
-    items.push({
-      apt: get("aptNm"),
-      amount: amount, // 만원
-      area: parseFloat(get("excluUseAr")) || 0,
-      floor: parseInt(get("floor"), 10) || 0,
-      year: get("dealYear"),
-      month: get("dealMonth"),
-      day: get("dealDay"),
-      dong: get("umdNm"),
-      buildYear: get("buildYear"),
-      region: regionName,
-      lawd: get("sggCd"),
+function tag(block, name) {
+  const m = block.match(new RegExp("<" + name + ">([\\s\\S]*?)</" + name + ">"));
+  return m ? m[1].trim() : "";
+}
+function num(s) { const n = (s || "").replace(/[^0-9]/g, ""); return n ? parseInt(n, 10) : 0; }
+
+// 매매 파싱
+function parseTrade(xml, regionName) {
+  const out = [];
+  (xml.match(/<item>[\s\S]*?<\/item>/g) || []).forEach((b) => {
+    const amount = num(tag(b, "dealAmount"));
+    if (!amount) return;
+    out.push({
+      apt: tag(b, "aptNm"), amount, area: parseFloat(tag(b, "excluUseAr")) || 0,
+      floor: parseInt(tag(b, "floor"), 10) || 0,
+      year: tag(b, "dealYear"), month: tag(b, "dealMonth"), day: tag(b, "dealDay"),
+      dong: tag(b, "umdNm"), buildYear: tag(b, "buildYear"),
+      region: regionName, lawd: tag(b, "sggCd"),
     });
-  }
-  return items;
+  });
+  return out;
+}
+// 전월세 파싱 (전세=월세0, 보증금 기준)
+function parseRent(xml, regionName) {
+  const out = [];
+  (xml.match(/<item>[\s\S]*?<\/item>/g) || []).forEach((b) => {
+    const deposit = num(tag(b, "deposit"));
+    const monthly = num(tag(b, "monthlyRent"));
+    if (!deposit) return;
+    out.push({
+      apt: tag(b, "aptNm"), amount: deposit, monthly,
+      area: parseFloat(tag(b, "excluUseAr")) || 0,
+      floor: parseInt(tag(b, "floor"), 10) || 0,
+      year: tag(b, "dealYear"), month: tag(b, "dealMonth"), day: tag(b, "dealDay"),
+      dong: tag(b, "umdNm"), buildYear: tag(b, "buildYear"),
+      contractType: tag(b, "contractType"),
+      preDeposit: num(tag(b, "preDeposit")),
+      region: regionName, lawd: tag(b, "sggCd"),
+      isRent: monthly > 0,
+    });
+  });
+  return out;
+}
+// 분양권 파싱
+function parseSilv(xml, regionName) {
+  const out = [];
+  (xml.match(/<item>[\s\S]*?<\/item>/g) || []).forEach((b) => {
+    const amount = num(tag(b, "dealAmount"));
+    if (!amount) return;
+    out.push({
+      apt: tag(b, "aptNm"), amount, area: parseFloat(tag(b, "excluUseAr")) || 0,
+      floor: parseInt(tag(b, "floor"), 10) || 0,
+      year: tag(b, "dealYear"), month: tag(b, "dealMonth"), day: tag(b, "dealDay"),
+      dong: tag(b, "umdNm"), buildYear: tag(b, "buildYear"),
+      region: regionName, lawd: tag(b, "sggCd"),
+    });
+  });
+  return out;
+}
+
+function buildUrl(endpoint, lawd, dealYmd, key, rows) {
+  return endpoint +
+    "?serviceKey=" + encodeURIComponent(key) +
+    "&LAWD_CD=" + encodeURIComponent(lawd) +
+    "&DEAL_YMD=" + encodeURIComponent(dealYmd) +
+    "&pageNo=1&numOfRows=" + encodeURIComponent(rows);
 }
 
 exports.handler = async function (event) {
@@ -59,84 +115,51 @@ exports.handler = async function (event) {
   const KEY = process.env.APPLYHOME_KEY;
   if (!KEY) return resp(500, { error: "APPLYHOME_KEY 환경변수가 설정되지 않았습니다." });
 
-  // 특정 단지 거래이력 조회 모드 (지역코드 + 단지명, 최근 여러 달)
+  const kind = p.kind || "trade"; // trade | rent | silv
+  const endpoint = ENDPOINTS[kind] || ENDPOINTS.trade;
+  const parser = kind === "rent" ? parseRent : kind === "silv" ? parseSilv : parseTrade;
+
+  // 특정 단지 거래이력 (매매 전용)
   if (p.lawd && p.apt) {
-    const aptName = p.apt;
     const monthsHist = [ymd(0), ymd(-1), ymd(-2), ymd(-3), ymd(-4), ymd(-5)];
     try {
-      const tasks = monthsHist.map((mm) =>
-        fetch(buildUrl(p.lawd, mm, KEY, "200"))
-          .then((r) => r.text())
-          .then((xml) => parseItems(xml, p.lawd))
-          .catch(() => [])
-      );
-      const results = await Promise.all(tasks);
-      let rows = [];
-      results.forEach((arr) => { rows = rows.concat(arr); });
-      // 단지명이 일치하는 것만
+      const results = await Promise.all(monthsHist.map((mm) =>
+        fetch(buildUrl(endpoint, p.lawd, mm, KEY, "200")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
+      ));
+      let rows = []; results.forEach((a) => { rows = rows.concat(a); });
       const norm = (s) => (s || "").replace(/\s|\(.*?\)/g, "");
-      const target = norm(aptName);
-      rows = rows.filter((it) => norm(it.apt) === target || norm(it.apt).indexOf(target) >= 0 || target.indexOf(norm(it.apt)) >= 0);
-      // 최신순 정렬
-      rows.sort((a, b) => {
-        const da = a.year + String(a.month).padStart(2,"0") + String(a.day).padStart(2,"0");
-        const db = b.year + String(b.month).padStart(2,"0") + String(b.day).padStart(2,"0");
-        return db.localeCompare(da);
-      });
+      const target = norm(p.apt);
+      rows = rows.filter((it) => { const n = norm(it.apt); return n === target || n.indexOf(target) >= 0 || target.indexOf(n) >= 0; });
+      rows.sort((a, b) => (b.year + pad(b.month) + pad(b.day)).localeCompare(a.year + pad(a.month) + pad(a.day)));
       return resp(200, { items: rows });
-    } catch (e) {
-      return resp(502, { error: "단지 이력 조회 실패", detail: String(e) });
-    }
+    } catch (e) { return resp(502, { error: "단지 이력 조회 실패", detail: String(e) }); }
   }
 
-  // 특정 지역/월 단건 조회 모드
+  // 특정 지역/월
   if (p.lawd) {
-    const url = buildUrl(p.lawd, p.ymd || ymd(0), KEY, p.rows || "50");
     try {
-      const r = await fetch(url);
+      const r = await fetch(buildUrl(endpoint, p.lawd, p.ymd || ymd(0), KEY, p.rows || "50"));
       const xml = await r.text();
-      return resp(200, { items: parseItems(xml, p.lawd) });
-    } catch (e) {
-      return resp(502, { error: "실거래가 호출 실패", detail: String(e) });
-    }
+      return resp(200, { items: parser(xml, p.lawd) });
+    } catch (e) { return resp(502, { error: "조회 실패", detail: String(e) }); }
   }
 
-  // 기본: 주요 지역 신고가 TOP 모드
-  const months = [ymd(0), ymd(-1)]; // 이번 달 + 지난 달
+  // 기본: 주요 지역 신고가 TOP
+  const regions = kind === "silv" ? SILV_REGIONS : MAJOR_REGIONS;
+  const months = [ymd(0), ymd(-1)];
   let all = [];
   try {
-    // 지역 x 월 병렬 호출
     const tasks = [];
-    for (const rg of MAJOR_REGIONS) {
-      for (const mm of months) {
-        tasks.push(
-          fetch(buildUrl(rg.code, mm, KEY, "50"))
-            .then((r) => r.text())
-            .then((xml) => parseItems(xml, rg.name))
-            .catch(() => [])
-        );
-      }
+    for (const rg of regions) for (const mm of months) {
+      tasks.push(fetch(buildUrl(endpoint, rg.code, mm, KEY, "60")).then((r) => r.text()).then((x) => parser(x, rg.name)).catch(() => []));
     }
-    const results = await Promise.all(tasks);
-    results.forEach((arr) => { all = all.concat(arr); });
-
-    // 가격순 정렬 후 상위 20건
+    (await Promise.all(tasks)).forEach((a) => { all = all.concat(a); });
     all.sort((a, b) => b.amount - a.amount);
-    const top = all.slice(0, 20);
-    return resp(200, { items: top, totalScanned: all.length });
-  } catch (e) {
-    return resp(502, { error: "실거래가 집계 실패", detail: String(e) });
-  }
+    return resp(200, { items: all.slice(0, 30), totalScanned: all.length });
+  } catch (e) { return resp(502, { error: "집계 실패", detail: String(e) }); }
 };
 
-function buildUrl(lawd, dealYmd, key, rows) {
-  return ENDPOINT +
-    "?serviceKey=" + encodeURIComponent(key) +
-    "&LAWD_CD=" + encodeURIComponent(lawd) +
-    "&DEAL_YMD=" + encodeURIComponent(dealYmd) +
-    "&pageNo=1&numOfRows=" + encodeURIComponent(rows);
-}
-
+function pad(s) { return String(s).padStart(2, "0"); }
 function resp(status, body) {
   return {
     statusCode: status,
