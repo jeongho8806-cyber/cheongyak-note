@@ -1241,7 +1241,7 @@ function renderSite(s){
   if(d.supply && d.supply.length){
     const totG=d.supply.reduce((a,r)=>a+r.general,0);
     const totS=d.supply.reduce((a,r)=>a+r.special,0);
-    const rowsSupply=d.supply.map(r=>`<tr><td>${r.ty}</td><td>${r.area}㎡</td><td>${r.general}</td><td>${r.special}</td><td><b>${r.general+r.special}</b></td></tr>`).join('');
+    const rowsSupply=d.supply.map(r=>`<tr><td>${r.ty}</td><td>${r.area?r.area+'㎡':'-'}</td><td>${r.general}</td><td>${r.special}</td><td><b>${r.general+r.special}</b></td></tr>`).join('');
     let specialTbl='';
     if(d.special && d.special.length){
       const rowsSp=d.special.map(r=>{
@@ -1531,11 +1531,13 @@ function mapRemainItem(it){
   };
 }
 // 청약홈 단지를 DATA에 합치기
-// 단지명 정규화(공백·괄호·특수문자·단위 제거)해서 중복 비교에 사용
+// 단지명 정규화(공백·괄호·특수문자 제거 + 끝의 단지/차/블록 표기 제거)해서 중복 비교
 function normName(name){
   return (name||'')
-    .replace(/[\s()（）\[\]\-_.·,]/g,'')   // 공백·괄호·하이픈·점·중점 등 제거
-    .replace(/\d+(블록|블럭|BL|bl|단지|차)/g,m=>m) // 블록/단지 표기는 유지(다른 단지 구분)
+    .replace(/\(.*?\)/g,'')                    // 괄호 안 내용 제거 (조합원 취소분 등 부가설명)
+    .replace(/\s+/g,'')                         // 공백 제거
+    .replace(/[\-_.·,（）()\[\]]/g,'')          // 특수문자 제거
+    .replace(/(\d+)(단지|차)$/,'')              // 끝의 'N단지','N차'만 제거 (블록코드는 유지)
     .toLowerCase();
 }
 async function loadApplyhome(){
@@ -1573,14 +1575,20 @@ async function loadApplyhome(){
   }
 }
 
-// 무순위/잔여세대 단지 불러와서 합치기
+// 무순위/잔여세대 단지 불러와서 합치기 (전체 페이지)
 async function loadRemain(){
   try{
-    const res = await fetch('/api/apt?type=remain&page=1&perPage=500');
-    const json = await res.json();
-    const list = (json && json.data) ? json.data : [];
+    let allRows=[];
+    // 무순위는 1,500건 이상이라 여러 페이지로 나눠 받음 (페이지당 500, 최대 4페이지)
+    for(let pg=1; pg<=4; pg++){
+      const res = await fetch('/api/apt?type=remain&page='+pg+'&perPage=500');
+      const json = await res.json();
+      const rows = (json && json.data) ? json.data : [];
+      allRows = allRows.concat(rows);
+      if(rows.length < 500) break; // 마지막 페이지
+    }
     let added=0, replaced=0;
-    list.forEach(it=>{
+    allRows.forEach(it=>{
       const s = mapRemainItem(it);
       if(!DATA[s.region]) return;
       const key = normName(s.name);
@@ -1596,7 +1604,7 @@ async function loadRemain(){
         DATA[s.region].push(s); added++;
       }
     });
-    console.log('무순위 단지 '+added+'건 추가, '+replaced+'건 갱신 (전체 '+(json.totalCount||'?')+'건 중)');
+    console.log('무순위 단지 '+added+'건 추가, '+replaced+'건 갱신 (총 '+allRows.length+'건 조회)');
   }catch(e){
     console.log('무순위 연동 실패:', e);
   }
@@ -1614,7 +1622,7 @@ async function fetchMdlFor(site){
     const list = (json && json.data) ? json.data : [];
     if(list.length){
       site.d.supply = list.map(r=>({
-        ty:(r.HOUSE_TY||'').trim(), area:r.SUPLY_AR||'',
+        ty:(r.HOUSE_TY||'').trim(), area:(r.SUPLY_AR&&r.SUPLY_AR!=='null')?r.SUPLY_AR:'',
         general:Number(r.SUPLY_HSHLDCO||0), special:Number(r.SPSPLY_HSHLDCO||0)
       }));
       // 일반분양만 특공 배분 표 (무순위는 특공 없음)
@@ -1632,6 +1640,17 @@ async function fetchMdlFor(site){
 }
 
 // 먼저 화면을 그리고(수동 데이터), API가 도착하면 다시 그림
+// 빈 수동 단지 정리: 입지분석(points)·평형(types)·공급(supply) 정보가 있는 단지만 남기고
+// 나머지 껍데기 수동 단지는 제거 (청약홈/무순위 API가 자동으로 채움)
+(function pruneManualSites(){
+  for(const rg in DATA){
+    DATA[rg] = DATA[rg].filter(s=>{
+      const d=s.d||{};
+      return (d.points&&d.points.length) || (d.types&&d.types.length) || (d.supply&&d.supply.length);
+    });
+  }
+})();
+
 renderAll();
 loadApplyhome()
   .then(()=>{ renderAll(); return loadRemain(); })
