@@ -190,6 +190,10 @@
   .sido-chip{font-size:13px;font-weight:700;padding:8px 15px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#555;cursor:pointer;transition:.12s}
   .sido-chip:hover{border-color:var(--brand);color:var(--brand)}
   .sido-chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .trade-tabs{display:flex;gap:8px;margin-bottom:16px;justify-content:center}
+  .trade-tab{font-size:14px;font-weight:700;padding:9px 22px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
+  .trade-tab:hover{background:#e0e5ee}
+  .trade-tab.on{background:var(--navy);color:#fff}
 
 
   /* 분양 카드 그리드 */
@@ -1954,9 +1958,14 @@ function openTradeList(kind){
   const subInfo = searchResult
     ? `<b style="color:var(--brand)">${searchResult.label}</b> ${searchResult.items.length}건 · <span style="cursor:pointer;text-decoration:underline" onclick="clearTradeSearch('${kind}')">주요 지역 TOP으로</span>`
     : `국토교통부 실거래가 기준 · 주요 지역 TOP ${list.length}건 · 아래 지역을 누르면 시도별로 볼 수 있어요`;
+  // 탭 (아파트/분양권/전월세)
+  const tabs=[['trade','아파트(매매)'],['silv','분양권'],['rent','전월세']].map(([k,label])=>
+    `<span class="trade-tab ${k===kind?'on':''}" onclick="switchTradeTab('${k}')">${label}</span>`
+  ).join('');
   lv.innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
-    <div class="lv-head"><h2>${titleMap[kind]}</h2><p>${subInfo}</p></div>
+    <div class="lv-head"><h2>전국 시도별 최고가 실거래가</h2><p>${subInfo}</p></div>
+    <div class="trade-tabs">${tabs}</div>
     <div class="sido-chips">${chips}</div>
     <div class="searchbar-wrap" style="margin:14px 0 18px">
       <div class="searchbar">
@@ -1971,6 +1980,17 @@ function openTradeList(kind){
   lv.style.display='block';
   window.scrollTo(0,0);
   if(!searchResult && !TRADE_STORE[kind].length){ loadTradeKind(kind).then(()=>{ if(document.getElementById('list-view').style.display==='block') openTradeList(kind); }); }
+}
+// 탭 전환 (현재 시도 선택 유지)
+function switchTradeTab(kind){
+  // 다른 탭에서 같은 시도를 보고 있었으면 그 시도로 다시 집계, 아니면 TOP
+  const prev=Object.values(TRADE_SEARCH).find(v=>v&&v.sido);
+  if(prev && prev.sido){
+    // 같은 시도를 새 탭으로 조회
+    selectSido(kind, prev.sido);
+  } else {
+    openTradeList(kind);
+  }
 }
 // 시도 칩 클릭 → 그 시도 시군구 전부 집계
 async function selectSido(kind,prefix){
