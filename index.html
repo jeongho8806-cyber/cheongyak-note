@@ -181,6 +181,8 @@
   .trade-price{text-align:right;flex-shrink:0}
   .trade-price .amt{font-size:16px;font-weight:800;color:var(--ink)}
   .trade-price .rg{font-size:11px;color:var(--brand);font-weight:700;margin-top:2px}
+  .trade-morebtn{display:inline-block;font-size:13px;font-weight:700;color:var(--brand);background:var(--brand-soft);border:1px solid var(--brand);border-radius:8px;padding:9px 20px;cursor:pointer}
+  .trade-morebtn:hover{background:var(--brand);color:#fff}
 
   /* 분양 카드 그리드 */
   .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -511,6 +513,7 @@
         <div class="block-h"><span class="ico">✅</span><span class="t">청약 종료 단지</span><span class="cnt" id="done-cnt"></span></div>
         <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 12px">이미 청약이 끝난 단지도 정보를 확인할 수 있습니다. 무순위·잔여세대나 유사 단지 안내를 받아보세요.</p>
         <div class="card-grid" id="done-grid"></div>
+        <div id="done-more" style="text-align:center;margin-top:14px"></div>
       </div>
 
     </div>
@@ -876,7 +879,8 @@ function renderAll(){
   // 청약 종료 단지
   const doneSites=sites.filter(s=>isDone(s.when));
   document.getElementById('done-cnt').textContent=`(${doneSites.length})`;
-  document.getElementById('done-grid').innerHTML=doneSites.map(s=>`
+  const doneLimit=DONE_EXPANDED?doneSites.length:10;
+  const doneCard=s=>`
     <div class="pcard" onclick="openSite('${s.id}')">
       <div class="thumb" style="background:linear-gradient(135deg,${gradOf(s.id)});filter:grayscale(.4)">
         <div class="tags">
@@ -889,8 +893,18 @@ function renderAll(){
         <h3>${s.name}</h3>
         <div class="loc">${s.d.loc}</div>
         <div class="meta"><span>${s.d.hh}</span><span class="when" style="color:#9aa0ab">${s.when}</span></div>
-      </div></div>`).join('') || '<p style="color:#aaa;font-size:13px">종료된 단지가 없습니다.</p>';
+      </div></div>`;
+  document.getElementById('done-grid').innerHTML=doneSites.slice(0,doneLimit).map(doneCard).join('') || '<p style="color:#aaa;font-size:13px">종료된 단지가 없습니다.</p>';
+  // 더보기 버튼
+  const doneMore=document.getElementById('done-more');
+  if(doneMore){
+    if(doneSites.length>10){
+      doneMore.innerHTML=`<span class="trade-morebtn" onclick="toggleDone()">${DONE_EXPANDED?'접기 ▲':'+ '+(doneSites.length-10)+'개 더 보기 ▼'}</span>`;
+    } else { doneMore.innerHTML=''; }
+  }
 }
+let DONE_EXPANDED=false;
+function toggleDone(){ DONE_EXPANDED=!DONE_EXPANDED; renderAll(); if(!DONE_EXPANDED) document.getElementById('b-done').scrollIntoView({behavior:'smooth'}); }
 
 /* ===== 청약 캘린더 ===== */
 let CAL_MONTH = 6; // 기본 6월(오늘 기준)
@@ -1714,6 +1728,8 @@ function wonToKor(manwon){
   return manwon.toLocaleString()+'만';
 }
 // 실거래 신고가 TOP 불러와서 렌더
+let TRADE_DATA=[];        // 신고가 TOP 데이터 보관
+let TRADE_EXPANDED=false; // 더보기 펼침 상태
 async function loadTrade(){
   const grid=document.getElementById('trade-grid');
   if(!grid) return;
@@ -1725,27 +1741,120 @@ async function loadTrade(){
       grid.innerHTML='<div class="locked">최근 실거래 데이터를 준비 중입니다.</div>';
       return;
     }
-    const top=items.slice(0,10);
-    document.getElementById('trade-cnt').textContent='('+top.length+')';
-    grid.className='trade-grid';
-    grid.innerHTML=top.map((it,i)=>{
-      const rank=i+1;
-      const pyeong=it.area?Math.round(it.area/3.3058):0;
-      return `<div class="trade-card">
-        <div class="trade-rank ${rank<=3?'top3':''}">${rank}</div>
-        <div class="trade-info">
-          <div class="trade-nm">${it.apt}</div>
-          <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡${pyeong?'('+pyeong+'평)':''} · ${it.floor}층 · ${it.month}/${it.day}</div>
-        </div>
-        <div class="trade-price">
-          <div class="amt">${wonToKor(it.amount)}</div>
-          <div class="rg">${it.region}</div>
-        </div>
-      </div>`;
-    }).join('');
+    TRADE_DATA=items;
+    renderTrade();
   }catch(e){
     grid.innerHTML='<div class="locked">실거래가를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>';
     console.log('실거래가 로딩 실패:', e);
+  }
+}
+function renderTrade(){
+  const grid=document.getElementById('trade-grid');
+  if(!grid||!TRADE_DATA.length) return;
+  const limit=TRADE_EXPANDED?TRADE_DATA.length:10;
+  const list=TRADE_DATA.slice(0,limit);
+  document.getElementById('trade-cnt').textContent='('+TRADE_DATA.length+')';
+  grid.className='trade-grid';
+  let html=list.map((it,i)=>{
+    const rank=i+1;
+    const pyeong=it.area?Math.round(it.area/3.3058):0;
+    return `<div class="trade-card" onclick="openTrade(${i})">
+      <div class="trade-rank ${rank<=3?'top3':''}">${rank}</div>
+      <div class="trade-info">
+        <div class="trade-nm">${it.apt}</div>
+        <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡${pyeong?'('+pyeong+'평)':''} · ${it.floor}층 · ${it.month}/${it.day}</div>
+      </div>
+      <div class="trade-price">
+        <div class="amt">${wonToKor(it.amount)}</div>
+        <div class="rg">${it.region}</div>
+      </div>
+    </div>`;
+  }).join('');
+  grid.innerHTML=html;
+  // 더보기 버튼 (그리드 밖에)
+  let moreEl=document.getElementById('trade-more');
+  if(!moreEl){
+    moreEl=document.createElement('div');
+    moreEl.id='trade-more';
+    moreEl.style.cssText='text-align:center;margin-top:12px';
+    grid.parentNode.appendChild(moreEl);
+  }
+  if(TRADE_DATA.length>10){
+    moreEl.innerHTML=`<span class="trade-morebtn" onclick="toggleTrade()">${TRADE_EXPANDED?'접기 ▲':'+ '+(TRADE_DATA.length-10)+'개 더 보기 ▼'}</span>`;
+  } else { moreEl.innerHTML=''; }
+}
+function toggleTrade(){ TRADE_EXPANDED=!TRADE_EXPANDED; renderTrade(); }
+
+// 신고가 단지 클릭 → 거래 이력 상세
+async function openTrade(idx){
+  const it=TRADE_DATA[idx];
+  if(!it) return;
+  PREV_VIEW='home';
+  const dv=document.getElementById('detail-view');
+  const pyeong=it.area?Math.round(it.area/3.3058):0;
+  // 먼저 기본 정보로 화면 띄우고, 이력은 비동기로 채움
+  dv.innerHTML=`
+    <div class="dt-back" onclick="closeSite()">‹ 목록으로</div>
+    <div class="dt-hero" style="background:linear-gradient(135deg,${gradOf(it.apt)})">
+      <div class="dt-hero-in">
+        <span class="dt-badge" style="background:var(--green)">실거래 신고가</span>
+        <h1>${it.apt}</h1>
+        <p>${it.region} ${it.dong} · ${it.buildYear?it.buildYear+'년 준공':''}</p>
+      </div>
+    </div>
+    <div class="dt-section">
+      <h2 class="dt-h">최근 신고가 거래</h2>
+      <table class="dt-table">
+        <tr><th>거래금액</th><td><b style="color:var(--brand);font-size:18px">${wonToKor(it.amount)}</b> (${Number(it.amount).toLocaleString()}만원)</td></tr>
+        <tr><th>전용면적</th><td>${it.area}㎡ ${pyeong?'('+pyeong+'평)':''}</td></tr>
+        <tr><th>층</th><td>${it.floor}층</td></tr>
+        <tr><th>거래일</th><td>${it.year}.${it.month}.${it.day}</td></tr>
+        <tr><th>준공</th><td>${it.buildYear||'-'}년</td></tr>
+      </table>
+    </div>
+    <div class="dt-section">
+      <h2 class="dt-h">이 단지 거래 이력 <span style="font-size:13px;color:var(--muted);font-weight:600">(최근 6개월)</span></h2>
+      <div id="trade-history"><div class="locked">📊 거래 이력을 불러오는 중입니다...</div></div>
+    </div>
+    <div class="alarm-box">
+      <div class="alarm-l">
+        <div class="alarm-ico">🔔</div>
+        <div>
+          <div class="alarm-h">${it.apt} 시세 알림 신청</div>
+          <div class="alarm-p">이 단지의 새 실거래가 등록되면 가장 먼저 문자로 알려드려요.</div>
+        </div>
+      </div>
+      <div class="alarm-form">
+        <input type="text" id="al-name" placeholder="이름">
+        <input type="tel" id="al-phone" placeholder="연락처 (- 없이)">
+        <button onclick="alarmSubmit('${it.apt.replace(/'/g,'')} 시세')">알림 신청 ▶</button>
+      </div>
+    </div>
+    <div class="dt-back" onclick="closeSite()" style="margin-top:16px">‹ 목록으로</div>`;
+  document.getElementById('home-view').style.display='none';
+  document.getElementById('list-view').style.display='none';
+  dv.style.display='block';
+  window.scrollTo(0,0);
+  // 거래 이력 비동기 로딩
+  try{
+    const res=await fetch('/api/trade?lawd='+encodeURIComponent(it.lawd||'')+'&apt='+encodeURIComponent(it.apt));
+    const json=await res.json();
+    const rows=(json&&json.items)?json.items:[];
+    const hist=document.getElementById('trade-history');
+    if(!hist) return;
+    if(!rows.length){ hist.innerHTML='<div class="locked">최근 6개월 내 추가 거래 내역이 없습니다.</div>'; return; }
+    const rowsHtml=rows.slice(0,30).map(r=>{
+      const py=r.area?Math.round(r.area/3.3058):0;
+      return `<tr><td>${r.year}.${String(r.month).padStart(2,'0')}.${String(r.day).padStart(2,'0')}</td><td>${r.area}㎡${py?'('+py+'평)':''}</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${wonToKor(r.amount)}</td></tr>`;
+    }).join('');
+    hist.innerHTML=`<div class="dt-scroll"><table class="dt-table small">
+      <tr><th>거래일</th><th>면적</th><th>층</th><th>거래금액</th></tr>
+      ${rowsHtml}
+    </table></div>
+    <p class="dt-note">국토교통부 실거래가 신고 자료 기준입니다. 동·호수별 세부 정보와 매물 상담은 '시세 알림 신청'으로 받아보세요.</p>`;
+  }catch(e){
+    const hist=document.getElementById('trade-history');
+    if(hist) hist.innerHTML='<div class="locked">거래 이력을 불러오지 못했습니다.</div>';
   }
 }
 
