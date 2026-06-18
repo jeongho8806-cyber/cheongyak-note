@@ -90,6 +90,47 @@
   .sr-loc{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
   .sr-empty{padding:18px;text-align:center;color:var(--muted);font-size:13.5px}
 
+  /* 간단 계산기 (메인) */
+  .mini-tools{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+  @media(max-width:760px){.mini-tools{grid-template-columns:1fr}}
+  .mini-card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--shadow)}
+  .mini-h{font-size:15px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+  .mini-ico{font-size:18px}
+  .mini-max{font-size:11.5px;font-weight:600;color:var(--muted);margin-left:auto}
+  .mini-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .mini-row label{font-size:13px;color:#555;width:88px;flex-shrink:0}
+  .mini-row select,.mini-row input{flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13.5px;font-family:inherit;min-width:0}
+  .mini-unit{font-size:12.5px;color:var(--muted);flex-shrink:0}
+  .mini-result{background:var(--brand-soft);border-radius:9px;padding:11px 14px;text-align:center;font-size:13.5px;color:#7a3c12;font-weight:600;margin-top:12px}
+  .mini-result b{font-size:21px;color:var(--brand);margin:0 4px}
+  .mini-result span{font-size:13px}
+  .mini-more{text-align:right;font-size:12.5px;color:var(--brand);font-weight:700;cursor:pointer;margin-top:9px}
+  .mini-more:hover{text-decoration:underline}
+
+  /* 도구 풀화면 */
+  #tools-view{padding:18px 0 50px}
+  .tv-head{margin-bottom:20px}
+  .tv-head h1{font-size:24px;font-weight:800;margin-bottom:6px}
+  .tv-head p{font-size:14px;color:var(--muted)}
+  .tv-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .tv-tab{padding:10px 20px;border:1.5px solid var(--line);border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;background:#fff;color:#555}
+  .tv-tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .tv-panel{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:26px;box-shadow:var(--shadow);max-width:640px}
+  .tv-panel h2{font-size:18px;font-weight:800;margin-bottom:18px}
+  .tv-field{margin-bottom:16px}
+  .tv-field label{display:block;font-size:13.5px;font-weight:600;color:#444;margin-bottom:7px}
+  .tv-field .sub{font-size:12px;color:var(--muted);font-weight:400}
+  .tv-field select,.tv-field input{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit}
+  .tv-out{background:var(--brand-soft);border-radius:12px;padding:20px;text-align:center;margin-top:8px}
+  .tv-out .lbl{font-size:13px;color:#7a3c12;margin-bottom:6px}
+  .tv-out .big{font-size:34px;font-weight:800;color:var(--brand)}
+  .tv-out .big span{font-size:17px}
+  .tv-note{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.6}
+  .tv-break{display:flex;justify-content:space-between;font-size:13px;color:#555;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .tv-break:last-child{border-bottom:none}
+  .tv-break b{color:var(--ink)}
+  .gnb-tool{color:var(--brand);font-weight:800}
+
   /* 본문 그리드 */
   .layout{display:grid;grid-template-columns:1fr 300px;gap:20px;padding-bottom:50px}
   @media(max-width:980px){.layout{grid-template-columns:1fr}}
@@ -258,6 +299,17 @@
   .dtype-plan span{font-size:11.5px;margin-top:4px}
   .dtype-note{padding:11px 16px;font-size:12.5px;color:#666}
   .dt-cta-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+  /* 관심단지 알림 배너 */
+  .alarm-box{background:linear-gradient(135deg,#1a2238,#283250);border-radius:16px;padding:24px 26px;margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .alarm-l{display:flex;align-items:center;gap:16px;flex:1;min-width:240px}
+  .alarm-ico{font-size:34px;flex-shrink:0}
+  .alarm-h{font-size:17px;font-weight:800;color:#fff;margin-bottom:5px}
+  .alarm-p{font-size:13px;color:#b9c2d8;line-height:1.5}
+  .alarm-form{display:flex;gap:8px;flex-wrap:wrap}
+  .alarm-form input{padding:12px 14px;border:none;border-radius:9px;font-size:13.5px;font-family:inherit;width:130px}
+  .alarm-form button{padding:12px 20px;border:none;border-radius:9px;background:var(--brand);color:#fff;font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap}
+  .alarm-form button:hover{background:#e85d10}
+  @media(max-width:620px){.alarm-form{width:100%}.alarm-form input{flex:1}}
   @media(max-width:720px){.dt-cta-row{grid-template-columns:1fr}}
   .dt-cta{background:linear-gradient(135deg,#ff7a2e,#e85d10);border-radius:16px;padding:30px 26px;text-align:center;color:#fff;margin-top:0}
   .dt-cta h3{font-size:20px;font-weight:800;margin-bottom:8px;line-height:1.35}
@@ -298,12 +350,13 @@
 </div></div>
 
 <header><div class="wrap head">
-  <div class="logo">청약<b>노트</b></div>
+  <div class="logo" onclick="goHome()" style="cursor:pointer">청약<b>노트</b></div>
   <nav class="gnb">
     <a onclick="openList('fast')">선착순</a>
     <a onclick="openList('week')">이번주</a>
     <a onclick="openList('region')">지역별</a>
     <a onclick="openList('notice')">모집공고</a>
+    <a onclick="openTools()" class="gnb-tool">청약도구</a>
   </nav>
   <div class="head-cta" onclick="openModal('')">상담 받기 →</div>
 </div></header>
@@ -345,6 +398,44 @@
       <span class="search-clear" id="search-clear" onclick="clearSearch()" style="display:none">✕</span>
     </div>
     <div class="search-results" id="search-results"></div>
+  </div>
+
+  <!-- 간단 계산기 (메인) -->
+  <div class="mini-tools">
+    <div class="mini-card">
+      <div class="mini-h"><span class="mini-ico">🏠</span> 청약 가점 빠른계산 <span class="mini-max">(84점 만점)</span></div>
+      <div class="mini-row">
+        <label>무주택 기간</label>
+        <select id="mg-house" onchange="miniGapjeom()"></select>
+      </div>
+      <div class="mini-row">
+        <label>부양가족 수</label>
+        <select id="mg-family" onchange="miniGapjeom()"></select>
+      </div>
+      <div class="mini-row">
+        <label>청약통장 가입</label>
+        <select id="mg-bank" onchange="miniGapjeom()"></select>
+      </div>
+      <div class="mini-result">내 예상 가점 <b id="mg-score">0</b><span>점</span></div>
+      <div class="mini-more" onclick="openTools('gapjeom')">자세히 계산하기 ›</div>
+    </div>
+    <div class="mini-card">
+      <div class="mini-h"><span class="mini-ico">💰</span> 대출 빠른계산 <span class="mini-max">(월 상환액)</span></div>
+      <div class="mini-row">
+        <label>대출 금액</label>
+        <input type="number" id="ml-amt" value="30000" oninput="miniLoan()"> <span class="mini-unit">만원</span>
+      </div>
+      <div class="mini-row">
+        <label>연 이자율</label>
+        <input type="number" id="ml-rate" value="4.0" step="0.1" oninput="miniLoan()"> <span class="mini-unit">%</span>
+      </div>
+      <div class="mini-row">
+        <label>상환 기간</label>
+        <input type="number" id="ml-year" value="30" oninput="miniLoan()"> <span class="mini-unit">년</span>
+      </div>
+      <div class="mini-result">월 예상 상환액 <b id="ml-month">0</b><span>만원</span></div>
+      <div class="mini-more" onclick="openTools('loan')">자세히 계산하기 ›</div>
+    </div>
   </div>
 
   <!-- 청약 캘린더 -->
@@ -432,6 +523,7 @@
 
 <div id="detail-view" style="display:none"></div>
 <div id="list-view" style="display:none"></div>
+<div id="tools-view" style="display:none"></div>
 
 </div><!-- /wrap -->
 
@@ -667,7 +759,7 @@ function monthOf(when){
 }
 /* 단지 상태 분류: fast > done > live */
 function statusOf(s){
-  if(s.fast) return 'fast';
+  if(s.fast || s.isRemain) return 'fast';
   if(isDone(s.when)) return 'done';
   return 'live';
 }
@@ -838,6 +930,137 @@ function startTicker(){
 /* ===== 카톡 공유방 ===== */
 function openKakaoRoom(){ window.open(KAKAO_ROOM,'_blank'); }
 
+/* ===== 청약 도구: 가점/대출 계산기 ===== */
+const G_HOUSE=[["1년 미만",2],["1년~2년",4],["2년~3년",6],["3년~4년",8],["4년~5년",10],["5년~6년",12],["6년~7년",14],["7년~8년",16],["8년~9년",18],["9년~10년",20],["10년~11년",22],["11년~12년",24],["12년~13년",26],["13년~14년",28],["14년~15년",30],["15년 이상",32]];
+const G_FAMILY=[["0명",5],["1명",10],["2명",15],["3명",20],["4명",25],["5명",30],["6명 이상",35]];
+const G_BANK=[["6개월 미만",1],["6개월~1년",2],["1년~2년",3],["2년~3년",4],["3년~4년",5],["4년~5년",6],["5년~6년",7],["6년~7년",8],["7년~8년",9],["8년~9년",10],["9년~10년",11],["10년~11년",12],["11년~12년",13],["12년~13년",14],["13년~14년",15],["14년~15년",16],["15년 이상",17]];
+
+function fillGapjeomSelects(prefix){
+  const h=document.getElementById(prefix+'-house');
+  const f=document.getElementById(prefix+'-family');
+  const b=document.getElementById(prefix+'-bank');
+  if(h&&!h.options.length) G_HOUSE.forEach((o,i)=>h.add(new Option(o[0],i)));
+  if(f&&!f.options.length) G_FAMILY.forEach((o,i)=>f.add(new Option(o[0],i)));
+  if(b&&!b.options.length) G_BANK.forEach((o,i)=>b.add(new Option(o[0],i)));
+}
+function calcGapjeom(hIdx,fIdx,bIdx){
+  return (G_HOUSE[hIdx]?G_HOUSE[hIdx][1]:0)+(G_FAMILY[fIdx]?G_FAMILY[fIdx][1]:0)+(G_BANK[bIdx]?G_BANK[bIdx][1]:0);
+}
+function miniGapjeom(){
+  fillGapjeomSelects('mg');
+  const s=calcGapjeom(+document.getElementById('mg-house').value, +document.getElementById('mg-family').value, +document.getElementById('mg-bank').value);
+  document.getElementById('mg-score').textContent=s;
+}
+function loanMonthly(amtManwon, ratePct, years){
+  const P=amtManwon*10000, r=ratePct/100/12, n=years*12;
+  if(r===0) return P/n;
+  return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+}
+function miniLoan(){
+  const amt=+document.getElementById('ml-amt').value||0;
+  const rate=+document.getElementById('ml-rate').value||0;
+  const yr=+document.getElementById('ml-year').value||1;
+  document.getElementById('ml-month').textContent=Math.round(loanMonthly(amt,rate,yr)/10000).toLocaleString();
+}
+let TOOL_TAB='gapjeom';
+function openTools(tab){
+  TOOL_TAB = tab || 'gapjeom';
+  const sr=document.getElementById('search-results'); if(sr) sr.classList.remove('on');
+  renderTools();
+  document.getElementById('home-view').style.display='none';
+  document.getElementById('list-view').style.display='none';
+  document.getElementById('detail-view').style.display='none';
+  document.getElementById('tools-view').style.display='block';
+  window.scrollTo(0,0);
+}
+function closeTools(){
+  document.getElementById('tools-view').style.display='none';
+  document.getElementById('home-view').style.display='block';
+}
+function goHome(){
+  ['detail-view','list-view','tools-view'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
+  document.getElementById('home-view').style.display='block';
+  const sr=document.getElementById('search-results'); if(sr) sr.classList.remove('on');
+  window.scrollTo(0,0);
+}
+function renderTools(){
+  const v=document.getElementById('tools-view');
+  const tabG = TOOL_TAB==='gapjeom'?'on':'', tabL=TOOL_TAB==='loan'?'on':'';
+  let panel='';
+  if(TOOL_TAB==='gapjeom'){
+    panel=`
+      <div class="tv-panel">
+        <h2>청약 가점 계산기 <span style="font-size:13px;color:var(--muted);font-weight:600">(가점제 · 84점 만점)</span></h2>
+        <div class="tv-field">
+          <label>무주택 기간 <span class="sub">· 만 30세 또는 혼인신고일부터 산정 (최대 32점)</span></label>
+          <select id="tg-house" onchange="toolGapjeom()"></select>
+        </div>
+        <div class="tv-field">
+          <label>부양가족 수 <span class="sub">· 본인 제외, 세대원 기준 (최대 35점)</span></label>
+          <select id="tg-family" onchange="toolGapjeom()"></select>
+        </div>
+        <div class="tv-field">
+          <label>청약통장 가입기간 <span class="sub">· 가입일부터 산정 (최대 17점)</span></label>
+          <select id="tg-bank" onchange="toolGapjeom()"></select>
+        </div>
+        <div class="tv-out">
+          <div class="lbl">내 청약 예상 가점</div>
+          <div class="big"><span id="tg-score">0</span><span> / 84점</span></div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="tv-break">무주택 기간 <b id="tg-b1">0점</b></div>
+          <div class="tv-break">부양가족 수 <b id="tg-b2">0점</b></div>
+          <div class="tv-break">청약통장 가입기간 <b id="tg-b3">0점</b></div>
+        </div>
+        <p class="tv-note">※ 실제 가점은 청약홈의 공식 산정 기준에 따라 달라질 수 있습니다. 본 계산기는 참고용이며, 정확한 자격 진단은 단지별 신청 시 1:1로 안내해 드립니다.</p>
+      </div>`;
+  } else {
+    panel=`
+      <div class="tv-panel">
+        <h2>대출 계산기 <span style="font-size:13px;color:var(--muted);font-weight:600">(원리금균등 · 월 상환액·총이자)</span></h2>
+        <div class="tv-field"><label>대출 금액 <span class="sub">(만원)</span></label><input type="number" id="tl-amt" value="30000" oninput="toolLoan()"></div>
+        <div class="tv-field"><label>연 이자율 <span class="sub">(%)</span></label><input type="number" id="tl-rate" value="4.0" step="0.1" oninput="toolLoan()"></div>
+        <div class="tv-field"><label>상환 기간 <span class="sub">(년)</span></label><input type="number" id="tl-year" value="30" oninput="toolLoan()"></div>
+        <div class="tv-out">
+          <div class="lbl">월 예상 상환액</div>
+          <div class="big"><span id="tl-month">0</span><span> 만원</span></div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="tv-break">총 대출 원금 <b id="tl-principal">0만원</b></div>
+          <div class="tv-break">총 이자 <b id="tl-interest">0만원</b></div>
+          <div class="tv-break">총 상환액 <b id="tl-total">0만원</b></div>
+        </div>
+        <p class="tv-note">※ 원리금균등상환 기준 단순 계산입니다. 실제 대출은 DSR·LTV 등 규제와 은행 심사에 따라 달라집니다. 한도·금리 상담은 '분양정보 받기'로 신청해 주세요.</p>
+      </div>`;
+  }
+  v.innerHTML=`
+    <div class="tv-head"><h1>청약 도구</h1><p>청약 가점과 대출 상환액을 미리 계산해보세요.</p></div>
+    <div class="tv-tabs">
+      <div class="tv-tab ${tabG}" onclick="openTools('gapjeom')">🏠 청약 가점 계산기</div>
+      <div class="tv-tab ${tabL}" onclick="openTools('loan')">💰 대출 계산기</div>
+    </div>
+    ${panel}
+    <div class="dt-back" onclick="closeTools()" style="margin-top:24px">‹ 메인으로</div>`;
+  if(TOOL_TAB==='gapjeom'){ fillGapjeomSelects('tg'); toolGapjeom(); } else { toolLoan(); }
+}
+function toolGapjeom(){
+  const hI=+document.getElementById('tg-house').value, fI=+document.getElementById('tg-family').value, bI=+document.getElementById('tg-bank').value;
+  document.getElementById('tg-b1').textContent=(G_HOUSE[hI]?G_HOUSE[hI][1]:0)+'점';
+  document.getElementById('tg-b2').textContent=(G_FAMILY[fI]?G_FAMILY[fI][1]:0)+'점';
+  document.getElementById('tg-b3').textContent=(G_BANK[bI]?G_BANK[bI][1]:0)+'점';
+  document.getElementById('tg-score').textContent=calcGapjeom(hI,fI,bI);
+}
+function toolLoan(){
+  const amt=+document.getElementById('tl-amt').value||0;
+  const rate=+document.getElementById('tl-rate').value||0;
+  const yr=+document.getElementById('tl-year').value||1;
+  const m=loanMonthly(amt,rate,yr), total=m*yr*12, interest=total-amt*10000;
+  document.getElementById('tl-month').textContent=Math.round(m/10000).toLocaleString();
+  document.getElementById('tl-principal').textContent=amt.toLocaleString()+'만원';
+  document.getElementById('tl-interest').textContent=Math.round(interest/10000).toLocaleString()+'만원';
+  document.getElementById('tl-total').textContent=Math.round(total/10000).toLocaleString()+'만원';
+}
+
 /* ===== 분야별 목록 뷰 ===== */
 function openList(kind){
   const sites=allSites();
@@ -961,6 +1184,19 @@ function renderSite(s){
   const d=s.d;
   const bdTxt = (!d.bd||d.bd==='-') ? '정보 준비중' : d.bd;
   const hhTxt = (!d.hh||d.hh==='-') ? '정보 준비중' : d.hh;
+  // 관심단지 알림 문구 (상태별)
+  const st = statusOf(s);
+  let alarmTitle, alarmDesc;
+  if(st==='done'){
+    alarmTitle = '무순위·잔여세대 알림 신청';
+    alarmDesc = '이 단지의 무순위(줍줍)나 미계약 잔여세대가 나오면 가장 먼저 문자로 알려드려요.';
+  } else if(st==='fast'){
+    alarmTitle = '선착순 계약 알림 신청';
+    alarmDesc = '선착순 동·호수 정보와 계약 조건을 바로 안내받으세요. 좋은 호실은 금방 마감됩니다.';
+  } else {
+    alarmTitle = '청약 일정 시작 알림 신청';
+    alarmDesc = '이 단지의 청약 접수일이 확정되면 일정·서류·자격을 가장 먼저 문자로 알려드려요.';
+  }
   // 입지 장점
   const points = d.points && d.points.length ? d.points : [
     ["입지","교통·학군·생활 인프라 상세 분석 자료는 신청 시 제공됩니다."],
@@ -1029,6 +1265,20 @@ function renderSite(s){
         </table></div>
         ${specialTbl}
         <p class="dt-note">공급세대수는 사업주체 최초 모집공고 기준이며, 특별공급 미달 시 일반공급으로 전환될 수 있습니다.</p>
+      </div>`;
+  } else if(s.fromApi && !d._mdlLoaded){
+    // API 단지인데 주택형을 아직 불러오는 중
+    supplyBlock = `
+      <div class="dt-section">
+        <h2 class="dt-h">공급 대상</h2>
+        <div class="locked">⏳ 주택형별 공급 정보를 불러오는 중입니다...</div>
+      </div>`;
+  } else {
+    // 자료가 없는 단지(수동 빈 단지 등) → 신청 유도
+    supplyBlock = `
+      <div class="dt-section">
+        <h2 class="dt-h">공급 대상</h2>
+        <div class="locked">📋 이 단지의 주택형·공급세대수 등 세부 자료는 <b>준비 중</b>입니다.<br>아래 '관심단지 알림' 또는 '분양정보 받기'로 신청하시면, 자료가 공개되는 즉시 가장 먼저 안내해 드립니다.</div>
       </div>`;
   }
 
@@ -1129,6 +1379,21 @@ function renderSite(s){
       <div class="locked">🏗️ 단지 배치도와 동·호수별 로얄동 추천은 신청자분들께만 제공됩니다.</div>
     </div>
 
+    <div class="alarm-box">
+      <div class="alarm-l">
+        <div class="alarm-ico">🔔</div>
+        <div>
+          <div class="alarm-h">${alarmTitle}</div>
+          <div class="alarm-p">${alarmDesc}</div>
+        </div>
+      </div>
+      <div class="alarm-form">
+        <input type="text" id="al-name" placeholder="이름">
+        <input type="tel" id="al-phone" placeholder="연락처 (- 없이)">
+        <button onclick="alarmSubmit('${s.name.replace(/'/g,'')}')">알림 신청 ▶</button>
+      </div>
+    </div>
+
     <div class="dt-cta-row">
       <div class="dt-cta">
         <h3>${s.name}<br>분양정보 받기</h3>
@@ -1165,6 +1430,11 @@ function closeSite(){
   window.scrollTo(0,0);
 }
 function dtSubmit(){ send(document.getElementById('dt-name').value.trim(),document.getElementById('dt-phone').value.trim(),document.getElementById('dt-site').value,['dt-name','dt-phone']); }
+function alarmSubmit(siteName){
+  const n=document.getElementById('al-name').value.trim();
+  const p=document.getElementById('al-phone').value.trim();
+  send(n,p,'[알림신청] '+siteName,['al-name','al-phone']);
+}
 
 /* ===== 모달/폼 ===== */
 function openModal(site){
@@ -1231,6 +1501,35 @@ function mapApiItem(it){
     }
   };
 }
+// 무순위/잔여세대 단지 → 우리 단지 객체로 변환
+function mapRemainItem(it){
+  const region = AREA_MAP[it.SUBSCRPT_AREA_CODE_NM] || "기타";
+  const secd = it.HOUSE_SECD_NM || "무순위";
+  return {
+    id: "api-"+it.HOUSE_MANAGE_NO,
+    name: it.HOUSE_NM || "(이름미상)",
+    when: "무순위 청약중",
+    region: region,
+    fromApi: true,
+    isRemain: true,        // 무순위 표시
+    d: {
+      loc: it.HSSPLY_ADRES || region,
+      hh: it.TOT_SUPLY_HSHLDCO ? (Number(it.TOT_SUPLY_HSHLDCO).toLocaleString()+"세대") : "-",
+      bd: it.BSNS_MBY_NM || "-",   // 무순위는 건설사 없음 → 시행사/조합 표시
+      type: secd,
+      tel: (it.MDHS_TELNO||"").replace(/(\d{2,4})(\d{3,4})(\d{4})/,"$1-$2-$3"),
+      url: it.PBLANC_URL || "",
+      schedule: {
+        notice: safeDate(it.RCRIT_PBLANC_DE),
+        special: '',
+        first: safeDate(it.SUBSCRPT_RCEPT_BGNDE),   // 무순위 접수일
+        second: '',
+        win: safeDate(it.PRZWNER_PRESNATN_DE),
+        contract: safeDate(it.CNTRCT_CNCLS_BGNDE) + (it.CNTRCT_CNCLS_ENDDE? " ~ "+safeDate(it.CNTRCT_CNCLS_ENDDE):"")
+      }
+    }
+  };
+}
 // 청약홈 단지를 DATA에 합치기
 // 단지명 정규화(공백·괄호·특수문자·단위 제거)해서 중복 비교에 사용
 function normName(name){
@@ -1274,13 +1573,43 @@ async function loadApplyhome(){
   }
 }
 
+// 무순위/잔여세대 단지 불러와서 합치기
+async function loadRemain(){
+  try{
+    const res = await fetch('/api/apt?type=remain&page=1&perPage=500');
+    const json = await res.json();
+    const list = (json && json.data) ? json.data : [];
+    let added=0, replaced=0;
+    list.forEach(it=>{
+      const s = mapRemainItem(it);
+      if(!DATA[s.region]) return;
+      const key = normName(s.name);
+      // 같은 단지가 이미 있으면(수동이든 일반분양이든) 무순위 정보로 갱신
+      const idx = DATA[s.region].findIndex(x=>normName(x.name)===key);
+      if(idx>=0){
+        const old = DATA[s.region][idx];
+        if(old.d && old.d.points) s.d.points = old.d.points;
+        if(old.d && old.d.types)  s.d.types  = old.d.types;
+        DATA[s.region][idx] = s;   // 무순위 청약중인 최신 상태로 갱신
+        replaced++;
+      } else {
+        DATA[s.region].push(s); added++;
+      }
+    });
+    console.log('무순위 단지 '+added+'건 추가, '+replaced+'건 갱신 (전체 '+(json.totalCount||'?')+'건 중)');
+  }catch(e){
+    console.log('무순위 연동 실패:', e);
+  }
+}
+
 // 특정 단지의 주택형 정보를 불러와 표 채우기 (상세 열 때 호출)
 async function fetchMdlFor(site){
   if(!site.fromApi) return;          // API 단지만
   if(site.d._mdlLoaded) return;      // 이미 불러왔으면 스킵
   const no = site.id.replace('api-','');
+  const type = site.isRemain ? 'remainMdl' : 'aptMdl';  // 무순위면 잔여세대 주택형
   try{
-    const res = await fetch('/api/apt?type=aptMdl&perPage=50&pblancNo='+encodeURIComponent(no));
+    const res = await fetch('/api/apt?type='+type+'&perPage=50&pblancNo='+encodeURIComponent(no));
     const json = await res.json();
     const list = (json && json.data) ? json.data : [];
     if(list.length){
@@ -1288,12 +1617,15 @@ async function fetchMdlFor(site){
         ty:(r.HOUSE_TY||'').trim(), area:r.SUPLY_AR||'',
         general:Number(r.SUPLY_HSHLDCO||0), special:Number(r.SPSPLY_HSHLDCO||0)
       }));
-      site.d.special = list.map(r=>({
-        ty:(r.HOUSE_TY||'').trim(),
-        multi:Number(r.MNYCH_HSHLDCO||0), newlywed:Number(r.NWBB_HSHLDCO||0),
-        first:Number(r.LFE_FRST_HSHLDCO||0), elder:Number(r.OLD_PARNTS_SUPORT_HSHLDCO||0),
-        inst:Number(r.INSTT_RECOMEND_HSHLDCO||0)
-      }));
+      // 일반분양만 특공 배분 표 (무순위는 특공 없음)
+      if(!site.isRemain){
+        site.d.special = list.map(r=>({
+          ty:(r.HOUSE_TY||'').trim(),
+          multi:Number(r.MNYCH_HSHLDCO||0), newlywed:Number(r.NWBB_HSHLDCO||0),
+          first:Number(r.LFE_FRST_HSHLDCO||0), elder:Number(r.OLD_PARNTS_SUPORT_HSHLDCO||0),
+          inst:Number(r.INSTT_RECOMEND_HSHLDCO||0)
+        }));
+      }
     }
     site.d._mdlLoaded = true;
   }catch(e){ console.log('주택형 조회 실패:', e); }
@@ -1301,7 +1633,12 @@ async function fetchMdlFor(site){
 
 // 먼저 화면을 그리고(수동 데이터), API가 도착하면 다시 그림
 renderAll();
-loadApplyhome().then(()=>renderAll());
+loadApplyhome()
+  .then(()=>{ renderAll(); return loadRemain(); })
+  .then(()=>renderAll());
+// 메인 간단 계산기 초기화
+miniGapjeom();
+miniLoan();
 </script>
 </body>
 </html>
