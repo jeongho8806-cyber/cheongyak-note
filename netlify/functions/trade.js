@@ -127,9 +127,10 @@ exports.handler = async function (event) {
         fetch(buildUrl(endpoint, p.lawd, mm, KEY, "200")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
       ));
       let rows = []; results.forEach((a) => { rows = rows.concat(a); });
-      const norm = (s) => (s || "").replace(/\s|\(.*?\)/g, "");
+      const norm = (s) => (s || "").replace(/\s|\(.*?\)|[0-9]+동|[~,\-]/g, "");
       const target = norm(p.apt);
-      rows = rows.filter((it) => { const n = norm(it.apt); return n === target || n.indexOf(target) >= 0 || target.indexOf(n) >= 0; });
+      const head = target.slice(0, 4); // 앞 4글자로 느슨하게 매칭
+      rows = rows.filter((it) => { const n = norm(it.apt); return n === target || n.indexOf(target) >= 0 || target.indexOf(n) >= 0 || (head && n.indexOf(head) >= 0); });
       rows.sort((a, b) => (b.year + pad(b.month) + pad(b.day)).localeCompare(a.year + pad(a.month) + pad(a.day)));
       return resp(200, { items: rows });
     } catch (e) { return resp(502, { error: "단지 이력 조회 실패", detail: String(e) }); }
