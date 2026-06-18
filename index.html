@@ -186,6 +186,10 @@
   .trade-rise{display:inline-block;font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-top:3px}
   .trade-rise.up{color:var(--red);background:#fdeaea}
   .trade-rise.down{color:#2b8a6a;background:#e7f6f0}
+  .sido-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+  .sido-chip{font-size:13px;font-weight:700;padding:8px 15px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#555;cursor:pointer;transition:.12s}
+  .sido-chip:hover{border-color:var(--brand);color:var(--brand)}
+  .sido-chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 
 
   /* 분양 카드 그리드 */
@@ -935,9 +939,11 @@ function renderCalendar(){
   for(let i=1;i<=12;i++) monthBox[i]=[];
   sites.forEach(s=>{ const mo=monthOf(s.when); if(mo>=1&&mo<=12) monthBox[mo].push(s); });
   // 월 탭
+  const nowMonth=TODAY.getMonth()+1;
   let tabs='';
   for(let i=1;i<=12;i++){
-    const c=monthBox[i].length;
+    // 미래 달은 청약완료(done) 제외하고 카운트
+    const c = i>nowMonth ? monthBox[i].filter(s=>statusOf(s)!=='done').length : monthBox[i].length;
     tabs+=`<div class="cal-m ${i===CAL_MONTH?'on':''}" onclick="selectMonth(${i})">${i}월<span class="mc">${c?c+'건':'-'}</span></div>`;
   }
   document.getElementById('cal-months').innerHTML=tabs;
@@ -949,7 +955,10 @@ function drawMonthPanel(list){
   if(!list || !list.length){ panel.innerHTML=`<div class="cal-empty">${CAL_MONTH}월에 등록된 청약 단지가 없습니다. 다른 달을 선택해 보세요.</div>`; return; }
   const buckets={fast:[],live:[],done:[]};
   list.forEach(s=>buckets[statusOf(s)].push(s));
-  const order=[['fast','선착순·무순위','h-fast'],['live','진행예정','h-live'],['done','청약완료','h-done']];
+  // 미래 달(오늘 달보다 뒤)에는 '청약완료'가 있을 수 없으므로 제외
+  const nowMonth=TODAY.getMonth()+1;
+  let order=[['fast','선착순·무순위','h-fast'],['live','진행예정','h-live'],['done','청약완료','h-done']];
+  if(CAL_MONTH>nowMonth){ order=order.filter(o=>o[0]!=='done'); }
   const LIMIT=15;
   let html='<div class="cal-daygrid">';
   order.forEach(([key,label,cls])=>{
@@ -1794,6 +1803,14 @@ const REGION_CODES=[
   {c:"45110",n:"전주 완산구"},{c:"45113",n:"전주 덕진구"},{c:"46110",n:"목포시"},{c:"46130",n:"여수시"},{c:"46150",n:"순천시"},
   {c:"50110",n:"제주시"},{c:"50130",n:"서귀포시"},
 ];
+// 시도 목록 (코드 앞 2자리 = 시도 prefix). 칩으로 표시
+const SIDO_LIST=[
+  {p:"11",n:"서울"},{p:"41",n:"경기"},{p:"28",n:"인천"},{p:"26",n:"부산"},
+  {p:"27",n:"대구"},{p:"30",n:"대전"},{p:"29",n:"광주"},{p:"31",n:"울산"},
+  {p:"36",n:"세종"},{p:"43",n:"충북"},{p:"44",n:"충남"},{p:"42",n:"강원"},
+  {p:"47",n:"경북"},{p:"48",n:"경남"},{p:"45",n:"전북"},{p:"46",n:"전남"},{p:"50",n:"제주"},
+];
+function codesOfSido(prefix){ return REGION_CODES.filter(r=>r.c.slice(0,2)===prefix); }
 
 // 같은 단지·같은 면적의 직전 거래 대비 상승액 계산 (받은 목록 내에서)
 function computeRise(list){
@@ -1847,7 +1864,7 @@ function renderTradeMini(kind){
   if(!grid||!list.length) return;
   document.getElementById(cfg.cnt).textContent='('+list.length+')';
   grid.className='trade-grid';
-  grid.innerHTML=list.slice(0,5).map((it,i)=>tradeCard(it,i,kind)).join('');
+  grid.innerHTML=list.slice(0,6).map((it,i)=>tradeCard(it,i,kind)).join('');
 }
 function tradeCard(it,i,kind){
   const rank=i+1;
@@ -1863,7 +1880,7 @@ function tradeCard(it,i,kind){
     <div class="trade-rank ${rank<=3?'top3':''}">${rank}</div>
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
-      <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡${pyeong?'('+pyeong+'평)':''} · ${it.floor}층 · ${it.month}/${it.day}</div>
+      <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡ · ${it.floor}층 · ${it.month}/${it.day}</div>
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -1876,37 +1893,76 @@ function rentAmt(it){
   if(it.isRent){ return wonToKor(it.amount)+'<span style="font-size:11px">/'+it.monthly+'</span>'; }
   return wonToKor(it.amount);
 }
+// 객체 기반 카드 (검색/시도 결과용 — 인덱스 대신 객체를 임시저장 후 열기)
+let TRADE_CLICK_STORE=[];
+function tradeCardObj(it,kind){
+  const idx=TRADE_CLICK_STORE.length;
+  TRADE_CLICK_STORE.push({it,kind});
+  const pyeong=it.area?Math.round(it.area/3.3058):0;
+  const amtTxt = kind==='rent' ? rentAmt(it) : wonToKor(it.amount);
+  let rise='';
+  if(it._rise!==undefined && it._rise!==0){
+    const up=it._rise>0;
+    rise=`<span class="trade-rise ${up?'up':'down'}">${up?'▲':'▼'} ${wonToKor(Math.abs(it._rise))}</span>`;
+  }
+  return `<div class="trade-card" onclick="openTradeClick(${idx})">
+    <div class="trade-rank" style="background:none;color:var(--muted);font-size:11px">${it.region||''}</div>
+    <div class="trade-info">
+      <div class="trade-nm">${it.apt}</div>
+      <div class="trade-meta">${it.dong} · ${it.area}㎡ · ${it.floor}층 · ${it.month}/${it.day}</div>
+    </div>
+    <div class="trade-price">
+      <div class="amt">${amtTxt}</div>
+      ${rise||''}
+    </div>
+  </div>`;
+}
+function openTradeClick(idx){
+  const o=TRADE_CLICK_STORE[idx]; if(!o) return;
+  openTradeWith(o.it,o.kind);
+}
 
 // 전용 목록 화면 (메뉴/더보기 → 전체)
-let TRADE_SEARCH={trade:null,silv:null,rent:null}; // 지역검색 결과 보관
+let TRADE_SEARCH={trade:null,silv:null,rent:null}; // 지역검색/시도 결과 보관
+const SIDO_CACHE={};  // 시도 집계 캐시 (kind_prefix → {label,items})
 function openTradeList(kind){
+  TRADE_CLICK_STORE=[];
   const cfg=TRADE_KINDS[kind];
   const searchResult=TRADE_SEARCH[kind];
   const list=searchResult ? searchResult.items : TRADE_STORE[kind];
   const lv=document.getElementById('list-view');
-  const titleMap={trade:'📈 이번 달 신고가 (매매)',silv:'🏗️ 분양권 신고가',rent:'🔑 전월세 신고가'};
-  const placeholder = kind==='rent'?'지역 검색 (예: 부산 해운대, 수원 영통)':'지역 검색 (예: 부산 해운대, 분당, 송파)';
+  const titleMap={trade:'📈 신고가 (매매)',silv:'🏗️ 분양권 신고가',rent:'🔑 전월세 신고가'};
+  const placeholder = '동/단지명으로 좁혀보기 (예: 은마, 반포자이)';
+  // 시도 칩
+  const chips=SIDO_LIST.map(s=>{
+    const on = searchResult && searchResult.sido===s.p;
+    return `<span class="sido-chip ${on?'on':''}" onclick="selectSido('${kind}','${s.p}')">${s.n}</span>`;
+  }).join('');
   let body;
   if(searchResult && !searchResult.items.length){
-    body='<div class="locked">\''+searchResult.label+'\' 지역의 최근 거래를 찾지 못했습니다. 다른 지역으로 검색해 보세요.</div>';
+    body='<div class="locked">\''+searchResult.label+'\' 지역의 최근 거래를 찾지 못했습니다.</div>';
   } else if(!list.length){
-    body='<div class="locked">데이터를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.</div>';
+    body='<div class="locked">데이터를 불러오는 중입니다...</div>';
   } else {
-    body='<div class="trade-grid">'+list.map((it,i)=>tradeCard(it,i,kind)).join('')+'</div>';
+    // 동/단지명 필터
+    let shown=list;
+    const fq=(searchResult&&searchResult.filter)?searchResult.filter:'';
+    if(fq){ shown=list.filter(it=>(it.apt||'').includes(fq)||(it.dong||'').includes(fq)); }
+    body='<div class="trade-grid">'+shown.map((it)=>tradeCardObj(it,kind)).join('')+'</div>';
+    if(fq && !shown.length) body='<div class="locked">\''+fq+'\' 검색 결과가 없습니다.</div>';
   }
   const subInfo = searchResult
-    ? `<b style="color:var(--brand)">${searchResult.label}</b> 검색 결과 ${list.length}건 · <span style="cursor:pointer;text-decoration:underline" onclick="clearTradeSearch('${kind}')">주요 지역 TOP으로</span>`
-    : `국토교통부 실거래가 기준 · 주요 지역 TOP ${list.length}건 · 지역을 검색하면 전국 단지를 볼 수 있어요`;
+    ? `<b style="color:var(--brand)">${searchResult.label}</b> ${searchResult.items.length}건 · <span style="cursor:pointer;text-decoration:underline" onclick="clearTradeSearch('${kind}')">주요 지역 TOP으로</span>`
+    : `국토교통부 실거래가 기준 · 주요 지역 TOP ${list.length}건 · 아래 지역을 누르면 시도별로 볼 수 있어요`;
   lv.innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
     <div class="lv-head"><h2>${titleMap[kind]}</h2><p>${subInfo}</p></div>
-    <div class="searchbar-wrap" style="margin-bottom:18px">
+    <div class="sido-chips">${chips}</div>
+    <div class="searchbar-wrap" style="margin:14px 0 18px">
       <div class="searchbar">
         <span class="ico">🔍</span>
-        <input type="text" id="trade-search-input" placeholder="${placeholder}" value="${searchResult?searchResult.q:''}" onkeyup="if(event.key==='Enter')doTradeSearch('${kind}')" autocomplete="off">
-        <span class="search-clear" onclick="doTradeSearch('${kind}')" style="display:block;color:var(--brand);font-weight:700">검색</span>
+        <input type="text" id="trade-search-input" placeholder="${placeholder}" value="${searchResult&&searchResult.filter?searchResult.filter:''}" oninput="filterTrade('${kind}')" autocomplete="off">
       </div>
-      <div id="trade-search-hint" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
     </div>
     ${body}`;
   document.getElementById('home-view').style.display='none';
@@ -1916,45 +1972,69 @@ function openTradeList(kind){
   window.scrollTo(0,0);
   if(!searchResult && !TRADE_STORE[kind].length){ loadTradeKind(kind).then(()=>{ if(document.getElementById('list-view').style.display==='block') openTradeList(kind); }); }
 }
-// 지역 검색 실행
-async function doTradeSearch(kind){
-  const inp=document.getElementById('trade-search-input');
-  const hint=document.getElementById('trade-search-hint');
-  if(!inp) return;
-  const q=inp.value.trim();
-  if(!q){ clearTradeSearch(kind); return; }
-  // 지역명 매칭 (공백 무시, 부분일치)
-  const norm=s=>s.replace(/\s/g,'');
-  const nq=norm(q);
-  const matches=REGION_CODES.filter(r=>norm(r.n).includes(nq)||nq.includes(norm(r.n).replace(/^(서울|부산|대구|인천|광주|대전|울산)/,'')));
-  if(!matches.length){
-    if(hint) hint.innerHTML='해당 지역을 찾지 못했어요. 예: 강남, 분당, 해운대, 수원 영통, 송파';
-    return;
-  }
-  if(hint) hint.innerHTML='⏳ '+matches.slice(0,3).map(m=>m.n).join(', ')+(matches.length>3?' 외':'')+' 조회 중...';
-  // 매칭된 지역(최대 3개) 조회
+// 시도 칩 클릭 → 그 시도 시군구 전부 집계
+async function selectSido(kind,prefix){
+  const sido=SIDO_LIST.find(s=>s.p===prefix);
+  const cacheKey=kind+'_'+prefix;
+  if(SIDO_CACHE[cacheKey]){ TRADE_SEARCH[kind]={...SIDO_CACHE[cacheKey],sido:prefix,filter:''}; openTradeList(kind); return; }
+  // 로딩 표시
+  const lv=document.getElementById('list-view');
+  const codes=codesOfSido(prefix);
+  lv.innerHTML=`<div class="lv-back" onclick="openTradeList('${kind}')">‹ 뒤로</div>
+    <div class="lv-head"><h2>${sido.n} 집계 중...</h2><p>⏳ ${sido.n}의 ${codes.length}개 지역 실거래를 모으고 있어요. 잠시만요...</p></div>
+    <div class="locked">📊 데이터를 집계하는 중입니다...</div>`;
   try{
-    const targets=matches.slice(0,3);
-    const months=['','&']; // 자리표시
-    const results=await Promise.all(targets.map(t=>
-      fetch('/api/trade?'+(kind!=='trade'?'kind='+kind+'&':'')+'lawd='+t.c).then(r=>r.json()).then(j=>(j.items||[])).catch(()=>[])
+    const results=await Promise.all(codes.map(c=>
+      fetch('/api/trade?'+(kind!=='trade'?'kind='+kind+'&':'')+'lawd='+c.c).then(r=>r.json()).then(j=>(j.items||[]).map(it=>{it.region=c.n.replace(/^(서울|부산|대구|인천|광주|대전|울산)\s?/,'');return it;})).catch(()=>[])
     ));
-    let all=[]; results.forEach((arr,i)=>{ arr.forEach(it=>{it.region=targets[i].n.replace(/^(서울|부산|대구|인천|광주|대전|울산)\s?/,'');}); all=all.concat(arr); });
+    let all=[]; results.forEach(arr=>{ all=all.concat(arr); });
     all.sort((a,b)=>b.amount-a.amount);
     computeRise(all);
-    TRADE_SEARCH[kind]={q,label:targets.map(t=>t.n).join(', '),items:all.slice(0,50)};
+    const top=all.slice(0,100);
+    SIDO_CACHE[cacheKey]={label:sido.n+' 전체',items:top,count:all.length};
+    TRADE_SEARCH[kind]={label:sido.n+' 전체('+all.length+'건)',items:top,sido:prefix,filter:''};
     openTradeList(kind);
   }catch(e){
-    if(hint) hint.innerHTML='조회 중 오류가 발생했어요. 다시 시도해 주세요.';
+    lv.innerHTML=`<div class="lv-back" onclick="openTradeList('${kind}')">‹ 뒤로</div><div class="locked">집계 중 오류가 발생했어요. 다시 시도해 주세요.</div>`;
   }
+}
+// 동/단지명으로 현재 목록 필터
+function filterTrade(kind){
+  const inp=document.getElementById('trade-search-input');
+  if(!inp) return;
+  const v=inp.value.trim();
+  if(!TRADE_SEARCH[kind]){
+    // TOP 목록에 필터: 임시 검색상태로
+    TRADE_SEARCH[kind]={label:'주요 지역 TOP',items:TRADE_STORE[kind],sido:null,filter:v,_topFilter:true};
+  } else {
+    TRADE_SEARCH[kind].filter=v;
+  }
+  // 입력 포커스 유지를 위해 목록만 다시 그림
+  redrawTradeBody(kind);
+}
+function redrawTradeBody(kind){
+  const sr=TRADE_SEARCH[kind];
+  const list=sr?sr.items:TRADE_STORE[kind];
+  const fq=sr&&sr.filter?sr.filter:'';
+  let shown=list;
+  if(fq) shown=list.filter(it=>(it.apt||'').includes(fq)||(it.dong||'').includes(fq));
+  const lv=document.getElementById('list-view');
+  const grid=lv.querySelector('.trade-grid')||lv.querySelector('.locked');
+  if(!grid) return;
+  const html = shown.length? '<div class="trade-grid">'+shown.map(it=>tradeCardObj(it,kind)).join('')+'</div>' : '<div class="locked">\''+fq+'\' 검색 결과가 없습니다.</div>';
+  // grid 또는 locked를 새 html로 교체
+  grid.outerHTML=html;
 }
 function clearTradeSearch(kind){ TRADE_SEARCH[kind]=null; openTradeList(kind); }
 
-// 단지 클릭 → 거래 이력 상세
+// 단지 클릭 → 거래 이력 상세 (인덱스 기반: 메인 미니카드용)
 async function openTrade(kind,idx){
-  // 지역검색 결과가 떠 있으면 그쪽에서, 아니면 TOP에서
-  const src = TRADE_SEARCH[kind] ? TRADE_SEARCH[kind].items : TRADE_STORE[kind];
-  const it=src[idx];
+  const it=TRADE_STORE[kind][idx];
+  if(!it) return;
+  return openTradeWith(it,kind);
+}
+// 거래 상세 (객체 기반)
+async function openTradeWith(it,kind){
   if(!it) return;
   PREV_VIEW = document.getElementById('list-view').style.display==='block' ? 'list' : 'home';
   const dv=document.getElementById('detail-view');
@@ -1981,7 +2061,7 @@ async function openTrade(kind,idx){
       <table class="dt-table">
         <tr><th>${isRent?'보증금'+(it.isRent?'/월세':''):'거래금액'}</th><td><b style="color:var(--brand);font-size:18px">${amtBig}</b> ${isRent?'':'('+Number(it.amount).toLocaleString()+'만원)'}</td></tr>
         ${riseRow}
-        <tr><th>전용면적</th><td>${it.area}㎡ ${pyeong?'('+pyeong+'평)':''}</td></tr>
+        <tr><th>전용면적</th><td>${it.area}㎡</td></tr>
         <tr><th>층</th><td>${it.floor}층</td></tr>
         <tr><th>거래일</th><td>${it.year}.${it.month}.${it.day}</td></tr>
         ${it.buildYear?`<tr><th>준공</th><td>${it.buildYear}년</td></tr>`:''}
@@ -2023,7 +2103,7 @@ async function openTrade(kind,idx){
     const rowsHtml=rows.slice(0,30).map(r=>{
       const py=r.area?Math.round(r.area/3.3058):0;
       const amtTxt = kind==='rent' ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
-      return `<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.area}㎡${py?'('+py+'평)':''}</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${amtTxt}</td></tr>`;
+      return `<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.area}㎡</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${amtTxt}</td></tr>`;
     }).join('');
     hist.innerHTML=`<div class="dt-scroll"><table class="dt-table small">
       <tr><th>거래일</th><th>면적</th><th>층</th><th>${amtHead}</th></tr>
