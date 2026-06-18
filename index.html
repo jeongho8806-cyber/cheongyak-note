@@ -1232,19 +1232,43 @@ function mapApiItem(it){
   };
 }
 // 청약홈 단지를 DATA에 합치기
+// 단지명 정규화(공백·괄호·특수문자·단위 제거)해서 중복 비교에 사용
+function normName(name){
+  return (name||'')
+    .replace(/[\s()（）\[\]\-_.·,]/g,'')   // 공백·괄호·하이픈·점·중점 등 제거
+    .replace(/\d+(블록|블럭|BL|bl|단지|차)/g,m=>m) // 블록/단지 표기는 유지(다른 단지 구분)
+    .toLowerCase();
+}
 async function loadApplyhome(){
   try{
-    const res = await fetch('/api/apt?type=apt&page=1&perPage=300');
+    const res = await fetch('/api/apt?type=apt&page=1&perPage=1000');
     const json = await res.json();
     const list = (json && json.data) ? json.data : [];
-    let added=0;
+    let added=0, replaced=0;
     list.forEach(it=>{
       const s = mapApiItem(it);
       if(!DATA[s.region]) return;
-      const exists = DATA[s.region].some(x=>x.name===s.name);
-      if(!exists){ DATA[s.region].push(s); added++; }
+      const key = normName(s.name);
+      // 같은 지역에서 정규화 이름이 같은 수동 단지 찾기
+      const idx = DATA[s.region].findIndex(x=>!x.fromApi && normName(x.name)===key);
+      if(idx>=0){
+        // 수동 단지가 입지분석/평형 등 특별정보를 갖고 있으면 그것만 API 단지에 이식
+        const old = DATA[s.region][idx];
+        if(old.d.points) s.d.points = old.d.points;
+        if(old.d.types)  s.d.types  = old.d.types;
+        DATA[s.region][idx] = s;   // API 단지로 대체(자료 있는 쪽)
+        replaced++;
+      } else {
+        // 이미 추가된 API 단지와도 중복이면 스킵
+        const dupApi = DATA[s.region].some(x=>x.fromApi && normName(x.name)===key);
+        if(!dupApi){ DATA[s.region].push(s); added++; }
+      }
     });
-    console.log('청약홈 단지 '+added+'건 추가됨 (전체 '+ (json.totalCount||'?') +'건 중)');
+    // 청약홈에 없는 '빈 자리채우기' 수동 단지 정리 (이름에 '신규분양'이 들어간 것)
+    for(const rg in DATA){
+      DATA[rg] = DATA[rg].filter(x=>!(/신규분양/.test(x.name) && !x.fromApi));
+    }
+    console.log('청약홈 단지 '+added+'건 추가, '+replaced+'건 대체 (전체 '+ (json.totalCount||'?') +'건 중)');
   }catch(e){
     console.log('청약홈 연동 실패, 기존 데이터로 표시:', e);
   }
