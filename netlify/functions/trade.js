@@ -48,6 +48,7 @@ function parseItems(xml, regionName) {
       dong: get("umdNm"),
       buildYear: get("buildYear"),
       region: regionName,
+      lawd: get("sggCd"),
     });
   }
   return items;
@@ -57,6 +58,36 @@ exports.handler = async function (event) {
   const p = event.queryStringParameters || {};
   const KEY = process.env.APPLYHOME_KEY;
   if (!KEY) return resp(500, { error: "APPLYHOME_KEY 환경변수가 설정되지 않았습니다." });
+
+  // 특정 단지 거래이력 조회 모드 (지역코드 + 단지명, 최근 여러 달)
+  if (p.lawd && p.apt) {
+    const aptName = p.apt;
+    const monthsHist = [ymd(0), ymd(-1), ymd(-2), ymd(-3), ymd(-4), ymd(-5)];
+    try {
+      const tasks = monthsHist.map((mm) =>
+        fetch(buildUrl(p.lawd, mm, KEY, "200"))
+          .then((r) => r.text())
+          .then((xml) => parseItems(xml, p.lawd))
+          .catch(() => [])
+      );
+      const results = await Promise.all(tasks);
+      let rows = [];
+      results.forEach((arr) => { rows = rows.concat(arr); });
+      // 단지명이 일치하는 것만
+      const norm = (s) => (s || "").replace(/\s|\(.*?\)/g, "");
+      const target = norm(aptName);
+      rows = rows.filter((it) => norm(it.apt) === target || norm(it.apt).indexOf(target) >= 0 || target.indexOf(norm(it.apt)) >= 0);
+      // 최신순 정렬
+      rows.sort((a, b) => {
+        const da = a.year + String(a.month).padStart(2,"0") + String(a.day).padStart(2,"0");
+        const db = b.year + String(b.month).padStart(2,"0") + String(b.day).padStart(2,"0");
+        return db.localeCompare(da);
+      });
+      return resp(200, { items: rows });
+    } catch (e) {
+      return resp(502, { error: "단지 이력 조회 실패", detail: String(e) });
+    }
+  }
 
   // 특정 지역/월 단건 조회 모드
   if (p.lawd) {
