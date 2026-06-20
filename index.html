@@ -204,6 +204,24 @@
   .trade-tab{font-size:14px;font-weight:700;padding:9px 22px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
   .trade-tab:hover{background:#e0e5ee}
   .trade-tab.on{background:var(--navy);color:#fff}
+  /* 지역별 화면 탭 */
+  .rg-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .rg-tab{font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
+  .rg-tab:hover{background:#e0e5ee}
+  .rg-tab.on{background:var(--brand);color:#fff}
+  .rg-tab b{font-weight:800;margin-left:3px}
+  /* 청약 바로가기 버튼 */
+  .apply-go{display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(135deg,#2faa6a,#1f8a52);border-radius:14px;padding:18px 22px;margin-top:14px;color:#fff;cursor:pointer;transition:.15s;flex-wrap:wrap}
+  .apply-go:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(47,170,106,.3)}
+  .apply-go-l{display:flex;align-items:center;gap:14px;flex:1;min-width:200px}
+  .apply-go-ico{font-size:30px}
+  .apply-go-l b{font-size:16px;font-weight:800}
+  .apply-go-sub{font-size:12px;color:#d9f5e6}
+  .apply-go-btn{background:#fff;color:#1f8a52;font-weight:800;font-size:14px;padding:12px 22px;border-radius:9px;white-space:nowrap}
+  .apply-go.hmpg{background:linear-gradient(135deg,#3a6ff0,#2a55c8);margin-top:10px}
+  .apply-go.hmpg:hover{box-shadow:0 8px 22px rgba(58,111,240,.3)}
+  .apply-go.hmpg .apply-go-sub{color:#d6e2ff}
+  .apply-go.hmpg .apply-go-btn{color:#2a55c8}
 
 
   /* 분양 카드 그리드 */
@@ -998,25 +1016,68 @@ function drawMonthPanel(list){
     html+=`<div class="cal-bucket"><div class="cal-bk-h ${cls}">${label}<span class="n">${arr.length}건</span></div><div class="cal-items" id="cal-items-${key}">`;
     html+=shown.map(s=>`<span class="cal-chip" onclick="openSite('${s.id}')">${s.name}<span class="rg">${s.region.replace('시','').replace('도','')}</span></span>`).join('');
     if(rest>0){
-      // 나머지는 숨겨두고 더보기 버튼으로 펼침
-      html+=`<span class="cal-chip cal-more" onclick="expandBucket('${key}')">+${rest}개 더 보기</span>`;
-      html+=`<span class="cal-hidden" id="cal-hidden-${key}" style="display:none">`;
-      html+=arr.slice(LIMIT).map(s=>`<span class="cal-chip" onclick="openSite('${s.id}')">${s.name}<span class="rg">${s.region.replace('시','').replace('도','')}</span></span>`).join('');
-      html+=`</span>`;
+      // 더보기 → 그 달 전체 목록 화면으로 이동
+      html+=`<span class="cal-chip cal-more" onclick="openMonthList(${CAL_MONTH})">+${rest}개 더 보기 →</span>`;
     }
     html+=`</div></div>`;
   });
   html+='</div>';
   panel.innerHTML=html;
 }
-function expandBucket(key){
-  const hidden=document.getElementById('cal-hidden-'+key);
-  const items=document.getElementById('cal-items-'+key);
-  if(!hidden||!items) return;
-  // 숨긴 칩들을 펼치고, 더보기 버튼 숨김
-  hidden.style.display='contents';
-  const moreBtn=items.querySelector('.cal-more');
-  if(moreBtn) moreBtn.style.display='none';
+// 그 달 전체를 분양예정·무순위·완료로 구분해 목록 화면으로
+let MONTH_STATE={ month:6, tab:'all', q:'' };
+function openMonthList(mo){
+  MONTH_STATE={ month:mo, tab:'all', q:'' };
+  renderMonthView();
+}
+function monthTab(t){ MONTH_STATE.tab=t; renderMonthView(); }
+function monthSearch(){
+  const inp=document.getElementById('month-search-input');
+  MONTH_STATE.q=inp?inp.value.trim():'';
+  renderMonthBody();
+}
+function sitesOfMonth(mo){
+  return allSites().filter(s=>monthOf(s.when)===mo);
+}
+function renderMonthView(){
+  const mo=MONTH_STATE.month;
+  const list=sitesOfMonth(mo);
+  const nowMonth=TODAY.getMonth()+1;
+  const cnt={all:0,upcoming:0,remain:0,done:0};
+  list.forEach(s=>{
+    let g=groupOf(s);
+    if(mo>nowMonth && g==='done') return; // 미래달 완료 제외
+    cnt[g]++; cnt.all++;
+  });
+  const tabsArr=[['all','전체',cnt.all],['upcoming','분양예정',cnt.upcoming],['remain','무순위(줍줍)',cnt.remain]];
+  if(mo<=nowMonth) tabsArr.push(['done','분양완료',cnt.done]);
+  const tabs=tabsArr.map(([k,label,n])=>`<span class="rg-tab ${MONTH_STATE.tab===k?'on':''}" onclick="monthTab('${k}')">${label} <b>${n}</b></span>`).join('');
+  document.getElementById('list-view').innerHTML=`
+    <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
+    <div class="lv-head"><h2>📅 ${mo}월 청약 단지</h2><p>분양예정 ${cnt.upcoming} · 무순위 ${cnt.remain}${mo<=nowMonth?' · 완료 '+cnt.done:''} · 총 ${cnt.all}건</p></div>
+    <div class="rg-tabs">${tabs}</div>
+    <div class="searchbar-wrap" style="margin-bottom:18px">
+      <div class="searchbar"><span class="ico">🔍</span>
+        <input type="text" id="month-search-input" placeholder="단지명·지역 검색" value="${MONTH_STATE.q}" oninput="monthSearch()" autocomplete="off"></div>
+    </div>
+    <div id="month-body"></div>`;
+  document.getElementById('home-view').style.display='none';
+  document.getElementById('detail-view').style.display='none';
+  document.getElementById('tools-view').style.display='none';
+  document.getElementById('list-view').style.display='block';
+  window.scrollTo(0,0);
+  renderMonthBody();
+}
+function renderMonthBody(){
+  const mo=MONTH_STATE.month, tab=MONTH_STATE.tab, q=MONTH_STATE.q;
+  const nowMonth=TODAY.getMonth()+1;
+  let list=sitesOfMonth(mo).filter(s=>!(mo>nowMonth && groupOf(s)==='done'));
+  if(tab!=='all') list=list.filter(s=>groupOf(s)===tab);
+  if(q) list=list.filter(s=>(s.name||'').includes(q)||(s.d.loc||'').includes(q)||(s.region||'').includes(q));
+  const box=document.getElementById('month-body');
+  if(!box) return;
+  if(!list.length){ box.innerHTML='<div class="locked">'+(q?'\''+q+'\' 검색 결과가 없습니다.':'해당 단지가 없습니다.')+'</div>'; return; }
+  box.innerHTML='<div class="card-grid">'+list.map(s=>listCard(s)).join('')+'</div>';
 }
 
 /* ===== 상단 선착순 티커 (자동 롤링) ===== */
@@ -1221,7 +1282,16 @@ function openList(kind){
 }
 function listCard(s){
   const done=isDone(s.when);
-  let tag = s.fast?'<span class="tag tag-fast">선착순</span>' : done?'<span class="tag tag-done">청약마감</span>':'<span class="tag tag-fast" style="background:#3a6ff0">분양예정</span>';
+  let tag;
+  if(s.isRemain || /무순위/.test(s.when)){
+    tag='<span class="tag" style="background:var(--red)">무순위</span>';   // 줍줍: 무순위만
+  } else if(s.fast || /분양중|청약중/.test(s.when)){
+    tag='<span class="tag tag-fast">선착순</span>';
+  } else if(done){
+    tag='<span class="tag tag-done">청약마감</span>';
+  } else {
+    tag='<span class="tag tag-fast" style="background:#3a6ff0">분양예정</span>';
+  }
   return `<div class="pcard" onclick="openSite('${s.id}')">
     <div class="body">
       <div class="htag">${tag}<span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span></div>
@@ -1267,41 +1337,63 @@ function doSearch(){
   const hit=allSites().find(s=>s.name.includes(q)||s.d.loc.includes(q)||s.region.includes(q));
   if(hit) openSite(hit.id);
 }
+// 지역별 화면 상태
+let REGION_STATE={ region:'', tab:'all', q:'' };
 function doSearchRegion(r){
+  REGION_STATE={ region:r, tab:'all', q:'' };
+  renderRegionView();
+}
+function regionTab(t){ REGION_STATE.tab=t; renderRegionView(); }
+function regionSearch(){
+  const inp=document.getElementById('region-search-input');
+  REGION_STATE.q = inp? inp.value.trim() : '';
+  renderRegionBody(); // 목록만 다시 그려 포커스 유지
+}
+// 단지가 어떤 그룹인지
+function groupOf(s){
+  if(s.isRemain || /무순위/.test(s.when)) return 'remain';     // 줍줍
+  if(isDone(s.when)) return 'done';                            // 완료
+  return 'upcoming';                                          // 분양예정/진행
+}
+function renderRegionView(){
+  const r=REGION_STATE.region;
   const list=(DATA[r]||[]).map(s=>({...s,region:r}));
   if(!list.length){ alert(r+' 지역은 현재 준비 중입니다.'); return; }
-  // 4분류: 줍줍·무순위 / 선착순·분양중 / 예정 / 올해 완료
-  const remain=[], ongoing=[], upcoming=[], done=[];
-  list.forEach(s=>{
-    if(s.isRemain || /무순위/.test(s.when)){ remain.push(s); }       // 줍줍·무순위
-    else if(s.fast || /분양중|청약중/.test(s.when)){ ongoing.push(s); } // 선착순·분양중
-    else if(isDone(s.when)){ done.push(s); }
-    else { upcoming.push(s); }
-  });
-  const section=(title,arr,color,desc)=>{
-    if(!arr.length) return '';
-    return `<div class="lv-region">
-      <h3 class="lv-rgh" style="border-color:${color}">${title} <span>${arr.length}건</span></h3>
-      ${desc?`<p style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px">${desc}</p>`:''}
-      <div class="card-grid">${arr.map(s=>listCard(s)).join('')}</div>
-    </div>`;
-  };
-  let body='';
-  body+=section('🎯 줍줍·무순위 진행중', remain, '#e2444b', '청약통장 없이도 신청 가능한 무순위·잔여세대(줍줍) 단지입니다. 경쟁이 치열하니 서두르세요.');
-  body+=section('🔥 선착순·분양중', ongoing, 'var(--brand)', '지금 선착순 계약 또는 청약 접수가 진행 중인 단지입니다.');
-  body+=section('📅 청약 예정', upcoming, '#3a6ff0', '곧 분양·청약이 진행될 예정 단지입니다.');
-  body+=section('✅ 올해 청약 완료', done, '#9aa0ab', '이미 청약이 끝난 단지입니다. 무순위·잔여세대 안내를 받아보세요.');
-  if(!body) body='<div class="locked">'+r+' 지역 단지 정보를 준비 중입니다.</div>';
-
+  const cnt={ all:list.length, upcoming:0, remain:0, done:0 };
+  list.forEach(s=>{ cnt[groupOf(s)]++; });
+  const tabs=[
+    ['all','전체',cnt.all],
+    ['upcoming','분양예정',cnt.upcoming],
+    ['remain','무순위(줍줍)',cnt.remain],
+    ['done','분양완료',cnt.done],
+  ].map(([k,label,n])=>`<span class="rg-tab ${REGION_STATE.tab===k?'on':''}" onclick="regionTab('${k}')">${label} <b>${n}</b></span>`).join('');
   document.getElementById('list-view').innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
-    <div class="lv-head"><h2>📍 ${r} 청약 단지</h2><p>줍줍 ${remain.length} · 선착순·분양중 ${ongoing.length} · 예정 ${upcoming.length} · 완료 ${done.length} · 총 ${list.length}건</p></div>
-    ${body}`;
+    <div class="lv-head"><h2>📍 ${r} 청약 단지</h2><p>분양예정 ${cnt.upcoming} · 무순위 ${cnt.remain} · 완료 ${cnt.done} · 총 ${cnt.all}건</p></div>
+    <div class="rg-tabs">${tabs}</div>
+    <div class="searchbar-wrap" style="margin-bottom:18px">
+      <div class="searchbar">
+        <span class="ico">🔍</span>
+        <input type="text" id="region-search-input" placeholder="단지명·동 검색 (예: 자이, 방배동)" value="${REGION_STATE.q}" oninput="regionSearch()" autocomplete="off">
+      </div>
+    </div>
+    <div id="region-body"></div>`;
   document.getElementById('home-view').style.display='none';
   document.getElementById('detail-view').style.display='none';
   document.getElementById('tools-view').style.display='none';
   document.getElementById('list-view').style.display='block';
   window.scrollTo(0,0);
+  renderRegionBody();
+}
+function renderRegionBody(){
+  const r=REGION_STATE.region, tab=REGION_STATE.tab, q=REGION_STATE.q;
+  let list=(DATA[r]||[]).map(s=>({...s,region:r}));
+  if(tab!=='all') list=list.filter(s=>groupOf(s)===tab);
+  if(q) list=list.filter(s=>(s.name||'').includes(q)||(s.d.loc||'').includes(q));
+  const box=document.getElementById('region-body');
+  if(!box) return;
+  if(!list.length){ box.innerHTML='<div class="locked">'+(q?'\''+q+'\' 검색 결과가 없습니다.':'해당 단지가 없습니다.')+'</div>'; return; }
+  box.innerHTML='<div class="card-grid">'+list.map(s=>listCard(s)).join('')+'</div>';
 }
 
 /* ===== 상세 페이지 ===== */
@@ -1456,6 +1548,23 @@ function renderSite(s){
     </div>
 
     ${done?`<div class="dt-donebar">이 단지는 청약이 마감되었습니다. 무순위·잔여세대 정보나 유사 단지 안내를 원하시면 아래로 신청해 주세요.</div>`:''}
+
+    ${(()=>{
+      const applyUrl = (d.url && d.url!=='') ? d.url : 'https://www.applyhome.co.kr/ai/aia/selectAPTLttotPblancListView.do';
+      const hasHmpg = d.hmpg && d.hmpg!=='';
+      let btns = '';
+      // 청약홈 공고 (모든 단지 — 마감 단지는 결과·정보 확인용)
+      btns += `<a class="apply-go" href="${applyUrl}" target="_blank" rel="noopener">
+        <span class="apply-go-l"><span class="apply-go-ico">📝</span><span><b>${done?'청약홈에서 결과·정보 보기':'청약홈에서 청약하기'}</b><br><span class="apply-go-sub">${d.url&&d.url!==''?'이 단지 청약홈 공고 페이지':'청약홈 APT 분양정보'} · 새 창</span></span></span>
+        <span class="apply-go-btn">바로가기 →</span></a>`;
+      // 분양 홈페이지 (있을 때만)
+      if(hasHmpg){
+        btns += `<a class="apply-go hmpg" href="${d.hmpg}" target="_blank" rel="noopener">
+          <span class="apply-go-l"><span class="apply-go-ico">🏢</span><span><b>분양 홈페이지 (모델하우스·평면도)</b><br><span class="apply-go-sub">건설사 공식 분양 사이트 · 방문예약 · 새 창</span></span></span>
+          <span class="apply-go-btn">바로가기 →</span></a>`;
+      }
+      return btns;
+    })()}
 
     <div class="dt-section">
       <h2 class="dt-h">사업 개요</h2>
@@ -1639,6 +1748,7 @@ function mapApiItem(it){
       type: it.HOUSE_SECD_NM === "APT" ? "APT" : (it.HOUSE_SECD_NM||"APT"),
       tel: (it.MDHS_TELNO||"").replace(/(\d{2,4})(\d{3,4})(\d{4})/,"$1-$2-$3"),
       url: it.PBLANC_URL || "",
+      hmpg: it.HMPG_ADRES || "",
       schedule: {
         notice: safeDate(it.RCRIT_PBLANC_DE),
         special: safeDate(it.SPSPLY_RCEPT_BGNDE),
@@ -1668,6 +1778,7 @@ function mapRemainItem(it){
       type: secd,
       tel: (it.MDHS_TELNO||"").replace(/(\d{2,4})(\d{3,4})(\d{4})/,"$1-$2-$3"),
       url: it.PBLANC_URL || "",
+      hmpg: it.HMPG_ADRES || "",
       schedule: {
         notice: safeDate(it.RCRIT_PBLANC_DE),
         special: '',
