@@ -165,9 +165,9 @@ exports.handler = async function (event) {
         return resp(200, { items: parser(xml, p.lawd) });
       }
       const mm = [];
-      for (let i = 0; i >= -11; i--) mm.push(ymd(i));
+      for (let i = 0; i >= -8; i--) mm.push(ymd(i));
       const results = await Promise.all(mm.map((m) =>
-        fetch(buildUrl(endpoint, p.lawd, m, KEY, "300")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
+        fetch(buildUrl(endpoint, p.lawd, m, KEY, "1000")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
       ));
       let items = []; results.forEach((a) => { items = items.concat(a); });
       return resp(200, { items });
