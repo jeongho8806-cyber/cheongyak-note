@@ -182,7 +182,8 @@
   /* 실거래 신고가 TOP */
   .trade-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   @media(max-width:560px){.trade-grid{grid-template-columns:1fr}}
-  .trade-card{display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow)}
+  .trade-card{display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow);cursor:pointer;transition:.13s}
+  .trade-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(20,30,50,.1);border-color:var(--brand)}
   .trade-rank{font-size:16px;font-weight:800;color:var(--brand);width:26px;text-align:center;flex-shrink:0}
   .trade-rank.top3{color:#fff;background:var(--brand);border-radius:7px;padding:3px 0}
   .trade-info{flex:1;min-width:0}
@@ -401,6 +402,55 @@
   .modal .sb:hover{background:var(--brand-dark)}
   .modal .cl{margin-top:12px;font-size:13px;color:#999;cursor:pointer}
   .modal .pv{font-size:10.5px;color:#bbb;margin-top:10px;line-height:1.6}
+  /* ===== 모바일 최적화 보정 ===== */
+  @media(max-width:760px){
+    .wrap{padding:0 12px}
+    /* 히어로: 카톡방을 위로, 본문 아래로 */
+    .hero{gap:12px;margin:14px 0}
+    .hero-main{padding:22px 20px}
+    .hero-main h1{font-size:22px}
+    .hero-main p{font-size:12.5px}
+    .hstat{padding:10px 12px;min-width:0;flex:1}
+    .hstat .n,.hstat .n b{font-size:17px}
+    /* 현장 리스트 격자 글자 */
+    .site-list-h{font-size:17px;padding:14px 0 10px}
+    .site-cell{padding:15px 6px}
+    .site-cell .sc-n{font-size:13.5px}
+    /* 시도 칩·탭: 가로 스크롤로 (줄바꿈 대신) */
+    .sido-chips,.trade-tabs,.rg-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:none}
+    .sido-chips::-webkit-scrollbar,.trade-tabs::-webkit-scrollbar,.rg-tabs::-webkit-scrollbar{display:none}
+    .sido-chip,.trade-tab,.rg-tab{flex-shrink:0;font-size:12.5px;padding:8px 13px}
+    /* 검색바 */
+    .searchbar{padding:14px 16px}
+    .searchbar input{font-size:15px}
+    /* 청약 바로가기 버튼: 세로 정렬 */
+    .apply-go{padding:15px 16px;gap:12px}
+    .apply-go-l{min-width:0}
+    .apply-go-ico{font-size:26px}
+    .apply-go-l b{font-size:14px}
+    .apply-go-btn{width:100%;text-align:center;padding:11px}
+    /* 상세 표 글자 */
+    .dt-hero{height:160px}
+    .dt-hero-in h1{font-size:21px}
+    .dt-section{padding:18px 16px}
+    .dt-h{font-size:16px}
+    .dt-table th,.dt-table td{padding:9px 10px;font-size:12.5px}
+    .dt-table th{width:auto}
+    /* 신고가 카드 */
+    .trade-nm{font-size:13.5px}
+    .trade-price .amt{font-size:15px}
+    /* 목록 화면 헤더 */
+    .lv-head h2{font-size:20px}
+    /* 캘린더 */
+    .cal-wrap{padding:16px 14px}
+    .cal-title{font-size:15px}
+  }
+  @media(max-width:430px){
+    .trade-grid{grid-template-columns:1fr}
+    .card-grid,.today-grid,.sched-grid,.notice-grid{grid-template-columns:1fr}
+    .site-grid{grid-template-columns:repeat(2,1fr)}
+    .hero-stats{gap:7px}
+  }
 </style>
 </head>
 <body>
