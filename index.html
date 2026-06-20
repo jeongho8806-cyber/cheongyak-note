@@ -29,10 +29,11 @@
   /* 창원자이 배너 */
   .cw-banner{display:block;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);margin:18px 0;background:#13243f;text-decoration:none;transition:.15s}
   .cw-banner:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.16)}
-  .cw-main{display:block;width:100%;height:auto}
-  .cw-promo img{display:block;width:100%;height:auto}
-  .cw-cta{background:#13243f;color:#fff;text-align:center;font-size:14.5px;font-weight:800;padding:15px;letter-spacing:-.3px}
+  .cw-row{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .cw-row img{display:block;width:100%;height:100%;object-fit:cover;max-height:230px}
+  .cw-cta{background:#13243f;color:#fff;text-align:center;font-size:14px;font-weight:800;padding:13px;letter-spacing:-.3px}
   .cw-banner:hover .cw-cta{background:#1a2f52}
+  @media(max-width:560px){.cw-row img{max-height:170px}.cw-cta{font-size:13px;padding:11px}}
   .kb-ico{font-size:22px}
   .kb-txt{font-size:13.5px;color:#3a2c00;flex:1}
   .kb-txt b{font-weight:800}
@@ -588,9 +589,9 @@
 
   <!-- 창원자이 더 스카이 분양 배너 -->
   <a class="cw-banner" href="changwon-xi.html" target="_blank" rel="noopener">
-    <img class="cw-main" src="20260620_232411.png" alt="창원자이 더 스카이" onerror="this.style.display='none'">
-    <div class="cw-promo">
-      <img src="20260620_232404.png" alt="창원자이 더 스카이 분양 안내" onerror="this.parentNode.style.display='none'">
+    <div class="cw-row">
+      <img src="20260620_232411.png" alt="창원자이 더 스카이 투시도" onerror="this.style.display='none'">
+      <img src="20260620_232404.png" alt="창원자이 더 스카이 분양 안내" onerror="this.style.display='none'">
     </div>
     <div class="cw-cta">창원자이 더 스카이 자세히 보기 →</div>
   </a>
