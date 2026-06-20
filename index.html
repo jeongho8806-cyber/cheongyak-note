@@ -2718,6 +2718,21 @@ function openTradeList(kind){
       gugunBar=`<div class="gugun-chips">${gchips.join('')}</div>`;
     }
   }
+  // 동(읍/면) 칩 — 구/군이 선택돼 있을 때, 거래 데이터에서 동을 자동 추출
+  let dongBar='';
+  if(searchResult && searchResult.gugun && searchResult.items && searchResult.items.length){
+    const dongCount={};
+    searchResult.items.forEach(it=>{ const d=(it.dong||'').trim(); if(d) dongCount[d]=(dongCount[d]||0)+1; });
+    const dongs=Object.keys(dongCount).sort((a,b)=>dongCount[b]-dongCount[a]); // 거래 많은 동 순
+    if(dongs.length>1){
+      const curDong=searchResult.dong||'';
+      const dchips=[`<span class="gugun-chip ${curDong===''?'on':''}" onclick="selectTradeDong('${kind}','')">전체 동</span>`];
+      dongs.forEach(d=>{
+        dchips.push(`<span class="gugun-chip ${curDong===d?'on':''}" onclick="selectTradeDong('${kind}','${d.replace(/'/g,"")}')">${d} ${dongCount[d]}</span>`);
+      });
+      dongBar=`<div class="gugun-chips" style="background:#eef4ff">${dchips.join('')}</div>`;
+    }
+  }
   let body;
   if(searchResult && !searchResult.items.length){
     body='<div class="locked">\''+searchResult.label+'\' 지역의 최근 거래를 찾지 못했습니다.</div>';
@@ -2731,8 +2746,11 @@ function openTradeList(kind){
     if(fq && !shown.length){
       body='<div class="locked">\''+fq+'\' 검색 결과가 없습니다.</div>';
     } else if(searchResult && searchResult.gugun){
-      // 구 조회: 단지별로 묶어서 표시 (한 단지당 대표 1건 + N건)
-      body=groupByApt(shown, kind);
+      // 구 조회: 선택된 동이 있으면 그 동만, 단지별로 묶어서 표시
+      let gShown=shown;
+      if(searchResult.dong){ gShown=shown.filter(it=>(it.dong||'').trim()===searchResult.dong); }
+      if(!gShown.length){ body='<div class="locked">\''+searchResult.dong+'\' 동의 거래를 찾지 못했습니다.</div>'; }
+      else body=groupByApt(gShown, kind);
     } else {
       // 그 외(TOP·시도): 거래 1건씩 (금액순)
       shown.sort((a,b)=>b.amount-a.amount);
@@ -2771,6 +2789,7 @@ function openTradeList(kind){
       <div style="font-size:11.5px;color:var(--muted);margin:6px 2px 0">💡 단지명을 입력하면 지역과 상관없이 <b>전국에서 자동으로 검색</b>됩니다. (처음 한 번만 잠깐 로딩)</div>
     </div>
     ${gugunBar}
+    ${dongBar}
     ${body}`;
   document.getElementById('home-view').style.display='none';
   document.getElementById('detail-view').style.display='none';
@@ -2821,7 +2840,7 @@ async function selectGugun(kind, code, name){
   const cacheKey='g_'+kind+'_'+code;
   const prefix=code.slice(0,2);
   if(SIDO_CACHE[cacheKey]){
-    TRADE_SEARCH[kind]={...SIDO_CACHE[cacheKey],sido:prefix,gugun:code,filter:''};
+    TRADE_SEARCH[kind]={...SIDO_CACHE[cacheKey],sido:prefix,gugun:code,filter:'',dong:''};
     openTradeList(kind); return;
   }
   const lv=document.getElementById('list-view');
@@ -2837,11 +2856,18 @@ async function selectGugun(kind, code, name){
     computeRise(items);
     const top=items.slice(0,100);
     SIDO_CACHE[cacheKey]={label:name+'('+items.length+'건)',items:top,count:items.length};
-    TRADE_SEARCH[kind]={label:name+'('+items.length+'건)',items:top,sido:prefix,gugun:code,filter:''};
+    TRADE_SEARCH[kind]={label:name+'('+items.length+'건)',items:top,sido:prefix,gugun:code,filter:'',dong:''};
     openTradeList(kind);
   }catch(e){
     lv.innerHTML=`<div class="lv-back" onclick="openTradeList('${kind}')">‹ 뒤로</div><div class="locked">조회 중 오류가 발생했어요. 다시 시도해 주세요.</div>`;
   }
+}
+// 구 안에서 동 선택 (이미 받아온 구 데이터에서 필터만)
+function selectTradeDong(kind, dong){
+  const sr=TRADE_SEARCH[kind];
+  if(!sr) return;
+  sr.dong = (sr.dong===dong) ? '' : dong; // 같은 동 다시 누르면 전체로
+  openTradeList(kind);
 }
 // 동/단지명으로 현재 목록 필터
 function filterTrade(kind){
