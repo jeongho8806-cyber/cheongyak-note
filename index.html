@@ -2338,6 +2338,8 @@ function computeRise(list){
   list.forEach(it=>{ it._barPct = Math.round(40 + 60*(it.amount-lo)/rg); });
 }
 function pad2(s){return String(s).padStart(2,'0');}
+// 전월세 계열(아파트/오피스텔/빌라 전월세) 판별
+function isRentKind(kind){ return kind==='rent'||kind==='offirent'||kind==='villarent'; }
 // 전용면적(㎡) → 공급면적 기준 평형 (84㎡≈34평). 계수 1.34로 통상 평형에 맞춤
 function areaToPyeong(area){ return area ? Math.round(area*1.34/3.3058) : 0; }
 
@@ -2370,7 +2372,7 @@ function renderTradeMini(kind){
 function tradeCard(it,i,kind){
   const rank=i+1;
   const pyeong=areaToPyeong(it.area);
-  const amtTxt = kind==='rent' ? rentAmt(it) : wonToKor(it.amount);
+  const amtTxt = isRentKind(kind) ? rentAmt(it) : wonToKor(it.amount);
   // 상승액 뱃지
   let rise='';
   if(it._rise!==undefined && it._rise!==0){
@@ -2382,7 +2384,7 @@ function tradeCard(it,i,kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
-      <div class="trade-bar ${kind==='rent'?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>
+      <div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2397,11 +2399,54 @@ function rentAmt(it){
 }
 // 객체 기반 카드 (검색/시도 결과용 — 인덱스 대신 객체를 임시저장 후 열기)
 let TRADE_CLICK_STORE=[];
+// 구 조회 결과를 단지별로 묶어 카드로 (한 단지당 대표 1건 + N건)
+function groupByApt(list, kind){
+  const groups={};
+  list.forEach(it=>{
+    const key=(it.apt||'')+'|'+(it.dong||'');
+    (groups[key]=groups[key]||[]).push(it);
+  });
+  // 각 그룹 대표: 최고가 거래
+  const cards=Object.values(groups).map(g=>{
+    g.sort((a,b)=>b.amount-a.amount);
+    const rep=g[0];               // 최고가 대표
+    rep._count=g.length;
+    rep._areas=[...new Set(g.map(x=>Math.round(x.area)))].sort((a,b)=>a-b);
+    return rep;
+  });
+  // 단지 대표 거래를 금액순 정렬
+  cards.sort((a,b)=>b.amount-a.amount);
+  // 금액 막대용 비율 재계산
+  const amts=cards.map(c=>c.amount);
+  const hi=Math.max(...amts), lo=Math.min(...amts), rg=(hi-lo)||1;
+  cards.forEach(c=>{ c._barPct=Math.round(40+60*(c.amount-lo)/rg); });
+  return '<div class="trade-grid">'+cards.map(it=>aptGroupCard(it,kind)).join('')+'</div>';
+}
+function aptGroupCard(it, kind){
+  const idx=TRADE_CLICK_STORE.length;
+  TRADE_CLICK_STORE.push({it,kind});
+  const pyeong=areaToPyeong(it.area);
+  const amtTxt = kind==='rent'||kind==='offirent'||kind==='villarent' ? rentAmt(it) : wonToKor(it.amount);
+  const areaRange = it._areas && it._areas.length>1 ? it._areas[0]+'~'+it._areas[it._areas.length-1]+'㎡' : it.area+'㎡';
+  const barCls = (kind==='rent'||kind==='offirent'||kind==='villarent')?'rent':(kind==='silv')?'silv':'';
+  return `<div class="trade-card" onclick="openTradeClick(${idx})">
+    <div class="trade-rank" style="background:none;color:var(--muted);font-size:11px">${it._count}건</div>
+    <div class="trade-info">
+      <div class="trade-nm">${it.apt}</div>
+      <div class="trade-meta">${it.dong} · ${areaRange} · 최근 ${it.month}/${it.day}</div>
+      <div class="trade-bar ${barCls}"><i style="width:${it._barPct||60}%"></i></div>
+    </div>
+    <div class="trade-price">
+      <div class="amt">${amtTxt}</div>
+      <div class="rg" style="color:var(--muted)">최고가</div>
+    </div>
+  </div>`;
+}
 function tradeCardObj(it,kind){
   const idx=TRADE_CLICK_STORE.length;
   TRADE_CLICK_STORE.push({it,kind});
   const pyeong=areaToPyeong(it.area);
-  const amtTxt = kind==='rent' ? rentAmt(it) : wonToKor(it.amount);
+  const amtTxt = isRentKind(kind) ? rentAmt(it) : wonToKor(it.amount);
   let rise='';
   if(it._rise!==undefined && it._rise!==0){
     const up=it._rise>0;
@@ -2412,7 +2457,7 @@ function tradeCardObj(it,kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
-      <div class="trade-bar ${kind==='rent'?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>
+      <div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2472,11 +2517,19 @@ function openTradeList(kind){
     body='<div class="locked">데이터를 불러오는 중입니다...</div>';
   } else {
     // 동/단지명 필터
-    let shown=list.slice().sort((a,b)=>b.amount-a.amount); // 금액 높은 순
+    let shown=list.slice();
     const fq=(searchResult&&searchResult.filter)?searchResult.filter:'';
     if(fq){ shown=shown.filter(it=>(it.apt||'').includes(fq)||(it.dong||'').includes(fq)); }
-    body='<div class="trade-grid">'+shown.map((it)=>tradeCardObj(it,kind)).join('')+'</div>';
-    if(fq && !shown.length) body='<div class="locked">\''+fq+'\' 검색 결과가 없습니다.</div>';
+    if(fq && !shown.length){
+      body='<div class="locked">\''+fq+'\' 검색 결과가 없습니다.</div>';
+    } else if(searchResult && searchResult.gugun){
+      // 구 조회: 단지별로 묶어서 표시 (한 단지당 대표 1건 + N건)
+      body=groupByApt(shown, kind);
+    } else {
+      // 그 외(TOP·시도): 거래 1건씩 (금액순)
+      shown.sort((a,b)=>b.amount-a.amount);
+      body='<div class="trade-grid">'+shown.map((it)=>tradeCardObj(it,kind)).join('')+'</div>';
+    }
   }
   const subInfo = searchResult
     ? `<b style="color:var(--brand)">${searchResult.label}</b> ${searchResult.items.length}건 · <span style="cursor:pointer;text-decoration:underline" onclick="clearTradeSearch('${kind}')">주요 지역 TOP으로</span>`
@@ -2951,7 +3004,7 @@ async function openTradeWith(it,kind){
       </table>
     </div>
     <div class="dt-section">
-      <h2 class="dt-h">이 단지 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력
+      <h2 class="dt-h">이 단지 ${isRentKind(kind)?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력
         <span style="display:inline-flex;gap:6px;margin-left:8px;vertical-align:middle">
           <button class="sort-btn on" id="span-12" onclick="setHistSpan(12)">1년</button>
           <button class="sort-btn" id="span-24" onclick="setHistSpan(24)">2년</button>
@@ -3004,8 +3057,8 @@ async function loadTradeHistory(){
     const rows=(json&&json.items)?json.items:[];
     if(!hist) return;
     if(!rows.length){ hist.innerHTML='<div class="locked">최근 '+yrLbl+' 내 추가 거래 내역이 없습니다.</div>'; return; }
-    const amtHead = kind==='rent' ? '보증금/월세' : '거래금액';
-    const fmtAmt=(r)=> kind==='rent' ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
+    const amtHead = isRentKind(kind) ? '보증금/월세' : '거래금액';
+    const fmtAmt=(r)=> isRentKind(kind) ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
     // 최신순 정렬
     const sorted=rows.slice().sort((a,b)=>(b.year+pad2(b.month)+pad2(b.day)).localeCompare(a.year+pad2(a.month)+pad2(a.day)));
 
@@ -3015,7 +3068,7 @@ async function loadTradeHistory(){
     const amts=baseRows.map(r=>r.amount);
     const hiV=Math.max(...amts), loV=Math.min(...amts);
     const avgV=Math.round(amts.reduce((a,b)=>a+b,0)/amts.length);
-    const sumLbl = kind==='rent' ? '보증금' : '거래가';
+    const sumLbl = isRentKind(kind) ? '보증금' : '거래가';
     const priceSum=`
       <div class="price-sum">
         <div class="ps-card hi"><div class="lbl">최고 ${sumLbl}</div><div class="val">${wonToKor(hiV)}</div></div>
@@ -3024,7 +3077,7 @@ async function loadTradeHistory(){
       </div>
       <div class="ps-meta">최근 ${yrLbl} 기준 · 총 ${rows.length}건</div>
       <div class="trend-box">
-        <div class="trend-h">📈 월별 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 추이</div>
+        <div class="trend-h">📈 월별 ${isRentKind(kind)?'전월세':kind==='silv'?'분양권':'매매'} 거래 추이</div>
         <div class="trend-avg">최근 거래 평균 ${wonToKor(avgV)}</div>
         ${buildTrendSVG(baseRows,kind)}
       </div>`;
