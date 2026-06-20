@@ -2399,14 +2399,20 @@ async function searchNationwide(kind){
 const NEWS_TABS=[
   ['all','전체'],['apt','청약·분양'],['policy','정책·대출'],['redev','재건축·재개발'],['market','시세·집값']
 ];
-let NEWS_STATE={ tab:'all', items:[], loading:false };
+let NEWS_STATE={ tab:'all', items:[], loading:false, shown:12 };
 const NEWS_CACHE={};
 let NEWS_RANK=[]; // 주요 뉴스 TOP (정확도순)
+const NEWS_PAGE=12; // 더보기 단위
 function openNews(tab){
   NEWS_STATE.tab = tab || 'all';
+  NEWS_STATE.shown = NEWS_PAGE; // 탭 바꾸면 다시 12개부터
   renderNewsView();
   loadNews(NEWS_STATE.tab);
   loadNewsRank();
+}
+function moreNews(){
+  NEWS_STATE.shown += NEWS_PAGE;
+  renderNewsView();
 }
 function renderNewsView(){
   const lv=document.getElementById('list-view');
@@ -2417,7 +2423,10 @@ function renderNewsView(){
   } else if(!NEWS_STATE.items.length){
     body='<div class="locked">표시할 뉴스가 없습니다. 잠시 후 다시 시도해 주세요.</div>';
   } else {
-    body='<div class="news-list">'+NEWS_STATE.items.map(n=>`
+    const total=NEWS_STATE.items.length;
+    const shown=Math.min(NEWS_STATE.shown, total);
+    const list=NEWS_STATE.items.slice(0, shown);
+    body='<div class="news-list">'+list.map(n=>`
       <a class="news-card" href="${n.link}" target="_blank" rel="noopener">
         <div class="news-body">
           <div class="news-title">${n.title}</div>
@@ -2425,10 +2434,20 @@ function renderNewsView(){
           <div class="news-meta">${n.date||''} · 원문 보기 →</div>
         </div>
       </a>`).join('')+'</div>';
+    if(shown < total){
+      body+=`<div style="text-align:center;margin:18px 0 4px">
+        <button onclick="moreNews()" style="background:#eef1f6;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:11px 28px;font-size:13.5px;font-weight:700;cursor:pointer">뉴스 더보기 (${total-shown}건) ＋</button>
+      </div>`;
+    }
   }
   lv.innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
     <div class="lv-head"><h2>📰 부동산 뉴스</h2><p>네이버 뉴스 기준 · 최신순 자동 업데이트 · 제목을 누르면 원문 기사로 이동합니다</p></div>
+    <a class="kakao-banner" href="#" onclick="openKakaoRoom();return false;" style="margin:0 0 18px">
+      <span class="kb-ico">💬</span>
+      <span class="kb-txt"><b>부동산 최신 뉴스 · 세금정보 공유방</b> 실시간 부동산 뉴스와 양도세·취득세·보유세 등 세금 정보를 가장 먼저 받아보세요</span>
+      <span class="kb-go">입장하기 →</span>
+    </a>
     ${renderNewsRank()}
     <div class="rg-tabs">${tabs}</div>
     ${body}`;
@@ -2465,7 +2484,7 @@ async function loadNews(tab){
   if(NEWS_CACHE[tab]){ NEWS_STATE.items=NEWS_CACHE[tab]; NEWS_STATE.loading=false; renderNewsView(); return; }
   NEWS_STATE.loading=true; renderNewsView();
   try{
-    const res=await fetch('/api/news?preset='+tab+'&display=36');
+    const res=await fetch('/api/news?preset='+tab+'&display=100');
     const json=await res.json();
     const items=(json&&json.items)?json.items:[];
     NEWS_CACHE[tab]=items;
