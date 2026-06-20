@@ -2319,6 +2319,8 @@ function computeRise(list){
   });
 }
 function pad2(s){return String(s).padStart(2,'0');}
+// 전용면적(㎡) → 공급면적 기준 평형 (84㎡≈34평). 계수 1.34로 통상 평형에 맞춤
+function areaToPyeong(area){ return area ? Math.round(area*1.34/3.3058) : 0; }
 
 async function loadTradeKind(kind){
   const cfg=TRADE_KINDS[kind];
@@ -2349,7 +2351,7 @@ function renderTradeMini(kind){
 }
 function tradeCard(it,i,kind){
   const rank=i+1;
-  const pyeong=it.area?Math.round(it.area/3.3058):0;
+  const pyeong=areaToPyeong(it.area);
   const amtTxt = kind==='rent' ? rentAmt(it) : wonToKor(it.amount);
   // 상승액 뱃지
   let rise='';
@@ -2379,7 +2381,7 @@ let TRADE_CLICK_STORE=[];
 function tradeCardObj(it,kind){
   const idx=TRADE_CLICK_STORE.length;
   TRADE_CLICK_STORE.push({it,kind});
-  const pyeong=it.area?Math.round(it.area/3.3058):0;
+  const pyeong=areaToPyeong(it.area);
   const amtTxt = kind==='rent' ? rentAmt(it) : wonToKor(it.amount);
   let rise='';
   if(it._rise!==undefined && it._rise!==0){
@@ -2818,7 +2820,7 @@ function renderHistRows(){
   if(!box) return;
   if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">해당 평형 거래가 없습니다.</div>'; return; }
   box.innerHTML=list.map(r=>{
-    const py=Math.round((r.area||0)/3.3058);
+    const py=areaToPyeong(r.area);
     const amtTxt=fmtAmt(r);
     const hot = r._isHigh && !r.cancel ? '<span class="hot">🔥 신고가</span>' : '';
     const cancelTag = r.cancel ? '<span class="hr-tag cancel">해지'+(r.cancelDay?' '+r.cancelDay.slice(4):'')+'</span>' : '';
@@ -2845,7 +2847,7 @@ function buildTrendSVG(rows, kind){
     const arr=byMonth[m]; const avg=arr.reduce((a,b)=>a+b,0)/arr.length;
     return {m, avg, cnt:arr.length};
   });
-  const W=620, H=200, padL=8, padR=8, padT=20, padB=34;
+  const W=620, H=210, padL=28, padR=28, padT=24, padB=36;
   const vals=pts.map(p=>p.avg);
   const min=Math.min(...vals), max=Math.max(...vals);
   const range=(max-min)||1;
@@ -2867,7 +2869,8 @@ function buildTrendSVG(rows, kind){
     // 라벨 너무 빽빽하면 일부만
     const show = pts.length<=8 || i%2===0 || i===pts.length-1;
     if(!show) return '';
-    return `<text x="${x(i)}" y="${H-12}" font-size="10" fill="#8b92a0" text-anchor="middle">${p.m.slice(2).replace('-','.')}</text>`;
+    const anchor = i===0?'start' : i===pts.length-1?'end' : 'middle';
+    return `<text x="${x(i)}" y="${H-12}" font-size="10" fill="#8b92a0" text-anchor="${anchor}">${p.m.slice(2).replace('-','.')}</text>`;
   }).join('');
   return `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
     ${bars}
@@ -2880,7 +2883,7 @@ async function openTradeWith(it,kind){
   if(!it) return;
   PREV_VIEW = document.getElementById('list-view').style.display==='block' ? 'list' : 'home';
   const dv=document.getElementById('detail-view');
-  const pyeong=it.area?Math.round(it.area/3.3058):0;
+  const pyeong=areaToPyeong(it.area);
   const isRent=kind==='rent';
   const amtBig = isRent ? rentAmt(it) : wonToKor(it.amount);
   const kindLabel = kind==='silv'?'분양권 신고가':kind==='rent'?'전월세 신고가':'실거래 신고가';
@@ -2990,7 +2993,7 @@ async function loadTradeHistory(){
 
     // 면적(평형)별 그룹 → 드롭다운 옵션
     const groups={};
-    rows.forEach(r=>{ const py=Math.round((r.area||0)/3.3058); (groups[py]=groups[py]||[]).push(r); });
+    rows.forEach(r=>{ const py=areaToPyeong(r.area); (groups[py]=groups[py]||[]).push(r); });
     const pyKeys=Object.keys(groups).map(Number).sort((a,b)=>b-a);
     const optHtml=['<option value="all">전체 ('+pyKeys.length+'개 평형)</option>']
       .concat(pyKeys.map(py=>{
