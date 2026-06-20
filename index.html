@@ -2854,7 +2854,7 @@ async function selectGugun(kind, code, name){
     items.forEach(it=>{ it.region=name.replace(/^(서울|부산|대구|인천|광주|대전|울산)\s?/,''); });
     items.sort((a,b)=>b.amount-a.amount);
     computeRise(items);
-    const top=items.slice(0,100);
+    const top=items.slice(0,200);
     SIDO_CACHE[cacheKey]={label:name+'('+items.length+'건)',items:top,count:items.length};
     TRADE_SEARCH[kind]={label:name+'('+items.length+'건)',items:top,sido:prefix,gugun:code,filter:'',dong:''};
     openTradeList(kind);
