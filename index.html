@@ -1093,18 +1093,18 @@ function renderMonthView(){
   const mo=MONTH_STATE.month;
   const list=sitesOfMonth(mo);
   const nowMonth=TODAY.getMonth()+1;
-  const cnt={all:0,upcoming:0,remain:0,done:0};
+  const cnt={all:0,ongoing:0,upcoming:0,remain:0,done:0};
   list.forEach(s=>{
     let g=groupOf(s);
     if(mo>nowMonth && g==='done') return; // 미래달 완료 제외
     cnt[g]++; cnt.all++;
   });
-  const tabsArr=[['all','전체',cnt.all],['upcoming','분양예정',cnt.upcoming],['remain','무순위(줍줍)',cnt.remain]];
+  const tabsArr=[['all','전체',cnt.all],['ongoing','청약 진행중',cnt.ongoing],['upcoming','분양예정',cnt.upcoming],['remain','무순위(줍줍)',cnt.remain]];
   if(mo<=nowMonth) tabsArr.push(['done','분양완료',cnt.done]);
   const tabs=tabsArr.map(([k,label,n])=>`<span class="rg-tab ${MONTH_STATE.tab===k?'on':''}" onclick="monthTab('${k}')">${label} <b>${n}</b></span>`).join('');
   document.getElementById('list-view').innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
-    <div class="lv-head"><h2>📅 ${mo}월 청약 단지</h2><p>분양예정 ${cnt.upcoming} · 무순위 ${cnt.remain}${mo<=nowMonth?' · 완료 '+cnt.done:''} · 총 ${cnt.all}건</p></div>
+    <div class="lv-head"><h2>📅 ${mo}월 청약 단지</h2><p>진행중 ${cnt.ongoing} · 분양예정 ${cnt.upcoming} · 무순위 ${cnt.remain}${mo<=nowMonth?' · 완료 '+cnt.done:''} · 총 ${cnt.all}건</p></div>
     <div class="rg-tabs">${tabs}</div>
     <div class="searchbar-wrap" style="margin-bottom:18px">
       <div class="searchbar"><span class="ico">🔍</span>
@@ -1342,11 +1342,14 @@ function listCard(s){
   } else {
     tag='<span class="tag tag-fast" style="background:#3a6ff0">분양예정</span>';
   }
+  // 두 번째(주택종류) 태그: APT·공공 등 실제 종류일 때만 (무순위 중복 방지)
+  const ty=s.d.type;
+  const typeTag = (ty && ty!=='무순위' && !/무순위/.test(ty)) ? `<span class="tag tag-${ty==='공공'?'rent':'apt'}">${ty}</span>` : '';
   return `<div class="pcard" onclick="openSite('${s.id}')">
     <div class="body">
-      <div class="htag">${tag}<span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span></div>
+      <div class="htag">${tag}${typeTag}</div>
       <h3>${s.name}</h3><div class="loc">${s.d.loc}</div>
-      <div class="bd-line">🏢 ${s.d.bd==="-"?s.d.type:s.d.bd}</div>
+      <div class="bd-line">🏢 ${s.d.bd==="-"?(ty==='무순위'?'무순위·잔여세대':ty):s.d.bd}</div>
       <div class="meta"><span>${s.d.hh}</span><span class="when">${s.when}</span></div></div></div>`;
 }
 function closeList(){
@@ -1401,25 +1404,27 @@ function regionSearch(){
 }
 // 단지가 어떤 그룹인지
 function groupOf(s){
-  if(s.isRemain || /무순위/.test(s.when)) return 'remain';     // 줍줍
-  if(isDone(s.when)) return 'done';                            // 완료
-  return 'upcoming';                                          // 분양예정/진행
+  if(s.isRemain || /무순위/.test(s.when)) return 'remain';      // 줍줍·무순위
+  if(s.fast || /분양중|청약중/.test(s.when)) return 'ongoing';  // 청약 진행중(선착순·분양중)
+  if(isDone(s.when)) return 'done';                             // 완료
+  return 'upcoming';                                           // 분양예정
 }
 function renderRegionView(){
   const r=REGION_STATE.region;
   const list=(DATA[r]||[]).map(s=>({...s,region:r}));
   if(!list.length){ alert(r+' 지역은 현재 준비 중입니다.'); return; }
-  const cnt={ all:list.length, upcoming:0, remain:0, done:0 };
+  const cnt={ all:list.length, ongoing:0, upcoming:0, remain:0, done:0 };
   list.forEach(s=>{ cnt[groupOf(s)]++; });
   const tabs=[
     ['all','전체',cnt.all],
+    ['ongoing','청약 진행중',cnt.ongoing],
     ['upcoming','분양예정',cnt.upcoming],
     ['remain','무순위(줍줍)',cnt.remain],
     ['done','분양완료',cnt.done],
   ].map(([k,label,n])=>`<span class="rg-tab ${REGION_STATE.tab===k?'on':''}" onclick="regionTab('${k}')">${label} <b>${n}</b></span>`).join('');
   document.getElementById('list-view').innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
-    <div class="lv-head"><h2>📍 ${r} 청약 단지</h2><p>분양예정 ${cnt.upcoming} · 무순위 ${cnt.remain} · 완료 ${cnt.done} · 총 ${cnt.all}건</p></div>
+    <div class="lv-head"><h2>📍 ${r} 청약 단지</h2><p>진행중 ${cnt.ongoing} · 분양예정 ${cnt.upcoming} · 무순위 ${cnt.remain} · 완료 ${cnt.done} · 총 ${cnt.all}건</p></div>
     <div class="rg-tabs">${tabs}</div>
     <div class="searchbar-wrap" style="margin-bottom:18px">
       <div class="searchbar">
