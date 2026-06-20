@@ -407,11 +407,31 @@
   .ps-card.avg .val{color:var(--ink)}
   .ps-meta{font-size:11.5px;color:var(--muted);text-align:right;margin:0 2px 16px}
   @media(max-width:560px){.ps-card .val{font-size:15px}.ps-card{padding:12px 8px}}
+  /* 매매·전세 동시 요약 (2번 레퍼런스) */
+  .dual-sum{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  @media(max-width:560px){.dual-sum{grid-template-columns:1fr}}
+  .dual-col{border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .dual-col-h{font-size:14px;font-weight:800;color:#fff;padding:11px 16px;display:flex;align-items:center;gap:7px}
+  .dual-col-h.sale{background:linear-gradient(135deg,#ff7a2e,#e85d10)}
+  .dual-col-h.rent{background:linear-gradient(135deg,#4a7af0,#2a55c8)}
+  .dual-col-h .cnt{margin-left:auto;font-size:11.5px;font-weight:700;opacity:.9}
+  .dual-rows{padding:6px 16px 12px;background:#fff}
+  .dual-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .dual-row:last-child{border-bottom:none}
+  .dual-row .dl{font-size:12.5px;color:var(--muted);font-weight:600}
+  .dual-row .dv{font-size:16px;font-weight:800;letter-spacing:-.3px}
+  .dual-row.hi .dv{color:var(--red)}
+  .dual-row.lo .dv{color:var(--blue)}
+  .dual-row.avg .dv{color:var(--ink)}
+  .dual-empty{padding:18px 16px;text-align:center;color:var(--muted);font-size:12.5px;background:#fff}
   /* 추이 그래프 */
   .trend-box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 16px 10px;box-shadow:var(--shadow);margin-bottom:20px}
   .trend-h{font-size:14px;font-weight:800;margin-bottom:4px}
   .trend-avg{font-size:13px;color:var(--brand);font-weight:800;margin-bottom:12px}
   .trend-svg{width:100%;height:auto;display:block}
+  .trend-tip{position:absolute;background:var(--navy);color:#fff;font-size:12px;font-weight:600;padding:7px 11px;border-radius:8px;pointer-events:none;white-space:nowrap;z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.18);line-height:1.4}
+  .trend-tip b{color:#fff;font-weight:800}
+  .trend-hot{cursor:pointer}
   .trend-empty{font-size:12.5px;color:var(--muted);padding:20px 0;text-align:center}
   /* 거래이력 드롭다운/정렬 바 */
   .hist-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
@@ -469,6 +489,10 @@
   .dp-card p{font-size:12.5px;color:#666;margin-top:4px;line-height:1.6}
   .locked{background:#f7f9fc;border:1px dashed #cfd6e0;border-radius:10px;padding:24px;text-align:center;color:#8b92a0;font-size:13.5px}
   .locked.map{margin-top:0}
+  .map-btn-row{display:flex;gap:8px;margin-bottom:14px}
+  .map-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:14px;font-weight:700;color:#333;cursor:pointer;font-family:inherit;transition:.12s}
+  .map-btn:hover{border-color:#03c75a;color:#03c75a}
+  .map-btn.rv:hover{border-color:#3a6ff0;color:#3a6ff0}
   .gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   @media(max-width:640px){.gallery{grid-template-columns:repeat(2,1fr)}}
   .g-ph{aspect-ratio:4/3;background:#eef1f6;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#c2c9d4}
@@ -1055,6 +1079,17 @@ function allSites(){
   for(const rg in DATA){ DATA[rg].forEach(s=>arr.push({...s,region:rg})); }
   return arr;
 }
+/* 주소(loc)에서 구/군 추출 (시도 단위 제외). 세종 등 구 없는 곳은 빈 값 */
+function gugunOf(loc){
+  if(!loc) return "";
+  const m=loc.match(/([가-힣]+(구|군|시))/g);
+  if(!m) return "";
+  for(const t of m){
+    if(/특별시|광역시|특별자치시|특별자치도/.test(t)) continue;
+    return t;
+  }
+  return "";
+}
 
 /* 분양 '월' 추출 (1~12). 월 못 찾으면 0 = 시기미정 */
 function monthOf(when){
@@ -1331,6 +1366,23 @@ function startTicker(){
 /* ===== 카톡 공유방 ===== */
 function openKakaoRoom(){ window.open(KAKAO_ROOM,'_blank'); }
 
+/* ===== 네이버 지도 / 로드뷰 (새 탭) ===== */
+function openNaverMap(query){
+  window.open('https://map.naver.com/p/search/'+encodeURIComponent(query),'_blank','noopener');
+}
+function openNaverRoadview(query){
+  // 로드뷰: 검색 결과 + 로드뷰 레이어가 켜진 상태로 열기 (좌표 없으면 검색 기반)
+  window.open('https://map.naver.com/p/search/'+encodeURIComponent(query)+'?c=15.00,0,0,0,dh&p=0,0,0,0,Float','_blank','noopener');
+}
+/* 지도/로드뷰 버튼 한 쌍 HTML 생성 */
+function mapBtns(query){
+  const q=(query||'').replace(/'/g,"\\'").replace(/\s+/g,' ').trim();
+  return `<div class="map-btn-row">
+    <button class="map-btn" onclick="openNaverMap('${q}')">🗺️ 지도</button>
+    <button class="map-btn rv" onclick="openNaverRoadview('${q}')">📷 로드뷰</button>
+  </div>`;
+}
+
 /* ===== 청약 도구: 가점/대출 계산기 ===== */
 const G_HOUSE=[["1년 미만",2],["1년~2년",4],["2년~3년",6],["3년~4년",8],["4년~5년",10],["5년~6년",12],["6년~7년",14],["7년~8년",16],["8년~9년",18],["9년~10년",20],["10년~11년",22],["11년~12년",24],["12년~13년",26],["13년~14년",28],["14년~15년",30],["15년 이상",32]];
 const G_FAMILY=[["0명",5],["1명",10],["2명",15],["3명",20],["4명",25],["5명",30],["6명 이상",35]];
@@ -1564,17 +1616,39 @@ function buildListBody(kind, items){
   // 정렬: 분양예정 → 진행중 → 마감
   list.sort((a,b)=>listSortKey(a)-listSortKey(b));
   if(!list.length){ return '<div class="locked">'+(q?"'"+q+"' 검색 결과가 없습니다.":"해당 조건의 단지가 없습니다.")+'</div>'; }
-  if(kind==='all-list' && !LIST_STATE.q && LIST_STATE.status==='all' && !LIST_STATE.sido){
-    // 통합 화면 + 조건 없을 때만 지역 그룹핑
+  // 구/군별로 한 번 더 묶어주는 헬퍼
+  function byGugun(arr){
+    const g={}; const order=[];
+    arr.forEach(s=>{
+      const gg=gugunOf(s.d&&s.d.loc)||'기타';
+      if(!g[gg]){ g[gg]=[]; order.push(gg); }
+      g[gg].push(s);
+    });
+    return order.map(gg=>{
+      const cards=g[gg].map(s=>listCard(s)).join('');
+      return `<div style="margin-bottom:18px">
+        <div style="font-size:14px;font-weight:800;color:#444;margin:0 0 10px;padding-left:9px;border-left:3px solid var(--brand)">${gg} <span style="font-size:12px;color:var(--muted);font-weight:600">${g[gg].length}건</span></div>
+        <div class="card-grid">${cards}</div>
+      </div>`;
+    }).join('');
+  }
+  // 검색어 없을 때(전체/상태탭만) → 구별 묶기 적용
+  const groupable = !LIST_STATE.q;
+  if(kind==='all-list' && groupable && !LIST_STATE.sido){
+    // 통합 화면: 시도 → 구 2단 그룹핑
     let body='';
     const grp={};
     list.forEach(s=>{ (grp[s.region]=grp[s.region]||[]).push(s); });
     for(const rg in grp){
-      body+=`<div class="lv-region"><h3 class="lv-rgh">${rg} <span>${grp[rg].length}건</span></h3><div class="card-grid">`;
-      body+=grp[rg].map(s=>listCard(s)).join('');
-      body+=`</div></div>`;
+      body+=`<div class="lv-region"><h3 class="lv-rgh">${rg} <span>${grp[rg].length}건</span></h3>`;
+      body+=byGugun(grp[rg]);
+      body+=`</div>`;
     }
     return body;
+  }
+  // 시도 칩 선택 상태(또는 선착순에서 시도 선택) → 그 시도 안에서 구별 묶기
+  if(groupable && LIST_STATE.sido){
+    return byGugun(list);
   }
   return `<div class="card-grid">${list.map(s=>listCard(s)).join('')}</div>`;
 }
@@ -1929,7 +2003,7 @@ function renderSite(s){
     <div class="dt-section">
       <h2 class="dt-h">입지 분석</h2>
       <div class="dp-grid">${pointCards}</div>
-      <div class="locked map">🗺️ 단지 위치·교통망 상세 지도는 신청 시 제공됩니다.</div>
+      ${mapBtns(s.name+' '+(d.loc||''))}
     </div>
 
     <div class="dt-section">
@@ -2963,12 +3037,58 @@ function buildTrendSVG(rows, kind){
     const anchor = i===0?'start' : i===pts.length-1?'end' : 'middle';
     return `<text x="${x(i)}" y="${H-12}" font-size="10" fill="#8b92a0" text-anchor="${anchor}">${p.m.slice(2).replace('-','.')}</text>`;
   }).join('');
-  return `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-    ${bars}
-    <polyline points="${linePts}" fill="none" stroke="#5b6ee8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${dots}
-    ${labels}
-  </svg>`;
+  // 호버 영역 (각 점 위 투명 세로 띠) + 데이터 저장
+  const hotspots=pts.map((p,i)=>{
+    const cx=x(i), cy=y(p.avg);
+    return `<rect class="trend-hot" x="${cx-(W/pts.length)/2}" y="0" width="${W/pts.length}" height="${H}" fill="transparent"
+      data-mlabel="${p.m.slice(2).replace('-','.')}" data-avg="${Math.round(p.avg)}" data-cnt="${p.cnt}" data-cx="${cx}" data-cy="${cy}"></rect>`;
+  }).join('');
+  // 컨테이너로 감싸고 툴팁 div 포함. 그래프 그릴 때마다 고유 id
+  const gid='tr'+(Math.random().toString(36).slice(2,8));
+  setTimeout(()=>bindTrendTooltip(gid, kind), 0);
+  return `<div class="trend-wrap" id="${gid}" style="position:relative">
+    <svg class="trend-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      ${bars}
+      <polyline points="${linePts}" fill="none" stroke="#5b6ee8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <line class="trend-vline" x1="0" y1="0" x2="0" y2="${H}" stroke="#c7cdfb" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>
+      <circle class="trend-active" r="6" fill="var(--brand)" style="display:none"/>
+      ${dots}
+      ${labels}
+      ${hotspots}
+    </svg>
+    <div class="trend-tip" style="display:none"></div>
+  </div>`;
+}
+// 그래프 툴팁 바인딩 (호버/터치 시 금액·건수 표시)
+function bindTrendTooltip(gid, kind){
+  const wrap=document.getElementById(gid); if(!wrap) return;
+  const svg=wrap.querySelector('svg');
+  const tip=wrap.querySelector('.trend-tip');
+  const vline=wrap.querySelector('.trend-vline');
+  const active=wrap.querySelector('.trend-active');
+  const W=620, H=210;
+  const isRent = kind==='rent'||kind==='offirent'||kind==='villarent';
+  function show(rect){
+    const cx=+rect.getAttribute('data-cx'), cy=+rect.getAttribute('data-cy');
+    const avg=+rect.getAttribute('data-avg'), cnt=+rect.getAttribute('data-cnt');
+    const ml=rect.getAttribute('data-mlabel');
+    vline.setAttribute('x1',cx); vline.setAttribute('x2',cx); vline.style.display='';
+    active.setAttribute('cx',cx); active.setAttribute('cy',cy); active.style.display='';
+    // 화면상 위치 계산 (viewBox → 실제 px)
+    const box=svg.getBoundingClientRect();
+    const px=box.left + (cx/W)*box.width - wrap.getBoundingClientRect().left;
+    const py=box.top + (cy/H)*box.height - wrap.getBoundingClientRect().top;
+    tip.innerHTML=`<b>${ml}</b> · ${isRent?'평균 보증금':'평균'} ${wonToKor(avg)}<br><span style="color:#c7cddb">거래 ${cnt}건</span>`;
+    tip.style.display='block';
+    tip.style.left=Math.max(4,Math.min(px-tip.offsetWidth/2, wrap.offsetWidth-tip.offsetWidth-4))+'px';
+    tip.style.top=Math.max(0,py-tip.offsetHeight-12)+'px';
+  }
+  function hide(){ tip.style.display='none'; vline.style.display='none'; active.style.display='none'; }
+  wrap.querySelectorAll('.trend-hot').forEach(rect=>{
+    rect.addEventListener('mouseenter',()=>show(rect));
+    rect.addEventListener('touchstart',(e)=>{ e.preventDefault(); show(rect); },{passive:false});
+  });
+  wrap.addEventListener('mouseleave',hide);
 }
 async function openTradeWith(it,kind){
   if(!it) return;
@@ -2992,6 +3112,7 @@ async function openTradeWith(it,kind){
         <p>${it.region} ${it.dong} · ${it.buildYear?it.buildYear+'년 준공':''}</p>
       </div>
     </div>
+    ${mapBtns(it.apt+' '+(it.region||'')+' '+(it.dong||''))}
     <div class="dt-section">
       <h2 class="dt-h">최근 ${kindLabel} 거래</h2>
       <table class="dt-table">
@@ -3002,6 +3123,11 @@ async function openTradeWith(it,kind){
         <tr><th>거래일</th><td>${it.year}.${it.month}.${it.day}</td></tr>
         ${it.buildYear?`<tr><th>준공</th><td>${it.buildYear}년</td></tr>`:''}
       </table>
+    </div>
+    <div class="dt-section">
+      <h2 class="dt-h">이 단지 매매가 · 전세가 한눈에</h2>
+      <div id="dual-summary"><div class="dual-empty">📊 매매·전세 시세를 불러오는 중입니다...</div></div>
+      <p class="dt-note">국토교통부 실거래 기준 최근 1년치 · 동일 단지의 매매와 전세(보증금) 거래를 함께 보여줍니다. 면적·층에 따라 실제 가격은 달라집니다.</p>
     </div>
     <div class="dt-section">
       <h2 class="dt-h">이 단지 ${isRentKind(kind)?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력
@@ -3036,6 +3162,60 @@ async function openTradeWith(it,kind){
   HIST_CTX={it, kind};
   HIST_SPAN=12;
   loadTradeHistory();
+  loadDualPriceSummary(it, kind);
+}
+// 같은 단지의 매매·전세 시세를 함께 불러와 요약 카드로 (분양권은 제외)
+async function loadDualPriceSummary(it, kind){
+  const box=document.getElementById('dual-summary');
+  if(!box) return;
+  if(kind==='silv'){ // 분양권은 매매/전세 동시요약 대상 아님 → 섹션 숨김
+    const sec=box.closest('.dt-section'); if(sec) sec.style.display='none';
+    return;
+  }
+  // 현재 건물유형에 맞는 매매/전세 kind 결정
+  let saleKind='trade', rentK='rent';
+  if(kind==='offitrade'||kind==='offirent'){ saleKind='offitrade'; rentK='offirent'; }
+  else if(kind==='villatrade'||kind==='villarent'){ saleKind='villatrade'; rentK='villarent'; }
+  const lawd=encodeURIComponent(it.lawd||'');
+  const apt=encodeURIComponent(it.apt);
+  function statify(rows){
+    const valid=(rows||[]).filter(r=>!r.cancel);
+    const base=valid.length?valid:(rows||[]);
+    if(!base.length) return null;
+    const amts=base.map(r=>r.amount);
+    return { hi:Math.max(...amts), lo:Math.min(...amts), avg:Math.round(amts.reduce((a,b)=>a+b,0)/amts.length), n:rows.length };
+  }
+  async function fetchStat(k, rentOnly){
+    try{
+      const res=await fetch('/api/trade?'+(k!=='trade'?'kind='+k+'&':'')+'lawd='+lawd+'&apt='+apt+'&months=12');
+      const json=await res.json();
+      let rows=(json&&json.items)?json.items:[];
+      // 전세 칼럼은 월세(isRent) 제외하고 순수 전세(보증금)만
+      if(rentOnly) rows=rows.filter(r=>!r.isRent);
+      return statify(rows);
+    }catch(e){ return null; }
+  }
+  const [saleStat, rentStat]=await Promise.all([fetchStat(saleKind,false), fetchStat(rentK,true)]);
+  function col(title, cls, stat, isRent){
+    let inner;
+    if(!stat){ inner=`<div class="dual-empty">최근 1년 ${isRent?'전세':'매매'} 거래 내역이 없습니다.</div>`; }
+    else{
+      inner=`<div class="dual-rows">
+        <div class="dual-row hi"><span class="dl">최고 ${isRent?'전세가':'매매가'}</span><span class="dv">${wonToKor(stat.hi)}</span></div>
+        <div class="dual-row avg"><span class="dl">평균 ${isRent?'전세가':'매매가'}</span><span class="dv">${wonToKor(stat.avg)}</span></div>
+        <div class="dual-row lo"><span class="dl">최저 ${isRent?'전세가':'매매가'}</span><span class="dv">${wonToKor(stat.lo)}</span></div>
+      </div>`;
+    }
+    const cntTxt=stat?stat.n+'건':'';
+    return `<div class="dual-col">
+      <div class="dual-col-h ${cls}">${title}<span class="cnt">${cntTxt}</span></div>
+      ${inner}
+    </div>`;
+  }
+  box.innerHTML=`<div class="dual-sum">
+    ${col('💰 매매','sale',saleStat,false)}
+    ${col('🔑 전세','rent',rentStat,true)}
+  </div>`;
 }
 // 기간 탭 전환
 function setHistSpan(months){
