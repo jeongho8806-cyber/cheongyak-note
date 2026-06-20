@@ -121,11 +121,14 @@ exports.handler = async function (event) {
   const endpoint = ENDPOINTS[kind] || ENDPOINTS.trade;
   const parser = kind === "rent" ? parseRent : kind === "silv" ? parseSilv : parseTrade;
 
-  // 특정 단지 거래이력 (kind별로 매매/전월세/분양권 모두 지원, 최근 1년)
+  // 특정 단지 거래이력 (kind별로 매매/전월세/분양권 모두 지원, 기간 선택)
   if (p.lawd && p.apt) {
-    // 최근 12개월
+    // months 파라미터로 조회 기간 결정 (기본 12개월, 최대 24개월)
+    let span = parseInt(p.months || "12", 10);
+    if (isNaN(span) || span < 1) span = 12;
+    if (span > 24) span = 24;
     const monthsHist = [];
-    for (let i = 0; i >= -11; i--) monthsHist.push(ymd(i));
+    for (let i = 0; i >= -(span - 1); i--) monthsHist.push(ymd(i));
     try {
       const results = await Promise.all(monthsHist.map((mm) =>
         fetch(buildUrl(endpoint, p.lawd, mm, KEY, "300")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
