@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>청약노트 - 오늘의 청약·분양 한 화면에</title>
+<title>전국청약지도 - 오늘의 청약·분양 한 화면에</title>
 <style>
   :root{
     --ink:#1f2430; --muted:#8b92a0; --line:#eceef2; --bg:#f4f6f9;
@@ -76,6 +76,16 @@
   .searchbar input{border:none;outline:none;flex:1;font-size:16px;font-family:inherit;background:transparent;font-weight:500}
   .searchbar .ico{color:var(--brand);font-size:20px}
   .searchbar-wrap{position:relative;margin-bottom:22px}
+  /* 청약 예정 현장 리스트 (시도별 격자) */
+  .site-list-box{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:8px;margin-bottom:22px;box-shadow:var(--shadow)}
+  .site-list-h{text-align:center;font-size:20px;font-weight:800;letter-spacing:-.5px;padding:18px 0 14px}
+  .site-grid{display:grid;grid-template-columns:repeat(3,1fr)}
+  @media(max-width:640px){.site-grid{grid-template-columns:repeat(2,1fr)}}
+  .site-cell{text-align:center;padding:20px 8px;border-top:1px solid var(--line);border-left:1px solid var(--line);cursor:pointer;transition:.12s}
+  .site-cell:hover{background:var(--brand-soft)}
+  .site-cell .sc-n{font-size:15px;font-weight:800;color:var(--ink)}
+  .site-cell .sc-c{font-size:12.5px;color:var(--brand);font-weight:700;margin-top:5px}
+  .site-cell .sc-c.zero{color:#aab2c0;font-weight:600}
   .search-title{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px}
   .search-clear{color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px}
   .search-clear:hover{color:var(--ink)}
@@ -209,9 +219,13 @@
   .tag-apt{background:rgba(0,0,0,.55)}
   .tag-rent{background:var(--green)}
   .tag-done{background:#9aa0ab}
-  .pcard .body{padding:13px 15px}
+  .pcard .body{padding:15px 16px}
   .pcard .body h3{font-size:15.5px;font-weight:800;margin-bottom:5px;letter-spacing:-.3px}
   .pcard .body .loc{font-size:12.5px;color:var(--muted);margin-bottom:8px}
+  /* 단지명 옆 인라인 태그 */
+  .pcard .htag{display:inline-flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+  .pcard .htag .tag{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:5px;color:#fff;display:inline-block}
+  .pcard .bd-line{font-size:11.5px;color:#8b92a0;margin-bottom:8px;display:flex;align-items:center;gap:5px}
   .pcard .meta{display:flex;gap:14px;font-size:12px;color:#666;border-top:1px solid var(--line);padding-top:8px}
   .pcard .meta .when{margin-left:auto;color:var(--brand);font-weight:700}
 
@@ -378,7 +392,7 @@
 </div></div>
 
 <header><div class="wrap head">
-  <div class="logo" onclick="goHome()" style="cursor:pointer">청약<b>노트</b></div>
+  <div class="logo" onclick="goHome()" style="cursor:pointer">전국청약<b>지도</b></div>
   <nav class="gnb">
     <a onclick="openList('fast')">선착순</a>
     <a onclick="openList('week')">이번주</a>
@@ -408,15 +422,21 @@
       <p>전국 아파트·오피스텔의 최신 모집공고를 자동 정리. 단지명·일정·세대수를 빠르게 확인하고, 중요한 청약 일정을 놓치지 마세요.</p>
       <div class="hero-stats" id="hero-stats"></div>
     </div>
-    <div class="hero-spot">
-      <div class="badge">SPOTLIGHT</div>
-      <div class="thumb-spot img" style="background:linear-gradient(135deg,#4a5878,#788aae)"><span class="ph">📷 단지 이미지</span></div>
-      <div class="info">
-        <h3 id="spot-name">엄궁역 트라비스 하늘채</h3>
-        <div class="loc" id="spot-loc">부산 사상구 엄궁동 · 진행예정</div>
-        <div class="go" onclick="openModal('엄궁역 트라비스 하늘채')">자세히 보기 →</div>
+    <div class="hero-spot" style="cursor:pointer" onclick="openKakaoRoom()">
+      <div class="badge" style="background:#3a2c00;color:#FEE500">카톡 공유방</div>
+      <div class="info" style="padding:46px 20px 22px;display:flex;flex-direction:column;align-items:center;text-align:center;height:100%;justify-content:center">
+        <div style="font-size:40px;margin-bottom:10px">💬</div>
+        <h3 style="font-size:18px">전국청약지도 카톡 공유방</h3>
+        <div class="loc" style="margin:6px 0 14px">실시간 분양·청약·무순위 정보를<br>가장 먼저 받아보세요</div>
+        <div style="background:#FEE500;color:#3a2c00;font-weight:800;font-size:14px;padding:11px 22px;border-radius:9px">입장하기 →</div>
       </div>
     </div>
+  </div>
+
+  <!-- 청약 예정 현장 리스트 (시도별) -->
+  <div class="site-list-box">
+    <div class="site-list-h">청약 예정 현장 리스트</div>
+    <div class="site-grid" id="site-grid"></div>
   </div>
 
   <!-- 검색바 -->
@@ -580,7 +600,7 @@
 </div><!-- /wrap -->
 
 <footer><div class="wrap">
-  <b>청약노트</b>
+  <b>전국청약지도</b>
   <span>전국 청약·분양 정보를 한 자리에</span>
   <span class="small">본 사이트는 분양 정보를 제공하며, 청약 결과·당첨을 보장하지 않습니다. 분양 일정은 사업 주체 사정에 따라 변경될 수 있습니다.</span>
 </div></footer>
@@ -844,16 +864,11 @@ function renderAll(){
     else if(done) tag='<span class="tag tag-done">청약마감</span>';
     else tag='<span class="tag tag-fast" style="background:#3a6ff0">분양예정</span>';
     return `<div class="pcard" onclick="openSite('${s.id}')">
-      <div class="thumb" style="background:linear-gradient(135deg,${gradOf(s.id)})">
-        <div class="tags">
-          ${tag}
-          <span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span>
-        </div>
-        <span class="ph-txt">📷 ${s.d.bd==="-"?s.d.type:s.d.bd}</span>
-      </div>
       <div class="body">
+        <div class="htag">${tag}<span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span></div>
         <h3>${s.name}</h3>
         <div class="loc">${s.d.loc}</div>
+        <div class="bd-line">🏢 ${s.d.bd==="-"?s.d.type:s.d.bd}</div>
         <div class="meta"><span>${s.d.hh}</span><span class="when">${s.when}</span></div>
       </div></div>`;
   }).join('');
@@ -894,6 +909,21 @@ function renderAll(){
   document.getElementById('side-region').innerHTML=counts.map(c=>`
     <div class="srow" onclick="doSearchRegion('${c.r}')"><span class="rg">${c.r}</span><span class="ct">${c.n}건</span></div>`).join('');
 
+  // 청약 예정 현장 리스트 (시도별 격자) — 진행예정(미마감) 현장 수
+  const SIDO_ORDER=["서울시","경기도","인천시","부산시","대구시","대전시","광주시","울산시","세종시","강원도","경상남도","경상북도","전라남도","전라북도","충청남도","충청북도","제주도"];
+  const sg=document.getElementById('site-grid');
+  if(sg){
+    sg.innerHTML=SIDO_ORDER.map(rg=>{
+      const list=DATA[rg]||[];
+      const liveN=list.filter(s=>!isDone(s.when)).length;
+      const label = liveN>0 ? liveN+'개 현장' : '준비중';
+      return `<div class="site-cell" onclick="doSearchRegion('${rg}')">
+        <div class="sc-n">${rg}</div>
+        <div class="sc-c ${liveN>0?'':'zero'}">${label}</div>
+      </div>`;
+    }).join('');
+  }
+
   // 최근 모집공고 (전체 최근 6개)
   const notice=sites.slice(0,6);
   document.getElementById('notice-grid').innerHTML=notice.map(s=>`
@@ -910,16 +940,11 @@ function renderAll(){
   const doneLimit=DONE_EXPANDED?doneSites.length:10;
   const doneCard=s=>`
     <div class="pcard" onclick="openSite('${s.id}')">
-      <div class="thumb" style="background:linear-gradient(135deg,${gradOf(s.id)});filter:grayscale(.4)">
-        <div class="tags">
-          <span class="tag tag-done">청약마감</span>
-          <span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span>
-        </div>
-        <span class="ph-txt">📷 ${s.d.bd==="-"?s.d.type:s.d.bd}</span>
-      </div>
       <div class="body">
+        <div class="htag"><span class="tag tag-done">청약마감</span><span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span></div>
         <h3>${s.name}</h3>
         <div class="loc">${s.d.loc}</div>
+        <div class="bd-line">🏢 ${s.d.bd==="-"?s.d.type:s.d.bd}</div>
         <div class="meta"><span>${s.d.hh}</span><span class="when" style="color:#9aa0ab">${s.when}</span></div>
       </div></div>`;
   document.getElementById('done-grid').innerHTML=doneSites.slice(0,doneLimit).map(doneCard).join('') || '<p style="color:#aaa;font-size:13px">종료된 단지가 없습니다.</p>';
@@ -1198,11 +1223,10 @@ function listCard(s){
   const done=isDone(s.when);
   let tag = s.fast?'<span class="tag tag-fast">선착순</span>' : done?'<span class="tag tag-done">청약마감</span>':'<span class="tag tag-fast" style="background:#3a6ff0">분양예정</span>';
   return `<div class="pcard" onclick="openSite('${s.id}')">
-    <div class="thumb" style="background:linear-gradient(135deg,${gradOf(s.id)})${done?';filter:grayscale(.4)':''}">
-      <div class="tags">${tag}<span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span></div>
-      <span class="ph-txt">📷 ${s.d.bd==="-"?s.d.type:s.d.bd}</span>
-    </div>
-    <div class="body"><h3>${s.name}</h3><div class="loc">${s.d.loc}</div>
+    <div class="body">
+      <div class="htag">${tag}<span class="tag tag-${s.d.type==='공공'?'rent':'apt'}">${s.d.type}</span></div>
+      <h3>${s.name}</h3><div class="loc">${s.d.loc}</div>
+      <div class="bd-line">🏢 ${s.d.bd==="-"?s.d.type:s.d.bd}</div>
       <div class="meta"><span>${s.d.hh}</span><span class="when">${s.when}</span></div></div></div>`;
 }
 function closeList(){
@@ -1244,8 +1268,40 @@ function doSearch(){
   if(hit) openSite(hit.id);
 }
 function doSearchRegion(r){
-  const list=DATA[r];
-  if(list && list.length) openSite(list[0].id);
+  const list=(DATA[r]||[]).map(s=>({...s,region:r}));
+  if(!list.length){ alert(r+' 지역은 현재 준비 중입니다.'); return; }
+  // 4분류: 줍줍·무순위 / 선착순·분양중 / 예정 / 올해 완료
+  const remain=[], ongoing=[], upcoming=[], done=[];
+  list.forEach(s=>{
+    if(s.isRemain || /무순위/.test(s.when)){ remain.push(s); }       // 줍줍·무순위
+    else if(s.fast || /분양중|청약중/.test(s.when)){ ongoing.push(s); } // 선착순·분양중
+    else if(isDone(s.when)){ done.push(s); }
+    else { upcoming.push(s); }
+  });
+  const section=(title,arr,color,desc)=>{
+    if(!arr.length) return '';
+    return `<div class="lv-region">
+      <h3 class="lv-rgh" style="border-color:${color}">${title} <span>${arr.length}건</span></h3>
+      ${desc?`<p style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px">${desc}</p>`:''}
+      <div class="card-grid">${arr.map(s=>listCard(s)).join('')}</div>
+    </div>`;
+  };
+  let body='';
+  body+=section('🎯 줍줍·무순위 진행중', remain, '#e2444b', '청약통장 없이도 신청 가능한 무순위·잔여세대(줍줍) 단지입니다. 경쟁이 치열하니 서두르세요.');
+  body+=section('🔥 선착순·분양중', ongoing, 'var(--brand)', '지금 선착순 계약 또는 청약 접수가 진행 중인 단지입니다.');
+  body+=section('📅 청약 예정', upcoming, '#3a6ff0', '곧 분양·청약이 진행될 예정 단지입니다.');
+  body+=section('✅ 올해 청약 완료', done, '#9aa0ab', '이미 청약이 끝난 단지입니다. 무순위·잔여세대 안내를 받아보세요.');
+  if(!body) body='<div class="locked">'+r+' 지역 단지 정보를 준비 중입니다.</div>';
+
+  document.getElementById('list-view').innerHTML=`
+    <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
+    <div class="lv-head"><h2>📍 ${r} 청약 단지</h2><p>줍줍 ${remain.length} · 선착순·분양중 ${ongoing.length} · 예정 ${upcoming.length} · 완료 ${done.length} · 총 ${list.length}건</p></div>
+    ${body}`;
+  document.getElementById('home-view').style.display='none';
+  document.getElementById('detail-view').style.display='none';
+  document.getElementById('tools-view').style.display='none';
+  document.getElementById('list-view').style.display='block';
+  window.scrollTo(0,0);
 }
 
 /* ===== 상세 페이지 ===== */
