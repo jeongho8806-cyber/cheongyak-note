@@ -387,6 +387,48 @@
   .dt-note b{color:var(--brand)}
   /* 면적별 거래이력 그룹 */
   .area-group{margin-bottom:16px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  /* 가격 요약 카드 */
+  .price-sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+  .ps-card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center;box-shadow:var(--shadow)}
+  .ps-card .lbl{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px}
+  .ps-card .val{font-size:17px;font-weight:800;letter-spacing:-.5px}
+  .ps-card.hi .val{color:var(--red)}
+  .ps-card.lo .val{color:var(--blue)}
+  .ps-card.avg .val{color:var(--ink)}
+  .ps-meta{font-size:11.5px;color:var(--muted);text-align:right;margin:0 2px 16px}
+  @media(max-width:560px){.ps-card .val{font-size:15px}.ps-card{padding:12px 8px}}
+  /* 추이 그래프 */
+  .trend-box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 16px 10px;box-shadow:var(--shadow);margin-bottom:20px}
+  .trend-h{font-size:14px;font-weight:800;margin-bottom:4px}
+  .trend-avg{font-size:13px;color:var(--brand);font-weight:800;margin-bottom:12px}
+  .trend-svg{width:100%;height:auto;display:block}
+  .trend-empty{font-size:12.5px;color:var(--muted);padding:20px 0;text-align:center}
+  /* 거래이력 드롭다운/정렬 바 */
+  .hist-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .hist-bar .lbl{font-size:14px;font-weight:800;color:var(--ink)}
+  .hist-sel{border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;font-size:13.5px;font-family:inherit;font-weight:600;color:var(--ink);background:#fff;outline:none;cursor:pointer}
+  .hist-sel:focus{border-color:var(--brand)}
+  .hist-cnt{font-size:13px;color:var(--muted);font-weight:600}
+  .hist-sort{margin-left:auto;display:flex;gap:6px}
+  .sort-btn{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:700;color:#666;cursor:pointer;font-family:inherit}
+  .sort-btn.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  /* 거래이력 행 */
+  .hist-rows{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .hist-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .hist-row:last-child{border-bottom:none}
+  .hist-row.cancelled{opacity:.5}
+  .hist-row.cancelled .hr-amt{text-decoration:line-through;color:var(--muted)}
+  .hr-date{font-size:13px;font-weight:700;color:var(--ink);width:54px;flex-shrink:0}
+  .hr-info{flex:1;min-width:0;font-size:12.5px;color:#666}
+  .hr-info .blue{color:var(--blue);font-weight:700}
+  .hr-tags{display:flex;gap:5px;margin-top:4px}
+  .hr-tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px}
+  .hr-tag.silv{background:#f0ecfb;color:#7c5fd3}
+  .hr-tag.direct{background:#e8f5ee;color:var(--green)}
+  .hr-tag.cancel{background:#fdecec;color:var(--red)}
+  .hr-amt{font-size:15px;font-weight:800;color:var(--ink);text-align:right;flex-shrink:0}
+  .hr-amt .hot{color:var(--red);display:block;font-size:10px;font-weight:800;margin-top:1px}
+  .hr-amt.isHot{color:var(--red)}
   .area-group-h{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f6f8fb;padding:11px 15px;cursor:pointer;user-select:none}
   .area-group-h .ag-area{font-size:14.5px;font-weight:800;color:var(--ink)}
   .area-group-h .ag-area span{font-size:12px;color:var(--muted);font-weight:600;margin-left:6px}
@@ -2751,6 +2793,88 @@ async function openTrade(kind,idx){
   return openTradeWith(it,kind);
 }
 // 거래 상세 (객체 기반)
+// 거래이력 상태 (단지 상세에서 면적 드롭다운·정렬)
+let HIST_DATA=null, HIST_VIEW={py:'all',sort:'new'};
+function syncSortBtn(){
+  const n=document.getElementById('hs-new'), o=document.getElementById('hs-old');
+  if(!n||!o) return;
+  n.classList.toggle('on', HIST_VIEW.sort==='new');
+  o.classList.toggle('on', HIST_VIEW.sort==='old');
+}
+function renderHistRows(){
+  if(!HIST_DATA) return;
+  const {rows,groups,kind,fmtAmt}=HIST_DATA;
+  let list = HIST_VIEW.py==='all' ? rows.slice() : (groups[HIST_VIEW.py]||[]).slice();
+  // 정렬
+  list.sort((a,b)=>{
+    const ka=a.year+pad2(a.month)+pad2(a.day), kb=b.year+pad2(b.month)+pad2(b.day);
+    return HIST_VIEW.sort==='new' ? kb.localeCompare(ka) : ka.localeCompare(kb);
+  });
+  const cntEl=document.getElementById('hist-cnt');
+  if(cntEl) cntEl.textContent=list.length+'건';
+  const kindTag = kind==='silv'?'<span class="hr-tag silv">분양권</span>':kind==='rent'?'<span class="hr-tag silv">전월세</span>':'';
+  const box=document.getElementById('hist-rows');
+  if(!box) return;
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">해당 평형 거래가 없습니다.</div>'; return; }
+  box.innerHTML=list.map(r=>{
+    const py=Math.round((r.area||0)/3.3058);
+    const amtTxt=fmtAmt(r);
+    const hot = r._isHigh && !r.cancel ? '<span class="hot">🔥 신고가</span>' : '';
+    const cancelTag = r.cancel ? '<span class="hr-tag cancel">해지'+(r.cancelDay?' '+r.cancelDay.slice(4):'')+'</span>' : '';
+    return `<div class="hist-row ${r.cancel?'cancelled':''}">
+      <div class="hr-date">${pad2(r.month)}.${pad2(r.day)}</div>
+      <div class="hr-info"><span class="blue">${r.area}㎡ ${py}평</span> · ${r.floor}층
+        <div class="hr-tags">${kindTag}${cancelTag}</div>
+      </div>
+      <div class="hr-amt ${r._isHigh&&!r.cancel?'isHot':''}">${amtTxt}${hot}</div>
+    </div>`;
+  }).join('');
+}
+// 월별 거래 추이 SVG 그래프 (rows → 월별 평균가 선그래프)
+function buildTrendSVG(rows, kind){
+  // 월별 평균 집계
+  const byMonth={};
+  rows.forEach(r=>{
+    const key=r.year+'-'+pad2(r.month);
+    (byMonth[key]=byMonth[key]||[]).push(r.amount);
+  });
+  const months=Object.keys(byMonth).sort();
+  if(months.length<2) return '<div class="trend-empty">추이 그래프를 그릴 만큼 거래가 충분하지 않습니다.</div>';
+  const pts=months.map(m=>{
+    const arr=byMonth[m]; const avg=arr.reduce((a,b)=>a+b,0)/arr.length;
+    return {m, avg, cnt:arr.length};
+  });
+  const W=620, H=200, padL=8, padR=8, padT=20, padB=34;
+  const vals=pts.map(p=>p.avg);
+  const min=Math.min(...vals), max=Math.max(...vals);
+  const range=(max-min)||1;
+  const x=i=> padL + (W-padL-padR) * (pts.length===1?0.5:i/(pts.length-1));
+  const y=v=> padT + (H-padT-padB) * (1-(v-min)/range);
+  // 막대(거래량) 최대
+  const maxCnt=Math.max(...pts.map(p=>p.cnt));
+  const bars=pts.map((p,i)=>{
+    const bh=(H-padT-padB)*(p.cnt/maxCnt)*0.5;
+    const bx=x(i)-9;
+    return `<rect x="${bx}" y="${H-padB-bh}" width="18" height="${bh}" rx="3" fill="#eef0fb"/>`;
+  }).join('');
+  const linePts=pts.map((p,i)=>x(i)+','+y(p.avg)).join(' ');
+  const dots=pts.map((p,i)=>{
+    const last=i===pts.length-1;
+    return `<circle cx="${x(i)}" cy="${y(p.avg)}" r="${last?5:3.5}" fill="${last?'var(--red)':'#7b8cf0'}"/>`;
+  }).join('');
+  const labels=pts.map((p,i)=>{
+    // 라벨 너무 빽빽하면 일부만
+    const show = pts.length<=8 || i%2===0 || i===pts.length-1;
+    if(!show) return '';
+    return `<text x="${x(i)}" y="${H-12}" font-size="10" fill="#8b92a0" text-anchor="middle">${p.m.slice(2).replace('-','.')}</text>`;
+  }).join('');
+  return `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${bars}
+    <polyline points="${linePts}" fill="none" stroke="#5b6ee8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    ${labels}
+  </svg>`;
+}
 async function openTradeWith(it,kind){
   if(!it) return;
   PREV_VIEW = document.getElementById('list-view').style.display==='block' ? 'list' : 'home';
@@ -2785,7 +2909,7 @@ async function openTradeWith(it,kind){
       </table>
     </div>
     <div class="dt-section">
-      <h2 class="dt-h">이 단지 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력 <span style="font-size:13px;color:var(--muted);font-weight:600">(최근 6개월)</span></h2>
+      <h2 class="dt-h">이 단지 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력 <span style="font-size:13px;color:var(--muted);font-weight:600">(최근 1년)</span></h2>
       <div id="trade-history"><div class="locked">📊 거래 이력을 불러오는 중입니다...</div></div>
     </div>
     <div class="alarm-box">
@@ -2815,57 +2939,68 @@ async function openTradeWith(it,kind){
     const rows=(json&&json.items)?json.items:[];
     const hist=document.getElementById('trade-history');
     if(!hist) return;
-    if(!rows.length){ hist.innerHTML='<div class="locked">최근 6개월 내 추가 거래 내역이 없습니다.</div>'; return; }
+    if(!rows.length){ hist.innerHTML='<div class="locked">최근 1년 내 추가 거래 내역이 없습니다.</div>'; return; }
     const amtHead = kind==='rent' ? '보증금/월세' : '거래금액';
     const fmtAmt=(r)=> kind==='rent' ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
     // 최신순 정렬
     const sorted=rows.slice().sort((a,b)=>(b.year+pad2(b.month)+pad2(b.day)).localeCompare(a.year+pad2(a.month)+pad2(a.day)));
 
-    // (1) 전체 거래 표 (날짜순, 면적 포함) — 원래 방식
-    const allRowsHtml=sorted.slice(0,30).map(r=>{
-      return `<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.area}㎡</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${fmtAmt(r)}</td></tr>`;
-    }).join('');
-    const allTable=`<div class="dt-scroll"><table class="dt-table small">
-      <tr><th>거래일</th><th>면적</th><th>층</th><th>${amtHead}</th></tr>
-      ${allRowsHtml}
-    </table></div>`;
-
-    // (2) 면적별 그룹 — 평형 단위로 묶음 (소수점 차이 합침)
-    const groups={};
-    rows.forEach(r=>{
-      const py=Math.round((r.area||0)/3.3058); // 평 단위로 묶기
-      (groups[py]=groups[py]||[]).push(r);
-    });
-    const pyKeys=Object.keys(groups).map(Number).sort((a,b)=>b-a);
-    const groupsHtml=pyKeys.map((py,gi)=>{
-      const g=groups[py].slice().sort((a,b)=>(b.year+pad2(b.month)+pad2(b.day)).localeCompare(a.year+pad2(a.month)+pad2(a.day)));
-      const areas=[...new Set(g.map(r=>r.area))].sort((a,b)=>a-b);
-      const areaLabel = areas.length>1 ? areas[0]+'~'+areas[areas.length-1]+'㎡' : areas[0]+'㎡';
-      const maxAmt=Math.max(...g.map(r=>r.amount));
-      const recent=g[0];
-      const summary = kind==='rent'
-        ? `<b>${g.length}건</b> · 최근 ${fmtAmt(recent)}`
-        : `최고 <b>${wonToKor(maxAmt)}</b> · ${g.length}건`;
-      const trs=g.slice(0,20).map(r=>`<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.area}㎡</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${fmtAmt(r)}</td></tr>`).join('');
-      return `<div class="area-group ${gi===0?'open':''}">
-        <div class="area-group-h" onclick="this.parentNode.classList.toggle('open')">
-          <div class="ag-area">${py}평형<span>(${areaLabel})</span></div>
-          <div class="ag-summary">${summary}<span class="ag-toggle">▼</span></div>
-        </div>
-        <div class="area-group-body">
-          <div class="dt-scroll"><table>
-            <tr><th>거래일</th><th>면적</th><th>층</th><th>${amtHead}</th></tr>
-            ${trs}
-          </table></div>
-        </div>
+    // (0) 가격 요약 + 추이 그래프 (해지 건 제외하고 계산)
+    const valid=rows.filter(r=>!r.cancel);
+    const baseRows = valid.length ? valid : rows;
+    const amts=baseRows.map(r=>r.amount);
+    const hiV=Math.max(...amts), loV=Math.min(...amts);
+    const avgV=Math.round(amts.reduce((a,b)=>a+b,0)/amts.length);
+    const sumLbl = kind==='rent' ? '보증금' : '거래가';
+    const priceSum=`
+      <div class="price-sum">
+        <div class="ps-card hi"><div class="lbl">최고 ${sumLbl}</div><div class="val">${wonToKor(hiV)}</div></div>
+        <div class="ps-card avg"><div class="lbl">평균 ${sumLbl}</div><div class="val">${wonToKor(avgV)}</div></div>
+        <div class="ps-card lo"><div class="lbl">최저 ${sumLbl}</div><div class="val">${wonToKor(loV)}</div></div>
+      </div>
+      <div class="ps-meta">최근 1년 기준 · 총 ${rows.length}건</div>
+      <div class="trend-box">
+        <div class="trend-h">📈 월별 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 추이</div>
+        <div class="trend-avg">최근 거래 평균 ${wonToKor(avgV)}</div>
+        ${buildTrendSVG(baseRows,kind)}
       </div>`;
-    }).join('');
+
+    // 면적(평형)별 그룹 → 드롭다운 옵션
+    const groups={};
+    rows.forEach(r=>{ const py=Math.round((r.area||0)/3.3058); (groups[py]=groups[py]||[]).push(r); });
+    const pyKeys=Object.keys(groups).map(Number).sort((a,b)=>b-a);
+    const optHtml=['<option value="all">전체 ('+pyKeys.length+'개 평형)</option>']
+      .concat(pyKeys.map(py=>{
+        const areas=[...new Set(groups[py].map(r=>r.area))].sort((a,b)=>a-b);
+        const al=areas.length>1?areas[0]+'~'+areas[areas.length-1]:areas[0];
+        return `<option value="${py}">${py}평 (${al}㎡) · ${groups[py].length}건</option>`;
+      })).join('');
+
+    // 신고가 계산: 각 평형 내에서 날짜순으로 직전 최고가를 넘으면 신고가
+    pyKeys.forEach(py=>{
+      const g=groups[py].slice().sort((a,b)=>(a.year+pad2(a.month)+pad2(a.day)).localeCompare(b.year+pad2(b.month)+pad2(b.day)));
+      let peak=0;
+      g.forEach(r=>{ if(!r.cancel){ if(r.amount>peak){ r._isHigh=true; peak=r.amount; } } });
+    });
+
+    // 거래이력 상태 저장 (드롭다운/정렬에서 다시 그림)
+    HIST_DATA={rows, groups, pyKeys, kind, fmtAmt};
+    HIST_VIEW={py:'all', sort:'new'};
 
     hist.innerHTML=`
-      ${allTable}
-      <h3 style="font-size:15px;font-weight:800;color:var(--ink);margin:22px 0 12px">📐 면적(평형)별 보기</h3>
-      ${groupsHtml}
-      <p class="dt-note">국토교통부 실거래가 신고 자료 기준 · 평형을 누르면 펼쳐집니다. 동·호수별 세부 정보와 매물 상담은 '시세 알림 신청'으로 받아보세요.</p>`;
+      ${priceSum}
+      <div class="hist-bar">
+        <span class="lbl">거래이력</span>
+        <select class="hist-sel" id="hist-area-sel" onchange="HIST_VIEW.py=this.value;renderHistRows()">${optHtml}</select>
+        <span class="hist-cnt" id="hist-cnt"></span>
+        <div class="hist-sort">
+          <button class="sort-btn on" id="hs-new" onclick="HIST_VIEW.sort='new';syncSortBtn();renderHistRows()">최신순</button>
+          <button class="sort-btn" id="hs-old" onclick="HIST_VIEW.sort='old';syncSortBtn();renderHistRows()">과거순</button>
+        </div>
+      </div>
+      <div class="hist-rows" id="hist-rows"></div>
+      <p class="dt-note">국토교통부 실거래가 신고 자료 기준(최근 1년) · 🔥는 해당 평형 신고가, 취소선은 계약 해지 건입니다.</p>`;
+    renderHistRows();
   }catch(e){
     const hist=document.getElementById('trade-history');
     if(hist) hist.innerHTML='<div class="locked">거래 이력을 불러오지 못했습니다.</div>';
