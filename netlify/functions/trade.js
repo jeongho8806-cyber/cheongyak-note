@@ -5,7 +5,7 @@
 //   /api/trade?kind=rent               전월세 신고가 TOP (보증금 기준)
 //   /api/trade?kind=silv               분양권 신고가 TOP
 //   /api/trade?lawd=11680&ymd=202606   특정 지역/월 (매매)
-//   /api/trade?lawd=11680&apt=은마      특정 단지 거래이력 (매매)
+//   /api/trade?lawd=11680&apt=은마      특정 단지 거래이력 (최근 1년)
 
 const ENDPOINTS = {
   trade: "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev",
@@ -60,6 +60,7 @@ function parseTrade(xml, regionName) {
       year: tag(b, "dealYear"), month: tag(b, "dealMonth"), day: tag(b, "dealDay"),
       dong: tag(b, "umdNm"), buildYear: tag(b, "buildYear"),
       region: regionName, lawd: tag(b, "sggCd"),
+      cancel: tag(b, "cdealType") === "O", cancelDay: tag(b, "cdealDay"),
     });
   });
   return out;
@@ -97,6 +98,7 @@ function parseSilv(xml, regionName) {
       year: tag(b, "dealYear"), month: tag(b, "dealMonth"), day: tag(b, "dealDay"),
       dong: tag(b, "umdNm"), buildYear: tag(b, "buildYear"),
       region: regionName, lawd: tag(b, "sggCd"),
+      cancel: tag(b, "cdealType") === "O", cancelDay: tag(b, "cdealDay"),
     });
   });
   return out;
@@ -119,12 +121,14 @@ exports.handler = async function (event) {
   const endpoint = ENDPOINTS[kind] || ENDPOINTS.trade;
   const parser = kind === "rent" ? parseRent : kind === "silv" ? parseSilv : parseTrade;
 
-  // 특정 단지 거래이력 (매매 전용)
+  // 특정 단지 거래이력 (kind별로 매매/전월세/분양권 모두 지원, 최근 1년)
   if (p.lawd && p.apt) {
-    const monthsHist = [ymd(0), ymd(-1), ymd(-2), ymd(-3), ymd(-4), ymd(-5)];
+    // 최근 12개월
+    const monthsHist = [];
+    for (let i = 0; i >= -11; i--) monthsHist.push(ymd(i));
     try {
       const results = await Promise.all(monthsHist.map((mm) =>
-        fetch(buildUrl(endpoint, p.lawd, mm, KEY, "200")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
+        fetch(buildUrl(endpoint, p.lawd, mm, KEY, "300")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
       ));
       let rows = []; results.forEach((a) => { rows = rows.concat(a); });
       const norm = (s) => (s || "").replace(/\s|\(.*?\)|[0-9]+동|[~,\-]/g, "");
