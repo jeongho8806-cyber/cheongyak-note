@@ -220,6 +220,17 @@
   .news-title{font-size:15px;font-weight:800;line-height:1.4;margin-bottom:7px;color:var(--ink)}
   .news-desc{font-size:12.5px;color:#666;line-height:1.6;margin-bottom:9px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .news-meta{font-size:11.5px;color:var(--brand);font-weight:700}
+  /* 랭킹뉴스 (주요 뉴스 TOP) */
+  .news-rank{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px 6px;box-shadow:var(--shadow);margin-bottom:18px}
+  .news-rank-h{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:800;color:var(--ink);margin-bottom:8px}
+  .nr-row{display:flex;align-items:center;gap:11px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+  .nr-row:last-child{border-bottom:none}
+  .nr-row:hover .nr-title{color:var(--brand)}
+  .nr-num{width:22px;height:22px;border-radius:6px;background:#eef1f6;color:#888;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .nr-row:nth-child(2) .nr-num,.nr-row:nth-child(3) .nr-num,.nr-row:nth-child(4) .nr-num{background:var(--brand);color:#fff}
+  .nr-title{font-size:13.5px;font-weight:700;color:var(--ink);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nr-date{font-size:11px;color:var(--muted);flex-shrink:0}
+  @media(max-width:760px){.nr-date{display:none}}
   /* 홈 미니 뉴스 */
   .news-mini-row{display:flex;align-items:center;gap:9px;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
   .news-mini-row:last-child{border-bottom:none}
@@ -2213,6 +2224,8 @@ function openTradeClick(idx){
 // 전용 목록 화면 (메뉴/더보기 → 전체)
 let TRADE_SEARCH={trade:null,silv:null,rent:null}; // 지역검색/시도 결과 보관
 const SIDO_CACHE={};  // 시도 집계 캐시 (kind_prefix → {label,items})
+const NATION_CACHE={}; // 전국 통합 데이터 캐시 (kind → items)
+let NATION_LOADING={trade:false,silv:false,rent:false};
 function openTradeList(kind){
   TRADE_CLICK_STORE=[];
   const cfg=TRADE_KINDS[kind];
@@ -2252,10 +2265,12 @@ function openTradeList(kind){
     <div class="trade-tabs">${tabs}</div>
     <div class="sido-chips">${chips}</div>
     <div class="searchbar-wrap" style="margin:14px 0 18px">
-      <div class="searchbar">
+      <div class="searchbar" style="display:flex;align-items:center;gap:8px">
         <span class="ico">🔍</span>
-        <input type="text" id="trade-search-input" placeholder="${placeholder}" value="${searchResult&&searchResult.filter?searchResult.filter:''}" oninput="filterTrade('${kind}')" autocomplete="off">
+        <input type="text" id="trade-search-input" placeholder="${placeholder}" value="${searchResult&&searchResult.filter?searchResult.filter:(searchResult&&searchResult.nationQ?searchResult.nationQ:'')}" oninput="filterTrade('${kind}')" onkeyup="if(event.key==='Enter')searchNationwide('${kind}')" autocomplete="off" style="flex:1">
+        <button onclick="searchNationwide('${kind}')" style="flex-shrink:0;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">전국 검색</button>
       </div>
+      <div style="font-size:11.5px;color:var(--muted);margin:6px 2px 0">💡 지역과 상관없이 전국에서 찾으려면 단지명을 입력하고 <b>전국 검색</b>(또는 Enter)을 누르세요.</div>
     </div>
     ${body}`;
   document.getElementById('home-view').style.display='none';
@@ -2331,16 +2346,67 @@ function redrawTradeBody(kind){
 }
 function clearTradeSearch(kind){ TRADE_SEARCH[kind]=null; openTradeList(kind); }
 
+// ===== 전국 통합 검색 =====
+// 전국 122개 지역 실거래를 한 번에 모음 (캐싱)
+async function loadNationwide(kind){
+  if(NATION_CACHE[kind]) return NATION_CACHE[kind];
+  const codes=REGION_CODES;
+  // 동시 호출이 너무 많지 않도록 8개씩 끊어서 처리
+  const all=[];
+  const chunk=8;
+  for(let i=0;i<codes.length;i+=chunk){
+    const part=codes.slice(i,i+chunk);
+    const results=await Promise.all(part.map(c=>
+      fetch('/api/trade?'+(kind!=='trade'?'kind='+kind+'&':'')+'lawd='+c.c)
+        .then(r=>r.json())
+        .then(j=>(j.items||[]).map(it=>{it.region=c.n;return it;}))
+        .catch(()=>[])
+    ));
+    results.forEach(arr=>{ for(const it of arr) all.push(it); });
+  }
+  all.sort((a,b)=>b.amount-a.amount);
+  computeRise(all);
+  NATION_CACHE[kind]=all;
+  return all;
+}
+
+// 전국에서 단지명·동으로 검색 실행
+async function searchNationwide(kind){
+  const inp=document.getElementById('trade-search-input');
+  const q=inp ? inp.value.trim() : '';
+  if(!q){ return; }
+  const lv=document.getElementById('list-view');
+  // 로딩 화면
+  if(!NATION_CACHE[kind]){
+    lv.innerHTML=`<div class="lv-back" onclick="openTradeList('${kind}')">‹ 뒤로</div>
+      <div class="lv-head"><h2>전국에서 '${q}' 검색 중...</h2><p>⏳ 전국 ${REGION_CODES.length}개 지역 실거래를 모으는 중이에요. 10~20초 걸릴 수 있어요.</p></div>
+      <div class="locked">🔍 전국 데이터를 모으는 중입니다...</div>`;
+  }
+  const data=await loadNationwide(kind);
+  const hits=data.filter(it=>(it.apt||'').includes(q)||(it.dong||'').includes(q)||(it.region||'').includes(q));
+  TRADE_SEARCH[kind]={
+    label:"전국 '"+q+"' 검색",
+    items:hits.slice(0,200),
+    sido:null,
+    filter:'',
+    nationQ:q
+  };
+  openTradeList(kind);
+}
+
+
 // ===== 부동산 뉴스 =====
 const NEWS_TABS=[
   ['all','전체'],['apt','청약·분양'],['policy','정책·대출'],['redev','재건축·재개발'],['market','시세·집값']
 ];
 let NEWS_STATE={ tab:'all', items:[], loading:false };
 const NEWS_CACHE={};
+let NEWS_RANK=[]; // 주요 뉴스 TOP (정확도순)
 function openNews(tab){
   NEWS_STATE.tab = tab || 'all';
   renderNewsView();
   loadNews(NEWS_STATE.tab);
+  loadNewsRank();
 }
 function renderNewsView(){
   const lv=document.getElementById('list-view');
@@ -2363,6 +2429,7 @@ function renderNewsView(){
   lv.innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
     <div class="lv-head"><h2>📰 부동산 뉴스</h2><p>네이버 뉴스 기준 · 최신순 자동 업데이트 · 제목을 누르면 원문 기사로 이동합니다</p></div>
+    ${renderNewsRank()}
     <div class="rg-tabs">${tabs}</div>
     ${body}`;
   document.getElementById('home-view').style.display='none';
@@ -2371,11 +2438,34 @@ function renderNewsView(){
   lv.style.display='block';
   window.scrollTo(0,0);
 }
+// 주요 뉴스 TOP 렌더 (정확도순)
+function renderNewsRank(){
+  if(!NEWS_RANK.length) return '';
+  const rows=NEWS_RANK.slice(0,5).map((n,i)=>`
+    <a class="nr-row" href="${n.link}" target="_blank" rel="noopener">
+      <span class="nr-num">${i+1}</span>
+      <span class="nr-title">${n.title}</span>
+      <span class="nr-date">${n.date||''}</span>
+    </a>`).join('');
+  return `<div class="news-rank">
+    <div class="news-rank-h">🔥 주요 뉴스 TOP 5</div>
+    ${rows}
+  </div>`;
+}
+async function loadNewsRank(){
+  if(NEWS_RANK.length) return; // 이미 로드됨
+  try{
+    const res=await fetch('/api/news?preset=ranking&display=10');
+    const json=await res.json();
+    NEWS_RANK=(json&&json.items)?json.items:[];
+    if(NEWS_RANK.length) renderNewsView();
+  }catch(e){ NEWS_RANK=[]; }
+}
 async function loadNews(tab){
   if(NEWS_CACHE[tab]){ NEWS_STATE.items=NEWS_CACHE[tab]; NEWS_STATE.loading=false; renderNewsView(); return; }
   NEWS_STATE.loading=true; renderNewsView();
   try{
-    const res=await fetch('/api/news?preset='+tab+'&display=24');
+    const res=await fetch('/api/news?preset='+tab+'&display=36');
     const json=await res.json();
     const items=(json&&json.items)?json.items:[];
     NEWS_CACHE[tab]=items;
