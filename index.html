@@ -1374,7 +1374,7 @@ async function getCoord(query){
   if(!q) return null;
   if(GEO_CACHE[q]!==undefined) return GEO_CACHE[q];
   try{
-    const res=await fetch('/api/geocode?q='+encodeURIComponent(q));
+    const res=await fetch('/.netlify/functions/geocode?q='+encodeURIComponent(q));
     const j=await res.json();
     const coord=(j&&j.ok)?{x:j.x,y:j.y}:null;
     GEO_CACHE[q]=coord;
