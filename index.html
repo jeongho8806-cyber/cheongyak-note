@@ -1649,10 +1649,15 @@ function toolLoan(){
 }
 
 /* ===== 분야별 목록 뷰 ===== */
-let LIST_STATE={kind:'all-list', sido:'', q:'', status:'all'}; // 청약 단지 화면 상태
-function openListMenu(kind){ LIST_STATE.sido=''; LIST_STATE.q=''; LIST_STATE.status='all'; openList(kind); } // 메뉴 진입 시 초기화
+let LIST_STATE={kind:'all-list', sido:'', gugun:'', q:'', status:'all'}; // 청약 단지 화면 상태
+function openListMenu(kind){ LIST_STATE.sido=''; LIST_STATE.gugun=''; LIST_STATE.q=''; LIST_STATE.status='all'; openList(kind); } // 메뉴 진입 시 초기화
 function selectListSido(sido){
   LIST_STATE.sido = (LIST_STATE.sido===sido) ? '' : sido; // 같은 칩 다시 누르면 전체로
+  LIST_STATE.gugun=''; // 시도 바뀌면 구 초기화
+  openList(LIST_STATE.kind);
+}
+function selectListGugun(gugun){
+  LIST_STATE.gugun = (LIST_STATE.gugun===gugun) ? '' : gugun;
   openList(LIST_STATE.kind);
 }
 function selectListStatus(st){ LIST_STATE.status=st; openList(LIST_STATE.kind); }
@@ -1707,6 +1712,24 @@ function openList(kind){
     if(LIST_STATE.sido){ items=items.filter(s=>s.region===LIST_STATE.sido); }
   }
 
+  // 구/군 칩 — 시도가 선택돼 있을 때, 그 시도 단지들의 주소에서 구를 추출
+  let listGugunBar='';
+  if(showSido && LIST_STATE.sido){
+    const guCount={};
+    items.forEach(s=>{ const g=gugunOf(s.d&&s.d.loc); if(g) guCount[g]=(guCount[g]||0)+1; });
+    const gus=Object.keys(guCount).sort((a,b)=>guCount[b]-guCount[a]);
+    if(gus.length>1){
+      const cur=LIST_STATE.gugun||'';
+      const gchips=[`<span class="gugun-chip ${cur===''?'on':''}" onclick="selectListGugun('')">전체 구</span>`];
+      gus.forEach(g=>{
+        gchips.push(`<span class="gugun-chip ${cur===g?'on':''}" onclick="selectListGugun('${g.replace(/'/g,"")}')">${g} ${guCount[g]}</span>`);
+      });
+      listGugunBar=`<div class="gugun-chips">${gchips.join('')}</div>`;
+    }
+    // 구 필터 적용
+    if(LIST_STATE.gugun){ items=items.filter(s=>gugunOf(s.d&&s.d.loc)===LIST_STATE.gugun); }
+  }
+
   // 상태 세부 탭 (분양예정 / 진행중·무순위 / 청약마감)
   const cnt={upcoming:0,ongoing:0,done:0};
   items.forEach(s=>{ cnt[listStatusOf(s)]++; });
@@ -1728,6 +1751,7 @@ function openList(kind){
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
     <div class="lv-head" id="list-head"><h2>${title}</h2><p>${sub} · 총 ${items.length}건</p></div>
     ${sidoBar}
+    ${listGugunBar}
     ${searchBar}
     ${statusBar}
     <div id="list-body">${buildListBody(kind, items)}</div>`;
@@ -1781,7 +1805,7 @@ function buildListBody(kind, items){
     return body;
   }
   // 시도 칩 선택 상태(또는 선착순에서 시도 선택) → 그 시도 안에서 구별 묶기
-  if(groupable && LIST_STATE.sido){
+  if(groupable && LIST_STATE.sido && !LIST_STATE.gugun){
     return byGugun(list);
   }
   return `<div class="card-grid">${list.map(s=>listCard(s)).join('')}</div>`;
@@ -1794,6 +1818,7 @@ function redrawListBody(){
   if(kind==='fast') items=sites.filter(s=>s.fast || s.isRemain);
   else items=sites; // all-list 및 기타: 전체 단지
   if(LIST_STATE.sido) items=items.filter(s=>s.region===LIST_STATE.sido);
+  if(LIST_STATE.gugun) items=items.filter(s=>gugunOf(s.d&&s.d.loc)===LIST_STATE.gugun);
   const box=document.getElementById('list-body');
   if(box) box.innerHTML=buildListBody(kind, items);
 }
