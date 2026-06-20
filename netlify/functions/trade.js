@@ -11,6 +11,12 @@ const ENDPOINTS = {
   trade: "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev",
   rent:  "https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent",
   silv:  "https://apis.data.go.kr/1613000/RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade",
+  // 오피스텔
+  offitrade: "https://apis.data.go.kr/1613000/RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade",
+  offirent:  "https://apis.data.go.kr/1613000/RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent",
+  // 연립다세대(빌라)
+  villatrade: "https://apis.data.go.kr/1613000/RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade",
+  villarent:  "https://apis.data.go.kr/1613000/RTMSDataSvcRHRent/getRTMSDataSvcRHRent",
 };
 
 // 주요 지역(법정동 시군구 코드 5자리)
@@ -47,6 +53,10 @@ function tag(block, name) {
   return m ? m[1].trim() : "";
 }
 function num(s) { const n = (s || "").replace(/[^0-9]/g, ""); return n ? parseInt(n, 10) : 0; }
+// 단지명: 부동산 유형마다 필드명이 다름 (아파트 aptNm / 오피스텔 offiNm / 빌라 mhouseNm)
+function nameTag(b) {
+  return tag(b, "aptNm") || tag(b, "offiNm") || tag(b, "mhouseNm") || tag(b, "bldgNm") || "";
+}
 
 // 매매 파싱
 function parseTrade(xml, regionName) {
@@ -55,7 +65,7 @@ function parseTrade(xml, regionName) {
     const amount = num(tag(b, "dealAmount"));
     if (!amount) return;
     out.push({
-      apt: tag(b, "aptNm"), amount, area: parseFloat(tag(b, "excluUseAr")) || 0,
+      apt: nameTag(b), amount, area: parseFloat(tag(b, "excluUseAr")) || 0,
       floor: parseInt(tag(b, "floor"), 10) || 0,
       year: tag(b, "dealYear"), month: tag(b, "dealMonth"), day: tag(b, "dealDay"),
       dong: tag(b, "umdNm"), buildYear: tag(b, "buildYear"),
@@ -73,7 +83,7 @@ function parseRent(xml, regionName) {
     const monthly = num(tag(b, "monthlyRent"));
     if (!deposit) return;
     out.push({
-      apt: tag(b, "aptNm"), amount: deposit, monthly,
+      apt: nameTag(b), amount: deposit, monthly,
       area: parseFloat(tag(b, "excluUseAr")) || 0,
       floor: parseInt(tag(b, "floor"), 10) || 0,
       year: tag(b, "dealYear"), month: tag(b, "dealMonth"), day: tag(b, "dealDay"),
@@ -93,7 +103,7 @@ function parseSilv(xml, regionName) {
     const amount = num(tag(b, "dealAmount"));
     if (!amount) return;
     out.push({
-      apt: tag(b, "aptNm"), amount, area: parseFloat(tag(b, "excluUseAr")) || 0,
+      apt: nameTag(b), amount, area: parseFloat(tag(b, "excluUseAr")) || 0,
       floor: parseInt(tag(b, "floor"), 10) || 0,
       year: tag(b, "dealYear"), month: tag(b, "dealMonth"), day: tag(b, "dealDay"),
       dong: tag(b, "umdNm"), buildYear: tag(b, "buildYear"),
@@ -119,7 +129,9 @@ exports.handler = async function (event) {
 
   const kind = p.kind || "trade"; // trade | rent | silv
   const endpoint = ENDPOINTS[kind] || ENDPOINTS.trade;
-  const parser = kind === "rent" ? parseRent : kind === "silv" ? parseSilv : parseTrade;
+  // 전월세 계열은 parseRent, 분양권은 parseSilv, 나머지(매매·오피스텔매매·빌라매매)는 parseTrade
+  const isRentKind = kind === "rent" || kind === "offirent" || kind === "villarent";
+  const parser = isRentKind ? parseRent : kind === "silv" ? parseSilv : parseTrade;
 
   // 특정 단지 거래이력 (kind별로 매매/전월세/분양권 모두 지원, 기간 선택)
   if (p.lawd && p.apt) {
