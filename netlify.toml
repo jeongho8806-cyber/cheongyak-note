@@ -2,21 +2,23 @@
 [build]
   publish = "."
   functions = "netlify/functions"
-
 # 함수 호출 경로를 짧게: /api/apt → 실제 함수
 [[redirects]]
   from = "/api/apt"
   to = "/.netlify/functions/apt"
   status = 200
-
 # 실거래가 함수
 [[redirects]]
   from = "/api/trade"
   to = "/.netlify/functions/trade"
   status = 200
-
 # 뉴스 함수
 [[redirects]]
   from = "/api/news"
   to = "/.netlify/functions/news"
+  status = 200
+# 좌표 변환 함수 (카카오)
+[[redirects]]
+  from = "/api/geocode"
+  to = "/.netlify/functions/geocode"
   status = 200
