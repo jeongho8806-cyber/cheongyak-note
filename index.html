@@ -198,6 +198,11 @@
   .trade-info{flex:1;min-width:0}
   .trade-nm{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .trade-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  /* 금액 수준 막대 (목록 내 상대 비교) */
+  .trade-bar{height:5px;border-radius:3px;background:#eef1f6;margin-top:7px;overflow:hidden}
+  .trade-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffb37a,var(--brand));transition:width .4s}
+  .trade-bar.rent i{background:linear-gradient(90deg,#9db4f5,var(--blue))}
+  .trade-bar.silv i{background:linear-gradient(90deg,#c3aef0,#7c5fd3)}
   .trade-price{text-align:right;flex-shrink:0}
   .trade-price .amt{font-size:16px;font-weight:800;color:var(--ink)}
   .trade-price .rg{font-size:11px;color:var(--brand);font-weight:700;margin-top:2px}
@@ -229,6 +234,11 @@
   .trade-tab{font-size:14px;font-weight:700;padding:9px 22px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
   .trade-tab:hover{background:#e0e5ee}
   .trade-tab.on{background:var(--navy);color:#fff}
+  /* 하위 탭 (건물유형) */
+  .bldg-tabs{display:flex;gap:6px;justify-content:center;margin:-6px 0 16px}
+  .bldg-tab{font-size:13px;font-weight:700;padding:6px 16px;border-radius:999px;background:#fff;border:1.5px solid var(--line);color:#666;cursor:pointer;transition:.12s}
+  .bldg-tab:hover{border-color:var(--brand);color:var(--brand)}
+  .bldg-tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
   /* 지역별 화면 탭 */
   .rg-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
   .rg-tab{font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
@@ -592,9 +602,9 @@
   <nav class="gnb">
     <a onclick="openListMenu('fast')">선착순</a>
     <a onclick="openListMenu('all-list')">청약 단지</a>
-    <a onclick="openTradeList('trade')">신고가</a>
-    <a onclick="openTradeList('silv')">분양권</a>
-    <a onclick="openTradeList('rent')">전월세</a>
+    <a onclick="openTradeList('trade')">아파트 실거래</a>
+    <a onclick="openTradeList('silv')">분양권 실거래</a>
+    <a onclick="openTradeList('rent')">전월세 실거래</a>
     <a onclick="openNews('all')">뉴스</a>
     <a href="community.html">커뮤니티</a>
     <a onclick="openTools()" class="gnb-tool">청약도구</a>
@@ -825,7 +835,7 @@
 <nav class="mobile-tabbar">
   <div class="mtab" onclick="goHome()"><span class="mt-ico">🏠</span>홈</div>
   <div class="mtab" onclick="openListMenu('fast')"><span class="mt-ico">🔥</span>선착순</div>
-  <div class="mtab" onclick="openTradeList('trade')"><span class="mt-ico">📈</span>신고가</div>
+  <div class="mtab" onclick="openTradeList('trade')"><span class="mt-ico">📈</span>실거래</div>
   <div class="mtab" onclick="openNews('all')"><span class="mt-ico">📰</span>뉴스</div>
   <div class="mtab" onclick="location.href='community.html'"><span class="mt-ico">💬</span>커뮤니티</div>
   <div class="mtab" onclick="openTools()"><span class="mt-ico">🧮</span>청약도구</div>
@@ -2241,8 +2251,13 @@ const TRADE_KINDS={
   trade:{label:'신고가',unit:'매매',grid:'trade-grid',cnt:'trade-cnt'},
   silv:{label:'분양권',unit:'분양권',grid:'silv-grid',cnt:'silv-cnt'},
   rent:{label:'전월세',unit:'전월세',grid:'rent-grid',cnt:'rent-cnt'},
+  // 오피스텔·빌라 (거래 목록 화면 전용, 메인 그리드 없음)
+  offitrade:{label:'오피스텔 매매',unit:'오피스텔 매매',grid:null,cnt:null},
+  villatrade:{label:'빌라 매매',unit:'빌라 매매',grid:null,cnt:null},
+  offirent:{label:'오피스텔 전월세',unit:'오피스텔 전월세',grid:null,cnt:null},
+  villarent:{label:'빌라 전월세',unit:'빌라 전월세',grid:null,cnt:null},
 };
-const TRADE_STORE={trade:[],silv:[],rent:[]};
+const TRADE_STORE={trade:[],silv:[],rent:[],offitrade:[],villatrade:[],offirent:[],villarent:[]};
 // 전국 주요 시군구 법정동 코드(5자리) — 지역 검색용
 const REGION_CODES=[
   // 서울 25개구
@@ -2317,6 +2332,10 @@ function computeRise(list){
       it._prev=it.preDeposit; it._rise=it.amount-it.preDeposit;
     }
   });
+  // 금액 막대 비율 (목록 내 상대 비교, 40~100% 범위로 매핑)
+  const amts=list.map(x=>x.amount);
+  const hi=Math.max(...amts), lo=Math.min(...amts), rg=(hi-lo)||1;
+  list.forEach(it=>{ it._barPct = Math.round(40 + 60*(it.amount-lo)/rg); });
 }
 function pad2(s){return String(s).padStart(2,'0');}
 // 전용면적(㎡) → 공급면적 기준 평형 (84㎡≈34평). 계수 1.34로 통상 평형에 맞춤
@@ -2324,19 +2343,18 @@ function areaToPyeong(area){ return area ? Math.round(area*1.34/3.3058) : 0; }
 
 async function loadTradeKind(kind){
   const cfg=TRADE_KINDS[kind];
-  const grid=document.getElementById(cfg.grid);
-  if(!grid) return;
+  const grid=cfg.grid?document.getElementById(cfg.grid):null;
   try{
     const res=await fetch('/api/trade'+(kind==='trade'?'':'?kind='+kind));
     const json=await res.json();
     const items=(json&&json.items)?json.items:[];
-    if(!items.length){ grid.innerHTML='<div class="locked">최근 '+cfg.unit+' 거래 데이터를 준비 중입니다.</div>'; return; }
+    if(!items.length){ if(grid) grid.innerHTML='<div class="locked">최근 '+cfg.unit+' 거래 데이터를 준비 중입니다.</div>'; return; }
     items.sort((a,b)=>b.amount-a.amount); // 금액 높은 순 (신고가 TOP)
     computeRise(items);
     TRADE_STORE[kind]=items;
-    renderTradeMini(kind);
+    if(grid) renderTradeMini(kind);
   }catch(e){
-    grid.innerHTML='<div class="locked">'+cfg.unit+' 실거래가를 불러오지 못했습니다.</div>';
+    if(grid) grid.innerHTML='<div class="locked">'+cfg.unit+' 실거래가를 불러오지 못했습니다.</div>';
   }
 }
 // 메인: 각 5개만
@@ -2363,7 +2381,8 @@ function tradeCard(it,i,kind){
     <div class="trade-rank ${rank<=3?'top3':''}">${rank}</div>
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
-      <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡ · ${it.floor}층 · ${it.month}/${it.day}</div>
+      <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
+      <div class="trade-bar ${kind==='rent'?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2392,7 +2411,8 @@ function tradeCardObj(it,kind){
     <div class="trade-rank" style="background:none;color:var(--muted);font-size:11px">${it.region||''}</div>
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
-      <div class="trade-meta">${it.dong} · ${it.area}㎡ · ${it.floor}층 · ${it.month}/${it.day}</div>
+      <div class="trade-meta">${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
+      <div class="trade-bar ${kind==='rent'?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2406,7 +2426,7 @@ function openTradeClick(idx){
 }
 
 // 전용 목록 화면 (메뉴/더보기 → 전체)
-let TRADE_SEARCH={trade:null,silv:null,rent:null}; // 지역검색/시도 결과 보관
+let TRADE_SEARCH={trade:null,silv:null,rent:null,offitrade:null,villatrade:null,offirent:null,villarent:null}; // 지역검색/시도 결과 보관
 const SIDO_CACHE={};  // 시도 집계 캐시 (kind_prefix → {label,items})
 const NATION_CACHE={}; // 전국 통합 데이터 캐시 (kind → items)
 let NATION_LOADING={trade:false,silv:false,rent:false};
@@ -2416,7 +2436,14 @@ function openTradeList(kind){
   const searchResult=TRADE_SEARCH[kind];
   const list=searchResult ? searchResult.items : TRADE_STORE[kind];
   const lv=document.getElementById('list-view');
-  const titleMap={trade:'📈 신고가 (매매)',silv:'🏗️ 분양권 신고가',rent:'🔑 전월세 신고가'};
+  // kind → 상단 거래유형(deal) + 건물유형(bldg) 분해
+  const TRADE_MAP={
+    trade:{deal:'sale',bldg:'apt'}, offitrade:{deal:'sale',bldg:'offi'}, villatrade:{deal:'sale',bldg:'villa'},
+    rent:{deal:'rent',bldg:'apt'}, offirent:{deal:'rent',bldg:'offi'}, villarent:{deal:'rent',bldg:'villa'},
+    silv:{deal:'silv',bldg:'apt'}
+  };
+  const cur=TRADE_MAP[kind]||{deal:'sale',bldg:'apt'};
+  const titleMap={trade:'📈 아파트 매매 실거래가',offitrade:'🏙️ 오피스텔 매매 실거래가',villatrade:'🏘️ 빌라 매매 실거래가',silv:'🏗️ 분양권 실거래가',rent:'🔑 아파트 전월세 실거래가',offirent:'🏙️ 오피스텔 전월세',villarent:'🏘️ 빌라 전월세'};
   const placeholder = '동/단지명으로 좁혀보기 (예: 은마, 반포자이)';
   // 시도 칩
   const chips=SIDO_LIST.map(s=>{
@@ -2454,14 +2481,25 @@ function openTradeList(kind){
   const subInfo = searchResult
     ? `<b style="color:var(--brand)">${searchResult.label}</b> ${searchResult.items.length}건 · <span style="cursor:pointer;text-decoration:underline" onclick="clearTradeSearch('${kind}')">주요 지역 TOP으로</span>`
     : `국토교통부 실거래가 기준 · 주요 지역 TOP ${list.length}건 · 아래 지역을 누르면 시도별로 볼 수 있어요`;
-  // 탭 (아파트/분양권/전월세)
-  const tabs=[['trade','아파트(매매)'],['silv','분양권'],['rent','전월세']].map(([k,label])=>
-    `<span class="trade-tab ${k===kind?'on':''}" onclick="switchTradeTab('${k}')">${label}</span>`
+  // 상단 탭 (매매/분양권/전월세) — 각 거래유형의 대표 kind로 이동
+  const dealTabs=[['sale','매매','trade'],['silv','분양권','silv'],['rent','전월세','rent']].map(([d,label,defKind])=>
+    `<span class="trade-tab ${cur.deal===d?'on':''}" onclick="switchTradeTab('${defKind}')">${label}</span>`
   ).join('');
+  // 하위 탭 (아파트/오피스텔/빌라) — 매매·전월세에서만 표시 (분양권은 아파트만)
+  let bldgTabs='';
+  if(cur.deal!=='silv'){
+    const bldgKindMap = cur.deal==='sale'
+      ? {apt:'trade',offi:'offitrade',villa:'villatrade'}
+      : {apt:'rent',offi:'offirent',villa:'villarent'};
+    bldgTabs='<div class="bldg-tabs">'+[['apt','아파트'],['offi','오피스텔'],['villa','빌라']].map(([b,label])=>
+      `<span class="bldg-tab ${cur.bldg===b?'on':''}" onclick="switchTradeTab('${bldgKindMap[b]}')">${label}</span>`
+    ).join('')+'</div>';
+  }
+  const tabsHtml=`<div class="trade-tabs">${dealTabs}</div>${bldgTabs}`;
   lv.innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
-    <div class="lv-head"><h2>전국 시도별 최고가 실거래가</h2><p>${subInfo}</p></div>
-    <div class="trade-tabs">${tabs}</div>
+    <div class="lv-head"><h2>${titleMap[kind]||'전국 실거래가'}</h2><p>${subInfo}</p></div>
+    ${tabsHtml}
     <div class="sido-chips">${chips}</div>
     <div class="searchbar-wrap" style="margin:14px 0 18px">
       <div class="searchbar" style="display:flex;align-items:center;gap:8px">
