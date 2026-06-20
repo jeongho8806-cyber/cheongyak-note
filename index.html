@@ -493,6 +493,24 @@
   .map-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:14px;font-weight:700;color:#333;cursor:pointer;font-family:inherit;transition:.12s}
   .map-btn:hover{border-color:#03c75a;color:#03c75a}
   .map-btn.rv:hover{border-color:#3a6ff0;color:#3a6ff0}
+  .map-btn.dr:hover{border-color:#2faa6a;color:#2faa6a}
+  /* 지도/로드뷰 모달 */
+  .map-modal-bg{position:fixed;inset:0;background:rgba(20,28,46,.6);z-index:120;display:none;align-items:center;justify-content:center;padding:16px}
+  .map-modal-bg.on{display:flex}
+  .map-modal{background:#fff;border-radius:16px;width:100%;max-width:860px;height:80vh;max-height:640px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .map-modal-head{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);flex-shrink:0}
+  .mm-title{font-size:16px;font-weight:800}
+  .mm-tabs{display:flex;gap:6px;margin-left:8px}
+  .mm-tab{font-size:13px;font-weight:700;padding:7px 14px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#666;cursor:pointer;font-family:inherit}
+  .mm-tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .mm-close{margin-left:auto;font-size:20px;color:#888;cursor:pointer;line-height:1;padding:4px 8px}
+  .mm-close:hover{color:var(--ink)}
+  .map-modal-body{flex:1;position:relative;background:#eef1f6;min-height:0}
+  .mm-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;background:#eef1f6;z-index:2}
+  .map-modal-foot{flex-shrink:0;padding:0}
+  .map-modal-foot a{display:block;text-align:center;padding:12px;font-size:13px;font-weight:700;color:var(--brand);border-top:1px solid var(--line);background:#fff}
+  .map-modal-foot a:hover{background:var(--brand-soft)}
+  @media(max-width:760px){.map-modal{height:88vh;max-height:none}.mm-tab{padding:6px 11px;font-size:12px}}
   .gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   @media(max-width:640px){.gallery{grid-template-columns:repeat(2,1fr)}}
   .g-ph{aspect-ratio:4/3;background:#eef1f6;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#c2c9d4}
@@ -614,6 +632,7 @@
     footer{margin-bottom:60px}
   }
 </style>
+<script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=gm6lzwhzfq&submodules=panorama"></script>
 </head>
 <body>
 
@@ -866,6 +885,26 @@
 </nav>
 
 <!-- 상담 모달 -->
+<!-- 지도/로드뷰 모달 -->
+<div class="map-modal-bg" id="map-modal" onclick="if(event.target===this)closeMapModal()">
+  <div class="map-modal">
+    <div class="map-modal-head">
+      <span class="mm-title" id="mm-title">로드뷰</span>
+      <span class="mm-tabs">
+        <button class="mm-tab" id="mm-tab-rv" onclick="switchMapMode('rv')">📷 로드뷰</button>
+        <button class="mm-tab" id="mm-tab-map" onclick="switchMapMode('map')">🗺️ 지도</button>
+      </span>
+      <span class="mm-close" onclick="closeMapModal()">✕</span>
+    </div>
+    <div class="map-modal-body">
+      <div id="mm-pano" style="width:100%;height:100%"></div>
+      <div id="mm-map" style="width:100%;height:100%;display:none"></div>
+      <div class="mm-loading" id="mm-loading">위치를 찾는 중입니다...</div>
+    </div>
+    <div class="map-modal-foot" id="mm-foot"></div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <h3 id="m-title">분양정보 받기</h3>
@@ -1366,9 +1405,10 @@ function startTicker(){
 /* ===== 카톡 공유방 ===== */
 function openKakaoRoom(){ window.open(KAKAO_ROOM,'_blank'); }
 
-/* ===== 네이버 지도 / 로드뷰 (카카오 좌표 → 네이버 지도) ===== */
+/* ===== 네이버 지도 / 로드뷰 (사이트 내 모달) ===== */
 // 좌표 캐시 (같은 단지 반복 조회 방지)
 const GEO_CACHE={};
+let MM_STATE={x:null,y:null,name:'',query:'',pano:null,map:null,mode:'rv'};
 async function getCoord(query){
   const q=(query||'').trim();
   if(!q) return null;
@@ -1376,35 +1416,104 @@ async function getCoord(query){
   try{
     const res=await fetch('/.netlify/functions/geocode?q='+encodeURIComponent(q));
     const j=await res.json();
-    const coord=(j&&j.ok)?{x:j.x,y:j.y}:null;
+    const coord=(j&&j.ok)?{x:j.x,y:j.y,name:j.name||'',address:j.address||''}:null;
     GEO_CACHE[q]=coord;
     return coord;
   }catch(e){ GEO_CACHE[q]=null; return null; }
 }
-// 버튼: 좌표 구해서 그 위치 지도로, 실패하면 검색으로
-async function openNaverMap(query){
-  const w=window.open('about:blank','_blank');  // 팝업 차단 회피: 먼저 창 열고 나중에 주소 채움
+// 모달 열기 (mode: 'rv' 로드뷰 / 'map' 지도)
+async function openMapModal(query, mode){
+  MM_STATE.query=query; MM_STATE.mode=mode||'rv';
+  const bg=document.getElementById('map-modal');
+  const loading=document.getElementById('mm-loading');
+  const foot=document.getElementById('mm-foot');
+  bg.classList.add('on');
+  loading.style.display='flex';
+  loading.textContent='위치를 찾는 중입니다...';
+  // 네이버 지도 스크립트 로드 확인
+  if(typeof naver==='undefined' || !naver.maps){
+    loading.textContent='지도를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
+    return;
+  }
   const c=await getCoord(query);
-  const url = c
-    ? 'https://map.naver.com/p?c='+c.y+','+c.x+',17,0,0,0,dh'
-    : 'https://map.naver.com/p/search/'+encodeURIComponent(query);
-  if(w) w.location.href=url; else window.open(url,'_blank','noopener');
+  if(!c){
+    loading.textContent='이 단지의 위치를 찾지 못했습니다.';
+    foot.innerHTML='<a href="https://map.naver.com/p/search/'+encodeURIComponent(query)+'" target="_blank" rel="noopener">네이버 지도에서 직접 검색하기 →</a>';
+    return;
+  }
+  MM_STATE.x=c.x; MM_STATE.y=c.y; MM_STATE.name=c.name||query;
+  // 하단: 길찾기 + 네이버 지도 더보기
+  const destName=(MM_STATE.name||query).replace(/'/g,"");
+  foot.innerHTML='<div style="display:flex">'
+    +'<a href="https://map.naver.com/p/directions/-/'+c.x+','+c.y+','+encodeURIComponent(destName)+'/-/transit" target="_blank" rel="noopener" style="flex:1;border-right:1px solid var(--line)">🧭 길찾기</a>'
+    +'<a href="https://map.naver.com/p?c='+c.y+','+c.x+',17,0,0,0,dh" target="_blank" rel="noopener" style="flex:1">네이버 지도 더보기 →</a>'
+    +'</div>';
+  switchMapMode(MM_STATE.mode);
 }
-async function openNaverRoadview(query){
+// 로드뷰 / 지도 전환
+function switchMapMode(mode){
+  MM_STATE.mode=mode;
+  const panoEl=document.getElementById('mm-pano');
+  const mapEl=document.getElementById('mm-map');
+  const loading=document.getElementById('mm-loading');
+  document.getElementById('mm-tab-rv').classList.toggle('on', mode==='rv');
+  document.getElementById('mm-tab-map').classList.toggle('on', mode==='map');
+  document.getElementById('mm-title').textContent = (mode==='rv'?'📷 로드뷰':'🗺️ 지도')+' · '+MM_STATE.name;
+  if(MM_STATE.x===null) return;
+  const pos=new naver.maps.LatLng(MM_STATE.y, MM_STATE.x);
+  if(mode==='rv'){
+    panoEl.style.display='block'; mapEl.style.display='none';
+    loading.style.display='flex'; loading.textContent='로드뷰를 불러오는 중입니다...';
+    if(!MM_STATE.pano){
+      MM_STATE.pano=new naver.maps.Panorama(panoEl, { position:pos, pov:{pan:0,tilt:0,fov:100} });
+      // 로드뷰 조회 결과 이벤트
+      naver.maps.Event.addListener(MM_STATE.pano,'pano_status',function(status){
+        if(status==='OK'){ loading.style.display='none'; }
+        else{
+          loading.style.display='flex';
+          loading.innerHTML='이 위치에는 로드뷰가 없습니다.<br>지도 탭으로 위치를 확인해 보세요.';
+        }
+      });
+    }else{
+      MM_STATE.pano.setPosition(pos);
+      setTimeout(()=>{ loading.style.display='none'; }, 700);
+    }
+  }else{
+    panoEl.style.display='none'; mapEl.style.display='block';
+    loading.style.display='none';
+    if(!MM_STATE.map){
+      MM_STATE.map=new naver.maps.Map(mapEl, { center:pos, zoom:16 });
+      MM_STATE.mapMarker=new naver.maps.Marker({ position:pos, map:MM_STATE.map });
+    }else{
+      MM_STATE.map.setCenter(pos);
+      if(MM_STATE.mapMarker) MM_STATE.mapMarker.setPosition(pos);
+      setTimeout(()=>{ if(MM_STATE.map) naver.maps.Event.trigger(MM_STATE.map,'resize'); }, 100);
+    }
+  }
+}
+function closeMapModal(){
+  document.getElementById('map-modal').classList.remove('on');
+}
+// 버튼 핸들러
+function openNaverMap(query){ openMapModal(query,'map'); }
+function openNaverRoadview(query){ openMapModal(query,'rv'); }
+// 길찾기: 좌표 구해서 네이버 길찾기 새 탭 (도착지 지정)
+async function openNaverDirections(query){
   const w=window.open('about:blank','_blank');
   const c=await getCoord(query);
-  // 좌표가 있으면 그 지점 지도로 열기(로드뷰 버튼이 정확히 동작). 없으면 검색.
+  const name=(c&&c.name)?c.name:query;
   const url = c
-    ? 'https://map.naver.com/p?c='+c.y+','+c.x+',18,0,0,0,dh&p='+c.x+','+c.y+',0,0,Float'
+    ? 'https://map.naver.com/p/directions/-/'+c.x+','+c.y+','+encodeURIComponent(name)+'/-/transit'
     : 'https://map.naver.com/p/search/'+encodeURIComponent(query);
   if(w) w.location.href=url; else window.open(url,'_blank','noopener');
 }
-/* 지도/로드뷰 버튼 한 쌍 HTML 생성 */
+/* 지도/로드뷰/길찾기 버튼 HTML 생성 */
 function mapBtns(query){
   const q=(query||'').replace(/'/g,"\\'").replace(/\s+/g,' ').trim();
   return `<div class="map-btn-row">
     <button class="map-btn" onclick="openNaverMap('${q}')">🗺️ 지도</button>
     <button class="map-btn rv" onclick="openNaverRoadview('${q}')">📷 로드뷰</button>
+    <button class="map-btn dr" onclick="openNaverDirections('${q}')">🧭 길찾기</button>
   </div>`;
 }
 
