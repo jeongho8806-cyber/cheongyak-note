@@ -1017,15 +1017,16 @@ function renderAll(){
     <div class="hstat"><div class="n">${sites.length-live.length}<b>건</b></div><div class="l">청약마감</div></div>
     <div class="hstat"><div class="n">${regions.length}<b>곳</b></div><div class="l">지역</div></div>`;
 
-  // 선착순/주요 분양 카드 (선착순 우선, 그다음 진행예정)
-  const fastFirst=sites.filter(s=>s.fast);
-  const rest=live.filter(s=>!s.fast);
+  // 선착순/주요 분양 카드 (선착순·무순위 우선, 그다음 진행예정)
+  const fastFirst=sites.filter(s=>s.fast || s.isRemain);
+  const rest=live.filter(s=>!s.fast && !s.isRemain);
   const fast=[...fastFirst,...rest,...sites.filter(s=>isDone(s.when))].slice(0,12);
   document.getElementById('fast-cnt').textContent=`(${fast.length})`;
   document.getElementById('fast-grid').innerHTML=fast.map(s=>{
     const done=isDone(s.when);
     let tag='';
-    if(s.fast) tag='<span class="tag tag-fast">선착순</span>';
+    if(s.isRemain) tag='<span class="tag" style="background:var(--red)">무순위</span>';
+    else if(s.fast) tag='<span class="tag tag-fast">선착순</span>';
     else if(done) tag='<span class="tag tag-done">청약마감</span>';
     else tag='<span class="tag tag-fast" style="background:#3a6ff0">분양예정</span>';
     return `<div class="pcard" onclick="openSite('${s.id}')">
@@ -1232,7 +1233,7 @@ let tickerIdx=0, tickerTimer=null;
 // 맨 앞에 항상 고정 표시할 항목 (클릭 불가, 텍스트만)
 const TICKER_PINNED={ name:"창원자이 더 스카이", info:"경남 창원 성산구 중앙동 · 519세대 · 2030년 4월 입주" };
 function startTicker(){
-  const fastSites=allSites().filter(s=>s.fast);
+  const fastSites=allSites().filter(s=>s.fast || s.isRemain);
   const el=document.getElementById('ticker');
   if(!el) return;
   // 고정 항목 + 선착순 단지들을 하나의 롤링 목록으로
@@ -1421,7 +1422,7 @@ function openList(kind){
   if(kind==='fast'){
     title='🔥 선착순·무순위 분양';
     sub='청약통장 없이도 신청 가능한 선착순·무순위 단지입니다.';
-    items=sites.filter(s=>s.fast);
+    items=sites.filter(s=>s.fast || s.isRemain);
   }else if(kind==='all-list' || kind==='week' || kind==='region'){
     kind='all-list'; LIST_STATE.kind='all-list';
     title='🏢 청약 단지';
@@ -1511,7 +1512,7 @@ function redrawListBody(){
   const sites=allSites();
   let items;
   const kind=LIST_STATE.kind;
-  if(kind==='fast') items=sites.filter(s=>s.fast);
+  if(kind==='fast') items=sites.filter(s=>s.fast || s.isRemain);
   else items=sites; // all-list 및 기타: 전체 단지
   if(LIST_STATE.sido) items=items.filter(s=>s.region===LIST_STATE.sido);
   const box=document.getElementById('list-body');
@@ -2267,6 +2268,7 @@ async function loadTradeKind(kind){
     const json=await res.json();
     const items=(json&&json.items)?json.items:[];
     if(!items.length){ grid.innerHTML='<div class="locked">최근 '+cfg.unit+' 거래 데이터를 준비 중입니다.</div>'; return; }
+    items.sort((a,b)=>b.amount-a.amount); // 금액 높은 순 (신고가 TOP)
     computeRise(items);
     TRADE_STORE[kind]=items;
     renderTradeMini(kind);
@@ -2380,9 +2382,9 @@ function openTradeList(kind){
     body='<div class="locked">데이터를 불러오는 중입니다...</div>';
   } else {
     // 동/단지명 필터
-    let shown=list;
+    let shown=list.slice().sort((a,b)=>b.amount-a.amount); // 금액 높은 순
     const fq=(searchResult&&searchResult.filter)?searchResult.filter:'';
-    if(fq){ shown=list.filter(it=>(it.apt||'').includes(fq)||(it.dong||'').includes(fq)); }
+    if(fq){ shown=shown.filter(it=>(it.apt||'').includes(fq)||(it.dong||'').includes(fq)); }
     body='<div class="trade-grid">'+shown.map((it)=>tradeCardObj(it,kind)).join('')+'</div>';
     if(fq && !shown.length) body='<div class="locked">\''+fq+'\' 검색 결과가 없습니다.</div>';
   }
@@ -2764,7 +2766,7 @@ async function openTradeWith(it,kind){
       </table>
     </div>
     <div class="dt-section">
-      <h2 class="dt-h">면적별 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력 <span style="font-size:13px;color:var(--muted);font-weight:600">(최근 6개월)</span></h2>
+      <h2 class="dt-h">이 단지 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력 <span style="font-size:13px;color:var(--muted);font-weight:600">(최근 6개월)</span></h2>
       <div id="trade-history"><div class="locked">📊 거래 이력을 불러오는 중입니다...</div></div>
     </div>
     <div class="alarm-box">
@@ -2796,41 +2798,55 @@ async function openTradeWith(it,kind){
     if(!hist) return;
     if(!rows.length){ hist.innerHTML='<div class="locked">최근 6개월 내 추가 거래 내역이 없습니다.</div>'; return; }
     const amtHead = kind==='rent' ? '보증금/월세' : '거래금액';
-    // 면적별로 그룹핑 (전용면적 반올림 기준)
+    const fmtAmt=(r)=> kind==='rent' ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
+    // 최신순 정렬
+    const sorted=rows.slice().sort((a,b)=>(b.year+pad2(b.month)+pad2(b.day)).localeCompare(a.year+pad2(a.month)+pad2(a.day)));
+
+    // (1) 전체 거래 표 (날짜순, 면적 포함) — 원래 방식
+    const allRowsHtml=sorted.slice(0,30).map(r=>{
+      return `<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.area}㎡</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${fmtAmt(r)}</td></tr>`;
+    }).join('');
+    const allTable=`<div class="dt-scroll"><table class="dt-table small">
+      <tr><th>거래일</th><th>면적</th><th>층</th><th>${amtHead}</th></tr>
+      ${allRowsHtml}
+    </table></div>`;
+
+    // (2) 면적별 그룹 — 평형 단위로 묶음 (소수점 차이 합침)
     const groups={};
     rows.forEach(r=>{
-      const key=Math.round(r.area*100)/100; // 면적 키
-      (groups[key]=groups[key]||[]).push(r);
+      const py=Math.round((r.area||0)/3.3058); // 평 단위로 묶기
+      (groups[py]=groups[py]||[]).push(r);
     });
-    // 면적 큰 순으로 정렬
-    const areaKeys=Object.keys(groups).map(Number).sort((a,b)=>b-a);
-    const fmtAmt=(r)=> kind==='rent' ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
-    const groupsHtml=areaKeys.map((ak,gi)=>{
-      const g=groups[ak].slice().sort((a,b)=>(b.year+pad2(b.month)+pad2(b.day)).localeCompare(a.year+pad2(a.month)+pad2(a.day)));
-      const py=Math.round(ak/3.3058);
-      // 최고가 / 최근가
+    const pyKeys=Object.keys(groups).map(Number).sort((a,b)=>b-a);
+    const groupsHtml=pyKeys.map((py,gi)=>{
+      const g=groups[py].slice().sort((a,b)=>(b.year+pad2(b.month)+pad2(b.day)).localeCompare(a.year+pad2(a.month)+pad2(a.day)));
+      const areas=[...new Set(g.map(r=>r.area))].sort((a,b)=>a-b);
+      const areaLabel = areas.length>1 ? areas[0]+'~'+areas[areas.length-1]+'㎡' : areas[0]+'㎡';
       const maxAmt=Math.max(...g.map(r=>r.amount));
       const recent=g[0];
       const summary = kind==='rent'
         ? `<b>${g.length}건</b> · 최근 ${fmtAmt(recent)}`
         : `최고 <b>${wonToKor(maxAmt)}</b> · ${g.length}건`;
-      const trs=g.slice(0,20).map(r=>`<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${fmtAmt(r)}</td></tr>`).join('');
-      // 첫 그룹은 펼친 상태로
+      const trs=g.slice(0,20).map(r=>`<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.area}㎡</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${fmtAmt(r)}</td></tr>`).join('');
       return `<div class="area-group ${gi===0?'open':''}">
         <div class="area-group-h" onclick="this.parentNode.classList.toggle('open')">
-          <div class="ag-area">${ak}㎡<span>(약 ${py}평)</span></div>
+          <div class="ag-area">${py}평형<span>(${areaLabel})</span></div>
           <div class="ag-summary">${summary}<span class="ag-toggle">▼</span></div>
         </div>
         <div class="area-group-body">
           <div class="dt-scroll"><table>
-            <tr><th>거래일</th><th>층</th><th>${amtHead}</th></tr>
+            <tr><th>거래일</th><th>면적</th><th>층</th><th>${amtHead}</th></tr>
             ${trs}
           </table></div>
         </div>
       </div>`;
     }).join('');
-    hist.innerHTML=`${groupsHtml}
-    <p class="dt-note">국토교통부 실거래가 신고 자료 기준 · 면적을 누르면 펼쳐집니다. 동·호수별 세부 정보와 매물 상담은 '시세 알림 신청'으로 받아보세요.</p>`;
+
+    hist.innerHTML=`
+      ${allTable}
+      <h3 style="font-size:15px;font-weight:800;color:var(--ink);margin:22px 0 12px">📐 면적(평형)별 보기</h3>
+      ${groupsHtml}
+      <p class="dt-note">국토교통부 실거래가 신고 자료 기준 · 평형을 누르면 펼쳐집니다. 동·호수별 세부 정보와 매물 상담은 '시세 알림 신청'으로 받아보세요.</p>`;
   }catch(e){
     const hist=document.getElementById('trade-history');
     if(hist) hist.innerHTML='<div class="locked">거래 이력을 불러오지 못했습니다.</div>';
