@@ -158,18 +158,22 @@ exports.handler = async function (event) {
   // 특정 지역/월
   if (p.lawd) {
     try {
-      // ymd가 지정되면 그 달만, 아니면 최근 3개월 합쳐서 (목록이 너무 적지 않게)
+      // ymd가 지정되면 그 달만
       if (p.ymd) {
-        const r = await fetch(buildUrl(endpoint, p.lawd, p.ymd, KEY, p.rows || "200"));
+        const r = await fetch(buildUrl(endpoint, p.lawd, p.ymd, KEY, p.rows || "1000"));
         const xml = await r.text();
         return resp(200, { items: parser(xml, p.lawd) });
       }
+      // 전월세 계열은 거래량이 매우 많아 응답이 비대해짐 → 개월 수를 줄임
+      const span = isRentKind ? 4 : 9;
       const mm = [];
-      for (let i = 0; i >= -8; i--) mm.push(ymd(i));
+      for (let i = 0; i >= -(span - 1); i--) mm.push(ymd(i));
       const results = await Promise.all(mm.map((m) =>
         fetch(buildUrl(endpoint, p.lawd, m, KEY, "1000")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
       ));
       let items = []; results.forEach((a) => { items = items.concat(a); });
+      // 응답이 너무 크면(거래 많은 지역) 단지별로 묶어 대표 거래만 추려 응답 슬림화
+      if (items.length > 600) items = groupTop(items);
       return resp(200, { items });
     } catch (e) { return resp(502, { error: "조회 실패", detail: String(e) }); }
   }
@@ -190,6 +194,16 @@ exports.handler = async function (event) {
 };
 
 function pad(s) { return String(s).padStart(2, "0"); }
+// 거래가 매우 많은 지역: 단지+면적별 대표(최고가) 거래만 남겨 응답 크기 축소
+function groupTop(items) {
+  const g = {};
+  items.forEach((it) => {
+    const key = (it.apt || "") + "|" + Math.round(it.area || 0);
+    if (!g[key]) { g[key] = it; it._count = 1; }
+    else { g[key]._count = (g[key]._count || 1) + 1; if (it.amount > g[key].amount) { const c = g[key]._count; g[key] = it; it._count = c; } }
+  });
+  return Object.values(g);
+}
 function resp(status, body) {
   return {
     statusCode: status,
