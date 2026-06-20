@@ -207,6 +207,16 @@
   .gugun-chip{font-size:12px;font-weight:600;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#666;cursor:pointer;transition:.12s}
   .gugun-chip:hover{border-color:var(--brand);color:var(--brand)}
   .gugun-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  /* 리스트(선착순·이번주·지역별) 검색창 */
+  .list-searchbar{display:flex;align-items:center;gap:9px;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:11px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .list-searchbar .ico{font-size:16px}
+  .list-searchbar input{border:none;outline:none;font-size:14px;flex:1;background:transparent;color:var(--ink)}
+  /* 상태 세부 탭 */
+  .status-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+  .status-tab{font-size:13px;font-weight:700;padding:8px 15px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
+  .status-tab:hover{background:#e0e5ee}
+  .status-tab.on{background:var(--brand);color:#fff}
+  .status-tab b{font-weight:800;margin-left:2px;opacity:.85}
   .trade-tabs{display:flex;gap:8px;margin-bottom:16px;justify-content:center}
   .trade-tab{font-size:14px;font-weight:700;padding:9px 22px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
   .trade-tab:hover{background:#e0e5ee}
@@ -367,6 +377,21 @@
   .dt-table th{background:#f6f8fb;font-weight:700;width:130px;color:#555}
   .dt-note{font-size:12.5px;color:var(--muted);margin-top:12px}
   .dt-note b{color:var(--brand)}
+  /* 면적별 거래이력 그룹 */
+  .area-group{margin-bottom:16px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .area-group-h{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f6f8fb;padding:11px 15px;cursor:pointer;user-select:none}
+  .area-group-h .ag-area{font-size:14.5px;font-weight:800;color:var(--ink)}
+  .area-group-h .ag-area span{font-size:12px;color:var(--muted);font-weight:600;margin-left:6px}
+  .area-group-h .ag-summary{font-size:12.5px;color:var(--muted);text-align:right}
+  .area-group-h .ag-summary b{color:var(--brand);font-weight:800}
+  .area-group-h .ag-toggle{font-size:12px;color:var(--muted);margin-left:8px;transition:.15s}
+  .area-group.open .ag-toggle{transform:rotate(180deg)}
+  .area-group-body{display:none}
+  .area-group.open .area-group-body{display:block}
+  .area-group-body table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .area-group-body th{background:#fafbfd;color:var(--muted);font-weight:600;padding:8px 12px;text-align:center;border-bottom:1px solid var(--line)}
+  .area-group-body td{padding:9px 12px;text-align:center;border-bottom:1px solid #f0f2f6}
+  .area-group-body tr:last-child td{border-bottom:none}
   .dt-prose{font-size:13.5px;color:#444;line-height:1.7;margin-bottom:14px}
   .dt-prose b{color:var(--brand)}
   .dt-subh{font-size:15px;font-weight:800;margin:22px 0 12px;display:flex;align-items:center;gap:8px}
@@ -452,9 +477,9 @@
     .site-cell{padding:15px 6px}
     .site-cell .sc-n{font-size:13.5px}
     /* 시도 칩·탭: 가로 스크롤로 (줄바꿈 대신) */
-    .sido-chips,.gugun-chips,.trade-tabs,.rg-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:none}
+    .sido-chips,.gugun-chips,.status-tabs,.trade-tabs,.rg-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:none}
     .sido-chips::-webkit-scrollbar,.trade-tabs::-webkit-scrollbar,.rg-tabs::-webkit-scrollbar{display:none}
-    .sido-chip,.gugun-chip,.trade-tab,.rg-tab{flex-shrink:0;font-size:12.5px;padding:8px 13px}
+    .sido-chip,.gugun-chip,.status-tab,.trade-tab,.rg-tab{flex-shrink:0;font-size:12.5px;padding:8px 13px}
     /* 검색바 */
     .searchbar{padding:14px 16px}
     .searchbar input{font-size:15px}
@@ -516,8 +541,7 @@
   <div class="logo" onclick="goHome()" style="cursor:pointer">전국청약<b>지도</b></div>
   <nav class="gnb">
     <a onclick="openListMenu('fast')">선착순</a>
-    <a onclick="openListMenu('week')">이번주</a>
-    <a onclick="openListMenu('region')">지역별</a>
+    <a onclick="openListMenu('all-list')">청약 단지</a>
     <a onclick="openTradeList('trade')">신고가</a>
     <a onclick="openTradeList('silv')">분양권</a>
     <a onclick="openTradeList('rent')">전월세</a>
@@ -1367,11 +1391,28 @@ function toolLoan(){
 }
 
 /* ===== 분야별 목록 뷰 ===== */
-let LIST_STATE={kind:'week', sido:''}; // 이번주/지역별 화면의 선택 시도
-function openListMenu(kind){ LIST_STATE.sido=''; openList(kind); } // 메뉴 진입 시 전체로 초기화
+let LIST_STATE={kind:'all-list', sido:'', q:'', status:'all'}; // 청약 단지 화면 상태
+function openListMenu(kind){ LIST_STATE.sido=''; LIST_STATE.q=''; LIST_STATE.status='all'; openList(kind); } // 메뉴 진입 시 초기화
 function selectListSido(sido){
   LIST_STATE.sido = (LIST_STATE.sido===sido) ? '' : sido; // 같은 칩 다시 누르면 전체로
   openList(LIST_STATE.kind);
+}
+function selectListStatus(st){ LIST_STATE.status=st; openList(LIST_STATE.kind); }
+function listSearchInput(){
+  const inp=document.getElementById('list-search-input');
+  LIST_STATE.q = inp ? inp.value.trim() : '';
+  redrawListBody();
+}
+// 단지 상태: 'upcoming'(분양예정) / 'ongoing'(진행중·무순위) / 'done'(청약마감)
+function listStatusOf(s){
+  if(s.fast || s.isRemain || /무순위|분양중|청약중/.test(s.when)) return 'ongoing';
+  if(isDone(s.when)) return 'done';
+  return 'upcoming';
+}
+// 정렬 우선순위: 분양예정 → 진행중 → 마감
+function listSortKey(s){
+  const st=listStatusOf(s);
+  return st==='upcoming'?0 : st==='ongoing'?1 : 2;
 }
 function openList(kind){
   LIST_STATE.kind = kind;
@@ -1381,13 +1422,10 @@ function openList(kind){
     title='🔥 선착순·무순위 분양';
     sub='청약통장 없이도 신청 가능한 선착순·무순위 단지입니다.';
     items=sites.filter(s=>s.fast);
-  }else if(kind==='week'){
-    title='📅 이번주·진행예정 청약';
-    sub='곧 청약이 진행되는 단지입니다.';
-    items=sites.filter(s=>!isDone(s.when)&&!s.fast);
-  }else if(kind==='region'){
-    title='📍 지역별 분양 단지';
-    sub='지역별로 분양 단지를 확인하세요.';
+  }else if(kind==='all-list' || kind==='week' || kind==='region'){
+    kind='all-list'; LIST_STATE.kind='all-list';
+    title='🏢 청약 단지';
+    sub='전국 분양·청약 단지입니다. 지역·상태로 좁혀보거나 검색해 보세요.';
     items=sites;
   }else{ // notice
     title='📋 전체 모집공고';
@@ -1395,51 +1433,89 @@ function openList(kind){
     items=sites;
   }
 
-  // 시도 탭은 선착순 / 이번주 / 지역별 에서 표시
-  const showSido = (kind==='fast' || kind==='week' || kind==='region');
+  // 시도 탭은 선착순 / 청약 단지 에서 표시
+  const showSido = (kind==='fast' || kind==='all-list');
   let sidoBar='';
   if(showSido){
     const SIDO_ORDER=["서울시","경기도","인천시","부산시","대구시","대전시","광주시","울산시","세종시","강원도","경상남도","경상북도","전라남도","전라북도","충청남도","충청북도","제주도"];
     const SIDO_SHORT={"서울시":"서울","경기도":"경기","인천시":"인천","부산시":"부산","대구시":"대구","대전시":"대전","광주시":"광주","울산시":"울산","세종시":"세종","강원도":"강원","경상남도":"경남","경상북도":"경북","전라남도":"전남","전라북도":"전북","충청남도":"충남","충청북도":"충북","제주도":"제주"};
-    // 해당 화면 기준으로 단지가 있는 지역만 칩 노출
     const avail={}; items.forEach(s=>{ if(s.region) avail[s.region]=(avail[s.region]||0)+1; });
     const chips=[`<span class="sido-chip ${LIST_STATE.sido===''?'on':''}" onclick="selectListSido('')">전체</span>`];
     SIDO_ORDER.forEach(rg=>{
       if(!avail[rg]) return;
       chips.push(`<span class="sido-chip ${LIST_STATE.sido===rg?'on':''}" onclick="selectListSido('${rg}')">${SIDO_SHORT[rg]||rg} ${avail[rg]}</span>`);
     });
-    sidoBar=`<div class="sido-chips" style="margin-bottom:16px">${chips.join('')}</div>`;
-    // 선택 지역으로 필터
+    sidoBar=`<div class="sido-chips" style="margin-bottom:14px">${chips.join('')}</div>`;
     if(LIST_STATE.sido){ items=items.filter(s=>s.region===LIST_STATE.sido); }
   }
 
-  let body;
-  if(kind==='region'){
-    // 지역별 그룹핑 (선택 지역이 있으면 그 지역만)
-    body='';
-    for(const rg in DATA){
-      if(LIST_STATE.sido && rg!==LIST_STATE.sido) continue;
-      const list=DATA[rg]; if(!list.length) continue;
-      body+=`<div class="lv-region"><h3 class="lv-rgh">${rg} <span>${list.length}건</span></h3><div class="card-grid">`;
-      body+=list.map(s=>listCard({...s,region:rg})).join('');
-      body+=`</div></div>`;
-    }
-    if(!body) body='<div class="locked">해당 지역의 단지가 없습니다.</div>';
-  }else{
-    body = items.length
-      ? `<div class="card-grid">${items.map(s=>listCard(s)).join('')}</div>`
-      : '<div class="locked">해당 지역의 단지가 없습니다.</div>';
-  }
+  // 상태 세부 탭 (분양예정 / 진행중·무순위 / 청약마감)
+  const cnt={upcoming:0,ongoing:0,done:0};
+  items.forEach(s=>{ cnt[listStatusOf(s)]++; });
+  const statusTabs=[
+    ['all','전체',items.length],
+    ['upcoming','분양예정',cnt.upcoming],
+    ['ongoing','진행중·무순위',cnt.ongoing],
+    ['done','청약마감',cnt.done],
+  ].map(([k,label,n])=>`<span class="status-tab ${LIST_STATE.status===k?'on':''}" onclick="selectListStatus('${k}')">${label} <b>${n}</b></span>`).join('');
+  const statusBar=`<div class="status-tabs">${statusTabs}</div>`;
+
+  // 검색창
+  const searchBar=`<div class="list-searchbar">
+    <span class="ico">🔍</span>
+    <input type="text" id="list-search-input" placeholder="단지명·지역으로 검색" value="${LIST_STATE.q}" oninput="listSearchInput()" autocomplete="off">
+  </div>`;
 
   document.getElementById('list-view').innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
-    <div class="lv-head"><h2>${title}</h2><p>${sub} · 총 ${items.length}건</p></div>
+    <div class="lv-head" id="list-head"><h2>${title}</h2><p>${sub} · 총 ${items.length}건</p></div>
     ${sidoBar}
-    ${body}`;
+    ${searchBar}
+    ${statusBar}
+    <div id="list-body">${buildListBody(kind, items)}</div>`;
   document.getElementById('home-view').style.display='none';
   document.getElementById('detail-view').style.display='none';
   document.getElementById('list-view').style.display='block';
-  window.scrollTo(0,0);
+  // 검색 입력 중이었으면 포커스·커서 복원
+  const inp=document.getElementById('list-search-input');
+  if(inp && LIST_STATE.q){ inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length); }
+  if(!LIST_STATE.q) window.scrollTo(0,0);
+}
+// 현재 LIST_STATE에 맞는 본문 HTML 생성 (상태탭·검색어·정렬 적용)
+function buildListBody(kind, items){
+  let list=items.slice();
+  // 상태 필터
+  if(LIST_STATE.status!=='all'){ list=list.filter(s=>listStatusOf(s)===LIST_STATE.status); }
+  // 검색 필터
+  const q=LIST_STATE.q;
+  if(q){ list=list.filter(s=>(s.name||'').includes(q)||(s.d&&s.d.loc||'').includes(q)||(s.region||'').includes(q)); }
+  // 정렬: 분양예정 → 진행중 → 마감
+  list.sort((a,b)=>listSortKey(a)-listSortKey(b));
+  if(!list.length){ return '<div class="locked">'+(q?"'"+q+"' 검색 결과가 없습니다.":"해당 조건의 단지가 없습니다.")+'</div>'; }
+  if(kind==='all-list' && !LIST_STATE.q && LIST_STATE.status==='all' && !LIST_STATE.sido){
+    // 통합 화면 + 조건 없을 때만 지역 그룹핑
+    let body='';
+    const grp={};
+    list.forEach(s=>{ (grp[s.region]=grp[s.region]||[]).push(s); });
+    for(const rg in grp){
+      body+=`<div class="lv-region"><h3 class="lv-rgh">${rg} <span>${grp[rg].length}건</span></h3><div class="card-grid">`;
+      body+=grp[rg].map(s=>listCard(s)).join('');
+      body+=`</div></div>`;
+    }
+    return body;
+  }
+  return `<div class="card-grid">${list.map(s=>listCard(s)).join('')}</div>`;
+}
+// 검색·탭 변경 시 본문만 다시 그림 (검색창 포커스 유지)
+function redrawListBody(){
+  const sites=allSites();
+  let items;
+  const kind=LIST_STATE.kind;
+  if(kind==='fast') items=sites.filter(s=>s.fast);
+  else items=sites; // all-list 및 기타: 전체 단지
+  if(LIST_STATE.sido) items=items.filter(s=>s.region===LIST_STATE.sido);
+  const box=document.getElementById('list-body');
+  if(box) box.innerHTML=buildListBody(kind, items);
 }
 function listCard(s){
   const done=isDone(s.when);
@@ -2688,7 +2764,7 @@ async function openTradeWith(it,kind){
       </table>
     </div>
     <div class="dt-section">
-      <h2 class="dt-h">이 단지 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력 <span style="font-size:13px;color:var(--muted);font-weight:600">(최근 6개월)</span></h2>
+      <h2 class="dt-h">면적별 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력 <span style="font-size:13px;color:var(--muted);font-weight:600">(최근 6개월)</span></h2>
       <div id="trade-history"><div class="locked">📊 거래 이력을 불러오는 중입니다...</div></div>
     </div>
     <div class="alarm-box">
@@ -2720,16 +2796,41 @@ async function openTradeWith(it,kind){
     if(!hist) return;
     if(!rows.length){ hist.innerHTML='<div class="locked">최근 6개월 내 추가 거래 내역이 없습니다.</div>'; return; }
     const amtHead = kind==='rent' ? '보증금/월세' : '거래금액';
-    const rowsHtml=rows.slice(0,30).map(r=>{
-      const py=r.area?Math.round(r.area/3.3058):0;
-      const amtTxt = kind==='rent' ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
-      return `<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.area}㎡</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${amtTxt}</td></tr>`;
+    // 면적별로 그룹핑 (전용면적 반올림 기준)
+    const groups={};
+    rows.forEach(r=>{
+      const key=Math.round(r.area*100)/100; // 면적 키
+      (groups[key]=groups[key]||[]).push(r);
+    });
+    // 면적 큰 순으로 정렬
+    const areaKeys=Object.keys(groups).map(Number).sort((a,b)=>b-a);
+    const fmtAmt=(r)=> kind==='rent' ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
+    const groupsHtml=areaKeys.map((ak,gi)=>{
+      const g=groups[ak].slice().sort((a,b)=>(b.year+pad2(b.month)+pad2(b.day)).localeCompare(a.year+pad2(a.month)+pad2(a.day)));
+      const py=Math.round(ak/3.3058);
+      // 최고가 / 최근가
+      const maxAmt=Math.max(...g.map(r=>r.amount));
+      const recent=g[0];
+      const summary = kind==='rent'
+        ? `<b>${g.length}건</b> · 최근 ${fmtAmt(recent)}`
+        : `최고 <b>${wonToKor(maxAmt)}</b> · ${g.length}건`;
+      const trs=g.slice(0,20).map(r=>`<tr><td>${r.year}.${pad2(r.month)}.${pad2(r.day)}</td><td>${r.floor}층</td><td style="text-align:right;font-weight:700">${fmtAmt(r)}</td></tr>`).join('');
+      // 첫 그룹은 펼친 상태로
+      return `<div class="area-group ${gi===0?'open':''}">
+        <div class="area-group-h" onclick="this.parentNode.classList.toggle('open')">
+          <div class="ag-area">${ak}㎡<span>(약 ${py}평)</span></div>
+          <div class="ag-summary">${summary}<span class="ag-toggle">▼</span></div>
+        </div>
+        <div class="area-group-body">
+          <div class="dt-scroll"><table>
+            <tr><th>거래일</th><th>층</th><th>${amtHead}</th></tr>
+            ${trs}
+          </table></div>
+        </div>
+      </div>`;
     }).join('');
-    hist.innerHTML=`<div class="dt-scroll"><table class="dt-table small">
-      <tr><th>거래일</th><th>면적</th><th>층</th><th>${amtHead}</th></tr>
-      ${rowsHtml}
-    </table></div>
-    <p class="dt-note">국토교통부 실거래가 신고 자료 기준입니다. 동·호수별 세부 정보와 매물 상담은 '시세 알림 신청'으로 받아보세요.</p>`;
+    hist.innerHTML=`${groupsHtml}
+    <p class="dt-note">국토교통부 실거래가 신고 자료 기준 · 면적을 누르면 펼쳐집니다. 동·호수별 세부 정보와 매물 상담은 '시세 알림 신청'으로 받아보세요.</p>`;
   }catch(e){
     const hist=document.getElementById('trade-history');
     if(hist) hist.innerHTML='<div class="locked">거래 이력을 불러오지 못했습니다.</div>';
