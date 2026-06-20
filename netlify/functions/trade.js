@@ -158,9 +158,19 @@ exports.handler = async function (event) {
   // 특정 지역/월
   if (p.lawd) {
     try {
-      const r = await fetch(buildUrl(endpoint, p.lawd, p.ymd || ymd(0), KEY, p.rows || "50"));
-      const xml = await r.text();
-      return resp(200, { items: parser(xml, p.lawd) });
+      // ymd가 지정되면 그 달만, 아니면 최근 3개월 합쳐서 (목록이 너무 적지 않게)
+      if (p.ymd) {
+        const r = await fetch(buildUrl(endpoint, p.lawd, p.ymd, KEY, p.rows || "200"));
+        const xml = await r.text();
+        return resp(200, { items: parser(xml, p.lawd) });
+      }
+      const mm = [];
+      for (let i = 0; i >= -11; i--) mm.push(ymd(i));
+      const results = await Promise.all(mm.map((m) =>
+        fetch(buildUrl(endpoint, p.lawd, m, KEY, "300")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
+      ));
+      let items = []; results.forEach((a) => { items = items.concat(a); });
+      return resp(200, { items });
     } catch (e) { return resp(502, { error: "조회 실패", detail: String(e) }); }
   }
 
