@@ -164,17 +164,23 @@ exports.handler = async function (event) {
         const xml = await r.text();
         return resp(200, { items: parser(xml, p.lawd) });
       }
-      // 전월세 계열은 거래량이 매우 많아 응답이 비대해짐 → 개월 수를 줄임
-      const span = isRentKind ? 4 : 9;
+      // 전월세 계열은 거래량이 매우 많아 응답이 비대해짐 → 개월 수를 더 줄이고 단지별로 묶어 전송
+      const span = isRentKind ? 3 : 9;
       const mm = [];
       for (let i = 0; i >= -(span - 1); i--) mm.push(ymd(i));
-      const results = await Promise.all(mm.map((m) =>
-        fetch(buildUrl(endpoint, p.lawd, m, KEY, "1000")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
-      ));
-      let items = []; results.forEach((a) => { items = items.concat(a); });
-      // 응답이 너무 크면(거래 많은 지역) 단지별로 묶어 대표 거래만 추려 응답 슬림화
-      if (items.length > 600) items = groupTop(items);
-      return resp(200, { items });
+      let items = [];
+      const errs = [];
+      // 순차 처리 (동시 대량 호출로 인한 타임아웃/메모리 부담 완화)
+      for (const m of mm) {
+        try {
+          const r = await fetch(buildUrl(endpoint, p.lawd, m, KEY, "1000"));
+          const x = await r.text();
+          items = items.concat(parser(x, p.lawd));
+        } catch (e) { errs.push(m + ":" + String(e)); }
+      }
+      // 거래 많으면 단지+면적별 대표만 (전월세는 항상 묶어 전송)
+      if (isRentKind || items.length > 600) items = groupTop(items);
+      return resp(200, { items, debug: { span, raw: items.length, errs } });
     } catch (e) { return resp(502, { error: "조회 실패", detail: String(e) }); }
   }
 
