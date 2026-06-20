@@ -202,6 +202,11 @@
   .sido-chip{font-size:13px;font-weight:700;padding:8px 15px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#555;cursor:pointer;transition:.12s}
   .sido-chip:hover{border-color:var(--brand);color:var(--brand)}
   .sido-chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  /* 세부 지역(구/군) 칩 */
+  .gugun-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px;padding:12px 14px;background:#f3f5f9;border-radius:12px}
+  .gugun-chip{font-size:12px;font-weight:600;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#666;cursor:pointer;transition:.12s}
+  .gugun-chip:hover{border-color:var(--brand);color:var(--brand)}
+  .gugun-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .trade-tabs{display:flex;gap:8px;margin-bottom:16px;justify-content:center}
   .trade-tab{font-size:14px;font-weight:700;padding:9px 22px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
   .trade-tab:hover{background:#e0e5ee}
@@ -447,9 +452,9 @@
     .site-cell{padding:15px 6px}
     .site-cell .sc-n{font-size:13.5px}
     /* 시도 칩·탭: 가로 스크롤로 (줄바꿈 대신) */
-    .sido-chips,.trade-tabs,.rg-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:none}
+    .sido-chips,.gugun-chips,.trade-tabs,.rg-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;scrollbar-width:none}
     .sido-chips::-webkit-scrollbar,.trade-tabs::-webkit-scrollbar,.rg-tabs::-webkit-scrollbar{display:none}
-    .sido-chip,.trade-tab,.rg-tab{flex-shrink:0;font-size:12.5px;padding:8px 13px}
+    .sido-chip,.gugun-chip,.trade-tab,.rg-tab{flex-shrink:0;font-size:12.5px;padding:8px 13px}
     /* 검색바 */
     .searchbar{padding:14px 16px}
     .searchbar input{font-size:15px}
@@ -510,9 +515,9 @@
 <header><div class="wrap head">
   <div class="logo" onclick="goHome()" style="cursor:pointer">전국청약<b>지도</b></div>
   <nav class="gnb">
-    <a onclick="openList('fast')">선착순</a>
-    <a onclick="openList('week')">이번주</a>
-    <a onclick="openList('region')">지역별</a>
+    <a onclick="openListMenu('fast')">선착순</a>
+    <a onclick="openListMenu('week')">이번주</a>
+    <a onclick="openListMenu('region')">지역별</a>
     <a onclick="openTradeList('trade')">신고가</a>
     <a onclick="openTradeList('silv')">분양권</a>
     <a onclick="openTradeList('rent')">전월세</a>
@@ -735,7 +740,7 @@
 <!-- 모바일 하단 탭바 -->
 <nav class="mobile-tabbar">
   <div class="mtab" onclick="goHome()"><span class="mt-ico">🏠</span>홈</div>
-  <div class="mtab" onclick="openList('fast')"><span class="mt-ico">🔥</span>선착순</div>
+  <div class="mtab" onclick="openListMenu('fast')"><span class="mt-ico">🔥</span>선착순</div>
   <div class="mtab" onclick="openTradeList('trade')"><span class="mt-ico">📈</span>신고가</div>
   <div class="mtab" onclick="openNews('all')"><span class="mt-ico">📰</span>뉴스</div>
   <div class="mtab" onclick="openTools()"><span class="mt-ico">🧮</span>청약도구</div>
@@ -1200,16 +1205,24 @@ function renderMonthBody(){
 
 /* ===== 상단 선착순 티커 (자동 롤링) ===== */
 let tickerIdx=0, tickerTimer=null;
+// 맨 앞에 항상 고정 표시할 항목 (클릭 불가, 텍스트만)
+const TICKER_PINNED={ name:"창원자이 더 스카이", info:"경남 창원 성산구 중앙동 · 519세대 · 2030년 4월 입주" };
 function startTicker(){
   const fastSites=allSites().filter(s=>s.fast);
   const el=document.getElementById('ticker');
   if(!el) return;
-  if(!fastSites.length){ el.textContent="현재 선착순 단지를 준비 중입니다."; return; }
+  // 고정 항목 + 선착순 단지들을 하나의 롤링 목록으로
+  const queue=[{pinned:true}, ...fastSites.map(s=>({pinned:false,site:s}))];
   function show(){
-    const s=fastSites[tickerIdx % fastSites.length];
+    const cur=queue[tickerIdx % queue.length];
     el.style.opacity=0;
     setTimeout(()=>{
-      el.innerHTML=`<span class="tk-link" onclick="openSite('${s.id}')">${s.name} · ${s.region.replace('시','').replace('도','')} / ${s.d.hh}</span>`;
+      if(cur.pinned){
+        el.innerHTML=`<span style="cursor:default">${TICKER_PINNED.name} · ${TICKER_PINNED.info}</span>`;
+      }else{
+        const s=cur.site;
+        el.innerHTML=`<span class="tk-link" onclick="openSite('${s.id}')">${s.name} · ${s.region.replace('시','').replace('도','')} / ${s.d.hh}</span>`;
+      }
       el.style.opacity=1;
     },200);
     tickerIdx++;
@@ -1354,7 +1367,14 @@ function toolLoan(){
 }
 
 /* ===== 분야별 목록 뷰 ===== */
+let LIST_STATE={kind:'week', sido:''}; // 이번주/지역별 화면의 선택 시도
+function openListMenu(kind){ LIST_STATE.sido=''; openList(kind); } // 메뉴 진입 시 전체로 초기화
+function selectListSido(sido){
+  LIST_STATE.sido = (LIST_STATE.sido===sido) ? '' : sido; // 같은 칩 다시 누르면 전체로
+  openList(LIST_STATE.kind);
+}
 function openList(kind){
+  LIST_STATE.kind = kind;
   const sites=allSites();
   let title, items, sub='';
   if(kind==='fast'){
@@ -1375,23 +1395,46 @@ function openList(kind){
     items=sites;
   }
 
+  // 시도 탭은 선착순 / 이번주 / 지역별 에서 표시
+  const showSido = (kind==='fast' || kind==='week' || kind==='region');
+  let sidoBar='';
+  if(showSido){
+    const SIDO_ORDER=["서울시","경기도","인천시","부산시","대구시","대전시","광주시","울산시","세종시","강원도","경상남도","경상북도","전라남도","전라북도","충청남도","충청북도","제주도"];
+    const SIDO_SHORT={"서울시":"서울","경기도":"경기","인천시":"인천","부산시":"부산","대구시":"대구","대전시":"대전","광주시":"광주","울산시":"울산","세종시":"세종","강원도":"강원","경상남도":"경남","경상북도":"경북","전라남도":"전남","전라북도":"전북","충청남도":"충남","충청북도":"충북","제주도":"제주"};
+    // 해당 화면 기준으로 단지가 있는 지역만 칩 노출
+    const avail={}; items.forEach(s=>{ if(s.region) avail[s.region]=(avail[s.region]||0)+1; });
+    const chips=[`<span class="sido-chip ${LIST_STATE.sido===''?'on':''}" onclick="selectListSido('')">전체</span>`];
+    SIDO_ORDER.forEach(rg=>{
+      if(!avail[rg]) return;
+      chips.push(`<span class="sido-chip ${LIST_STATE.sido===rg?'on':''}" onclick="selectListSido('${rg}')">${SIDO_SHORT[rg]||rg} ${avail[rg]}</span>`);
+    });
+    sidoBar=`<div class="sido-chips" style="margin-bottom:16px">${chips.join('')}</div>`;
+    // 선택 지역으로 필터
+    if(LIST_STATE.sido){ items=items.filter(s=>s.region===LIST_STATE.sido); }
+  }
+
   let body;
   if(kind==='region'){
-    // 지역별 그룹핑
+    // 지역별 그룹핑 (선택 지역이 있으면 그 지역만)
     body='';
     for(const rg in DATA){
+      if(LIST_STATE.sido && rg!==LIST_STATE.sido) continue;
       const list=DATA[rg]; if(!list.length) continue;
       body+=`<div class="lv-region"><h3 class="lv-rgh">${rg} <span>${list.length}건</span></h3><div class="card-grid">`;
       body+=list.map(s=>listCard({...s,region:rg})).join('');
       body+=`</div></div>`;
     }
+    if(!body) body='<div class="locked">해당 지역의 단지가 없습니다.</div>';
   }else{
-    body=`<div class="card-grid">${items.map(s=>listCard(s)).join('')}</div>`;
+    body = items.length
+      ? `<div class="card-grid">${items.map(s=>listCard(s)).join('')}</div>`
+      : '<div class="locked">해당 지역의 단지가 없습니다.</div>';
   }
 
   document.getElementById('list-view').innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
     <div class="lv-head"><h2>${title}</h2><p>${sub} · 총 ${items.length}건</p></div>
+    ${sidoBar}
     ${body}`;
   document.getElementById('home-view').style.display='none';
   document.getElementById('detail-view').style.display='none';
@@ -2239,6 +2282,21 @@ function openTradeList(kind){
     const on = searchResult && searchResult.sido===s.p;
     return `<span class="sido-chip ${on?'on':''}" onclick="selectSido('${kind}','${s.p}')">${s.n}</span>`;
   }).join('');
+  // 세부 지역(구/군) 칩 — 시도가 선택돼 있을 때만
+  let gugunBar='';
+  if(searchResult && searchResult.sido){
+    const subs=codesOfSido(searchResult.sido);
+    if(subs.length){
+      const curGugun=searchResult.gugun||'';
+      const gchips=[`<span class="gugun-chip ${curGugun===''?'on':''}" onclick="selectSido('${kind}','${searchResult.sido}')">전체</span>`];
+      subs.forEach(c=>{
+        // 표시명: "서울 강남구" → "강남구"
+        const shortN=c.n.replace(/^(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)\s?/,'');
+        gchips.push(`<span class="gugun-chip ${curGugun===c.c?'on':''}" onclick="selectGugun('${kind}','${c.c}','${c.n.replace(/'/g,"")}')">${shortN}</span>`);
+      });
+      gugunBar=`<div class="gugun-chips">${gchips.join('')}</div>`;
+    }
+  }
   let body;
   if(searchResult && !searchResult.items.length){
     body='<div class="locked">\''+searchResult.label+'\' 지역의 최근 거래를 찾지 못했습니다.</div>';
@@ -2270,8 +2328,9 @@ function openTradeList(kind){
         <input type="text" id="trade-search-input" placeholder="${placeholder}" value="${searchResult&&searchResult.filter?searchResult.filter:(searchResult&&searchResult.nationQ?searchResult.nationQ:'')}" oninput="filterTrade('${kind}')" onkeyup="if(event.key==='Enter')searchNationwide('${kind}')" autocomplete="off" style="flex:1">
         <button onclick="searchNationwide('${kind}')" style="flex-shrink:0;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">전국 검색</button>
       </div>
-      <div style="font-size:11.5px;color:var(--muted);margin:6px 2px 0">💡 지역과 상관없이 전국에서 찾으려면 단지명을 입력하고 <b>전국 검색</b>(또는 Enter)을 누르세요.</div>
+      <div style="font-size:11.5px;color:var(--muted);margin:6px 2px 0">💡 단지명을 입력하면 지역과 상관없이 <b>전국에서 자동으로 검색</b>됩니다. (처음 한 번만 잠깐 로딩)</div>
     </div>
+    ${gugunBar}
     ${body}`;
   document.getElementById('home-view').style.display='none';
   document.getElementById('detail-view').style.display='none';
@@ -2311,10 +2370,37 @@ async function selectSido(kind,prefix){
     computeRise(all);
     const top=all.slice(0,100);
     SIDO_CACHE[cacheKey]={label:sido.n+' 전체',items:top,count:all.length};
-    TRADE_SEARCH[kind]={label:sido.n+' 전체('+all.length+'건)',items:top,sido:prefix,filter:''};
+    TRADE_SEARCH[kind]={label:sido.n+' 전체('+all.length+'건)',items:top,sido:prefix,filter:'',gugun:''};
     openTradeList(kind);
   }catch(e){
     lv.innerHTML=`<div class="lv-back" onclick="openTradeList('${kind}')">‹ 뒤로</div><div class="locked">집계 중 오류가 발생했어요. 다시 시도해 주세요.</div>`;
+  }
+}
+// 세부 지역(구/군) 하나만 조회
+async function selectGugun(kind, code, name){
+  const cacheKey='g_'+kind+'_'+code;
+  const prefix=code.slice(0,2);
+  if(SIDO_CACHE[cacheKey]){
+    TRADE_SEARCH[kind]={...SIDO_CACHE[cacheKey],sido:prefix,gugun:code,filter:''};
+    openTradeList(kind); return;
+  }
+  const lv=document.getElementById('list-view');
+  lv.innerHTML=`<div class="lv-back" onclick="openTradeList('${kind}')">‹ 뒤로</div>
+    <div class="lv-head"><h2>${name} 조회 중...</h2><p>⏳ ${name}의 최근 실거래를 불러오는 중이에요.</p></div>
+    <div class="locked">📊 데이터를 불러오는 중입니다...</div>`;
+  try{
+    const res=await fetch('/api/trade?'+(kind!=='trade'?'kind='+kind+'&':'')+'lawd='+code);
+    const json=await res.json();
+    let items=(json&&json.items)?json.items:[];
+    items.forEach(it=>{ it.region=name.replace(/^(서울|부산|대구|인천|광주|대전|울산)\s?/,''); });
+    items.sort((a,b)=>b.amount-a.amount);
+    computeRise(items);
+    const top=items.slice(0,100);
+    SIDO_CACHE[cacheKey]={label:name+'('+items.length+'건)',items:top,count:items.length};
+    TRADE_SEARCH[kind]={label:name+'('+items.length+'건)',items:top,sido:prefix,gugun:code,filter:''};
+    openTradeList(kind);
+  }catch(e){
+    lv.innerHTML=`<div class="lv-back" onclick="openTradeList('${kind}')">‹ 뒤로</div><div class="locked">조회 중 오류가 발생했어요. 다시 시도해 주세요.</div>`;
   }
 }
 // 동/단지명으로 현재 목록 필터
@@ -2322,26 +2408,74 @@ function filterTrade(kind){
   const inp=document.getElementById('trade-search-input');
   if(!inp) return;
   const v=inp.value.trim();
-  if(!TRADE_SEARCH[kind]){
-    // TOP 목록에 필터: 임시 검색상태로
-    TRADE_SEARCH[kind]={label:'주요 지역 TOP',items:TRADE_STORE[kind],sido:null,filter:v,_topFilter:true};
-  } else {
-    TRADE_SEARCH[kind].filter=v;
+  // 입력이 비면: 검색 해제 → 원래 목록(TOP 또는 선택 시도)으로
+  if(!v){
+    if(TRADE_SEARCH[kind] && (TRADE_SEARCH[kind]._topFilter || TRADE_SEARCH[kind].nationQ)){
+      TRADE_SEARCH[kind]=null;
+      openTradeList(kind);
+    } else if(TRADE_SEARCH[kind]){
+      TRADE_SEARCH[kind].filter='';
+      redrawTradeBody(kind);
+    }
+    return;
   }
-  // 입력 포커스 유지를 위해 목록만 다시 그림
+  // 전국 데이터가 이미 준비돼 있으면 즉시 전국에서 필터링
+  if(NATION_CACHE[kind]){
+    applyNationFilter(kind, v);
+    return;
+  }
+  // 아직 없으면: 백그라운드로 전국 데이터를 모으고, 그동안은 현재 목록에서 임시 필터
+  if(TRADE_SEARCH[kind] && TRADE_SEARCH[kind].sido){
+    TRADE_SEARCH[kind].filter=v; // 시도 선택 중이면 그 안에서 우선 필터
+  } else {
+    TRADE_SEARCH[kind]={label:'주요 지역 TOP',items:TRADE_STORE[kind],sido:null,filter:v,_topFilter:true};
+  }
   redrawTradeBody(kind);
+  // 전국 데이터 백그라운드 로드 (한 번만)
+  if(!NATION_LOADING[kind]){
+    NATION_LOADING[kind]=true;
+    showNationHint(kind);
+    loadNationwide(kind).then(()=>{
+      NATION_LOADING[kind]=false;
+      const cur=document.getElementById('trade-search-input');
+      const cv=cur?cur.value.trim():'';
+      if(cv) applyNationFilter(kind, cv); // 다 모이면 현재 입력값으로 전국 필터
+    }).catch(()=>{ NATION_LOADING[kind]=false; });
+  }
+}
+// 전국 캐시에서 q로 필터링해 화면 갱신
+function applyNationFilter(kind, q){
+  const data=NATION_CACHE[kind]||[];
+  const hits=data.filter(it=>(it.apt||'').includes(q)||(it.dong||'').includes(q)||(it.region||'').includes(q));
+  TRADE_SEARCH[kind]={label:"전국 '"+q+"' 검색",items:hits.slice(0,200),sido:null,filter:'',nationQ:q};
+  redrawTradeBody(kind);
+}
+// 전국 데이터 모으는 중 안내
+function showNationHint(kind){
+  const lv=document.getElementById('list-view');
+  const grid=lv.querySelector('.trade-grid')||lv.querySelector('.locked');
+  if(grid && grid.classList.contains('locked')){
+    grid.innerHTML='🔍 전국에서 검색 중입니다... (처음 한 번만 데이터를 모아요)';
+  }
 }
 function redrawTradeBody(kind){
   const sr=TRADE_SEARCH[kind];
   const list=sr?sr.items:TRADE_STORE[kind];
   const fq=sr&&sr.filter?sr.filter:'';
+  const q=sr&&sr.nationQ?sr.nationQ:fq;
   let shown=list;
   if(fq) shown=list.filter(it=>(it.apt||'').includes(fq)||(it.dong||'').includes(fq));
   const lv=document.getElementById('list-view');
   const grid=lv.querySelector('.trade-grid')||lv.querySelector('.locked');
   if(!grid) return;
-  const html = shown.length? '<div class="trade-grid">'+shown.map(it=>tradeCardObj(it,kind)).join('')+'</div>' : '<div class="locked">\''+fq+'\' 검색 결과가 없습니다.</div>';
-  // grid 또는 locked를 새 html로 교체
+  let html;
+  if(shown.length){
+    html='<div class="trade-grid">'+shown.map(it=>tradeCardObj(it,kind)).join('')+'</div>';
+  } else if(NATION_LOADING[kind]){
+    html='<div class="locked">🔍 전국에서 검색 중입니다... (처음 한 번만 데이터를 모아요)</div>';
+  } else {
+    html='<div class="locked">\''+(q||'')+'\' 검색 결과가 없습니다.</div>';
+  }
   grid.outerHTML=html;
 }
 function clearTradeSearch(kind){ TRADE_SEARCH[kind]=null; openTradeList(kind); }
@@ -2503,7 +2637,6 @@ async function loadNewsMini(){
     const res=await fetch('/api/news?preset=all&display=6');
     const json=await res.json();
     const items=(json&&json.items)?json.items:[];
-    NEWS_CACHE['all']=items;
     if(!items.length){ box.innerHTML='<div class="locked">뉴스를 준비 중입니다.</div>'; return; }
     box.innerHTML=items.slice(0,5).map(n=>`
       <a class="news-mini-row" href="${n.link}" target="_blank" rel="noopener">
