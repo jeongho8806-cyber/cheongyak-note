@@ -1366,13 +1366,38 @@ function startTicker(){
 /* ===== 카톡 공유방 ===== */
 function openKakaoRoom(){ window.open(KAKAO_ROOM,'_blank'); }
 
-/* ===== 네이버 지도 / 로드뷰 (새 탭) ===== */
-function openNaverMap(query){
-  window.open('https://map.naver.com/p/search/'+encodeURIComponent(query),'_blank','noopener');
+/* ===== 네이버 지도 / 로드뷰 (카카오 좌표 → 네이버 지도) ===== */
+// 좌표 캐시 (같은 단지 반복 조회 방지)
+const GEO_CACHE={};
+async function getCoord(query){
+  const q=(query||'').trim();
+  if(!q) return null;
+  if(GEO_CACHE[q]!==undefined) return GEO_CACHE[q];
+  try{
+    const res=await fetch('/api/geocode?q='+encodeURIComponent(q));
+    const j=await res.json();
+    const coord=(j&&j.ok)?{x:j.x,y:j.y}:null;
+    GEO_CACHE[q]=coord;
+    return coord;
+  }catch(e){ GEO_CACHE[q]=null; return null; }
 }
-function openNaverRoadview(query){
-  // 로드뷰: 검색 결과 + 로드뷰 레이어가 켜진 상태로 열기 (좌표 없으면 검색 기반)
-  window.open('https://map.naver.com/p/search/'+encodeURIComponent(query)+'?c=15.00,0,0,0,dh&p=0,0,0,0,Float','_blank','noopener');
+// 버튼: 좌표 구해서 그 위치 지도로, 실패하면 검색으로
+async function openNaverMap(query){
+  const w=window.open('about:blank','_blank');  // 팝업 차단 회피: 먼저 창 열고 나중에 주소 채움
+  const c=await getCoord(query);
+  const url = c
+    ? 'https://map.naver.com/p?c='+c.y+','+c.x+',17,0,0,0,dh'
+    : 'https://map.naver.com/p/search/'+encodeURIComponent(query);
+  if(w) w.location.href=url; else window.open(url,'_blank','noopener');
+}
+async function openNaverRoadview(query){
+  const w=window.open('about:blank','_blank');
+  const c=await getCoord(query);
+  // 좌표가 있으면 그 지점 지도로 열기(로드뷰 버튼이 정확히 동작). 없으면 검색.
+  const url = c
+    ? 'https://map.naver.com/p?c='+c.y+','+c.x+',18,0,0,0,dh&p='+c.x+','+c.y+',0,0,Float'
+    : 'https://map.naver.com/p/search/'+encodeURIComponent(query);
+  if(w) w.location.href=url; else window.open(url,'_blank','noopener');
 }
 /* 지도/로드뷰 버튼 한 쌍 HTML 생성 */
 function mapBtns(query){
