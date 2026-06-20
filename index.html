@@ -2795,6 +2795,7 @@ async function openTrade(kind,idx){
 // 거래 상세 (객체 기반)
 // 거래이력 상태 (단지 상세에서 면적 드롭다운·정렬)
 let HIST_DATA=null, HIST_VIEW={py:'all',sort:'new'};
+let HIST_CTX=null, HIST_SPAN=12;
 function syncSortBtn(){
   const n=document.getElementById('hs-new'), o=document.getElementById('hs-old');
   if(!n||!o) return;
@@ -2909,7 +2910,12 @@ async function openTradeWith(it,kind){
       </table>
     </div>
     <div class="dt-section">
-      <h2 class="dt-h">이 단지 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력 <span style="font-size:13px;color:var(--muted);font-weight:600">(최근 1년)</span></h2>
+      <h2 class="dt-h">이 단지 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력
+        <span style="display:inline-flex;gap:6px;margin-left:8px;vertical-align:middle">
+          <button class="sort-btn on" id="span-12" onclick="setHistSpan(12)">1년</button>
+          <button class="sort-btn" id="span-24" onclick="setHistSpan(24)">2년</button>
+        </span>
+      </h2>
       <div id="trade-history"><div class="locked">📊 거래 이력을 불러오는 중입니다...</div></div>
     </div>
     <div class="alarm-box">
@@ -2932,14 +2938,31 @@ async function openTradeWith(it,kind){
   document.getElementById('tools-view').style.display='none';
   dv.style.display='block';
   window.scrollTo(0,0);
-  // 거래이력 추가 로딩 (매매·분양권·전월세 모두)
+  // 거래이력 로딩 (기간 탭에서 재호출 가능하도록 분리)
+  HIST_CTX={it, kind};
+  HIST_SPAN=12;
+  loadTradeHistory();
+}
+// 기간 탭 전환
+function setHistSpan(months){
+  HIST_SPAN=months;
+  document.getElementById('span-12').classList.toggle('on', months===12);
+  document.getElementById('span-24').classList.toggle('on', months===24);
+  loadTradeHistory();
+}
+async function loadTradeHistory(){
+  if(!HIST_CTX) return;
+  const {it, kind}=HIST_CTX;
+  const months=HIST_SPAN||12;
+  const yrLbl = months>=24?'2년':'1년';
+  const hist=document.getElementById('trade-history');
+  if(hist) hist.innerHTML='<div class="locked">📊 최근 '+yrLbl+' 거래 이력을 불러오는 중입니다...</div>';
   try{
-    const res=await fetch('/api/trade?'+(kind!=='trade'?'kind='+kind+'&':'')+'lawd='+encodeURIComponent(it.lawd||'')+'&apt='+encodeURIComponent(it.apt));
+    const res=await fetch('/api/trade?'+(kind!=='trade'?'kind='+kind+'&':'')+'lawd='+encodeURIComponent(it.lawd||'')+'&apt='+encodeURIComponent(it.apt)+'&months='+months);
     const json=await res.json();
     const rows=(json&&json.items)?json.items:[];
-    const hist=document.getElementById('trade-history');
     if(!hist) return;
-    if(!rows.length){ hist.innerHTML='<div class="locked">최근 1년 내 추가 거래 내역이 없습니다.</div>'; return; }
+    if(!rows.length){ hist.innerHTML='<div class="locked">최근 '+yrLbl+' 내 추가 거래 내역이 없습니다.</div>'; return; }
     const amtHead = kind==='rent' ? '보증금/월세' : '거래금액';
     const fmtAmt=(r)=> kind==='rent' ? (r.isRent? wonToKor(r.amount)+'/'+r.monthly : wonToKor(r.amount)) : wonToKor(r.amount);
     // 최신순 정렬
@@ -2958,7 +2981,7 @@ async function openTradeWith(it,kind){
         <div class="ps-card avg"><div class="lbl">평균 ${sumLbl}</div><div class="val">${wonToKor(avgV)}</div></div>
         <div class="ps-card lo"><div class="lbl">최저 ${sumLbl}</div><div class="val">${wonToKor(loV)}</div></div>
       </div>
-      <div class="ps-meta">최근 1년 기준 · 총 ${rows.length}건</div>
+      <div class="ps-meta">최근 ${yrLbl} 기준 · 총 ${rows.length}건</div>
       <div class="trend-box">
         <div class="trend-h">📈 월별 ${kind==='rent'?'전월세':kind==='silv'?'분양권':'매매'} 거래 추이</div>
         <div class="trend-avg">최근 거래 평균 ${wonToKor(avgV)}</div>
@@ -2999,7 +3022,7 @@ async function openTradeWith(it,kind){
         </div>
       </div>
       <div class="hist-rows" id="hist-rows"></div>
-      <p class="dt-note">국토교통부 실거래가 신고 자료 기준(최근 1년) · 🔥는 해당 평형 신고가, 취소선은 계약 해지 건입니다.</p>`;
+      <p class="dt-note">국토교통부 실거래가 신고 자료 기준(최근 ${yrLbl}) · 🔥는 해당 평형 신고가, 취소선은 계약 해지 건입니다.</p>`;
     renderHistRows();
   }catch(e){
     const hist=document.getElementById('trade-history');
