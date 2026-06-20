@@ -14,3 +14,9 @@
   from = "/api/trade"
   to = "/.netlify/functions/trade"
   status = 200
+
+# 뉴스 함수
+[[redirects]]
+  from = "/api/news"
+  to = "/.netlify/functions/news"
+  status = 200
