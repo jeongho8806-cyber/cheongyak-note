@@ -16,15 +16,15 @@ exports.handler = async function (event) {
   const headers = { Authorization: "KakaoAK " + KEY };
 
   try {
-    // 1) 키워드(장소명) 검색 — "이문아이파크자이" 같은 단지명에 적합
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const aptName = tokens[0] || q;            // 보통 첫 토큰이 단지명
+    const region = tokens.slice(1).join(" ");  // 나머지가 지역
+    // 시도 순서: ① 단지명+지역 키워드 → ② 단지명만 키워드 → ③ 지역+단지명 → ④ 주소검색 → ⑤ 지역만
     let hit = await searchKeyword(q, headers);
-    // 2) 키워드로 못 찾으면 주소 검색으로 재시도
+    if (!hit && aptName) hit = await searchKeyword(aptName, headers);
+    if (!hit && region && aptName) hit = await searchKeyword(region + " " + aptName, headers);
     if (!hit) hit = await searchAddress(q, headers);
-    // 3) 그래도 없으면 단지명을 떼고 지역만으로 한 번 더(대략 위치라도)
-    if (!hit) {
-      const onlyRegion = q.split(/\s+/).slice(1).join(" "); // 첫 토큰(단지명) 제거
-      if (onlyRegion) hit = await searchKeyword(onlyRegion, headers) || await searchAddress(onlyRegion, headers);
-    }
+    if (!hit && region) hit = await searchKeyword(region, headers) || await searchAddress(region, headers);
 
     if (!hit) return resp(200, { ok: false, error: "좌표를 찾지 못했습니다.", q });
     return resp(200, { ok: true, x: Number(hit.x), y: Number(hit.y), name: hit.name || "", address: hit.address || "", q });
