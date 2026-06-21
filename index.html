@@ -209,7 +209,7 @@
   .trade-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
   /* 금액 수준 막대 (목록 내 상대 비교) */
   .trade-bar{height:5px;border-radius:3px;background:#eef1f6;margin-top:7px;overflow:hidden}
-  .spark{display:block;width:100%;height:34px;margin-top:6px}
+  .spark{display:block;width:100%;height:38px;margin-top:7px}
   .trade-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffb37a,var(--brand));transition:width .4s}
   .trade-bar.rent i{background:linear-gradient(90deg,#9db4f5,var(--blue))}
   .trade-bar.silv i{background:linear-gradient(90deg,#c3aef0,#7c5fd3)}
@@ -1717,7 +1717,7 @@ function openList(kind){
     const chips=[`<span class="sido-chip ${LIST_STATE.sido===''?'on':''}" onclick="selectListSido('')">전체</span>`];
     SIDO_ORDER.forEach(rg=>{
       if(!avail[rg]) return;
-      chips.push(`<span class="sido-chip ${LIST_STATE.sido===rg?'on':''}" onclick="selectListSido('${rg}')">${SIDO_SHORT[rg]||rg} ${avail[rg]}</span>`);
+      chips.push(`<span class="sido-chip ${LIST_STATE.sido===rg?'on':''}" onclick="selectListSido('${rg}')">${SIDO_SHORT[rg]||rg} (${avail[rg]})</span>`);
     });
     sidoBar=`<div class="sido-chips" style="margin-bottom:14px">${chips.join('')}</div>`;
     if(LIST_STATE.sido){ items=items.filter(s=>s.region===LIST_STATE.sido); }
@@ -1733,7 +1733,7 @@ function openList(kind){
       const cur=LIST_STATE.gugun||'';
       const gchips=[`<span class="gugun-chip ${cur===''?'on':''}" onclick="selectListGugun('')">전체 구</span>`];
       gus.forEach(g=>{
-        gchips.push(`<span class="gugun-chip ${cur===g?'on':''}" onclick="selectListGugun('${g.replace(/'/g,"")}')">${g} ${guCount[g]}</span>`);
+        gchips.push(`<span class="gugun-chip ${cur===g?'on':''}" onclick="selectListGugun('${g.replace(/'/g,"")}')">${g} (${guCount[g]})</span>`);
       });
       listGugunBar=`<div class="gugun-chips">${gchips.join('')}</div>`;
     }
@@ -1867,7 +1867,7 @@ function liveSearch(){
   const clr=document.getElementById('search-clear');
   clr.style.display = q ? 'block' : 'none';
   if(!q){ box.innerHTML=''; box.classList.remove('on'); return; }
-  const order={fast:0,live:1,done:2};
+  const order={live:0,fast:1,done:2}; // 예정 → 선착순 → 마감
   const hits=allSites().filter(s=>
     s.name.toLowerCase().includes(q) || (s.d.loc||'').toLowerCase().includes(q) || s.region.includes(q) || (s.d.bd||'').toLowerCase().includes(q)
   ).sort((a,b)=>(order[statusOf(a)]-order[statusOf(b)])).slice(0,12);
@@ -2588,23 +2588,50 @@ function computeRise(list){
 }
 function pad2(s){return String(s).padStart(2,'0');}
 // 실거래가 흐름 미니 추세선(스파크라인) SVG 생성
-function sparklineSVG(it){
+// 종류별 추세선 색 (매매=주황, 분양권=보라, 전월세=파랑)
+function sparkColor(kind){
+  if(kind==='silv') return '#7c5fd3';
+  if(isRentKind(kind)) return '#3a6ff0';
+  return '#ff6b1a';
+}
+// 부드러운 곡선용 path 생성 (Catmull-Rom → 베지어)
+function smoothPath(P){
+  if(P.length<2) return '';
+  if(P.length===2) return `M${P[0].x} ${P[0].y} L${P[1].x} ${P[1].y}`;
+  let d=`M${P[0].x.toFixed(1)} ${P[0].y.toFixed(1)}`;
+  for(let i=0;i<P.length-1;i++){
+    const p0=P[i-1]||P[i], p1=P[i], p2=P[i+1], p3=P[i+2]||P[i+1];
+    const t=0.18; // 곡률(작을수록 직선에 가까움)
+    const c1x=p1.x+(p2.x-p0.x)*t, c1y=p1.y+(p2.y-p0.y)*t;
+    const c2x=p2.x-(p3.x-p1.x)*t, c2y=p2.y-(p3.y-p1.y)*t;
+    d+=` C${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+function sparklineSVG(it, kind){
   // 시계열 우선순위: _series(같은 단지 여러 거래) → [_prev, amount](직전+현재) → 없음
   let pts = (it._series && it._series.length>=2) ? it._series.slice()
           : (it._prev ? [it._prev, it.amount] : null);
   if(!pts || pts.length<2) return ''; // 점 1개뿐이면 선 생략
-  const W=120, H=34, P=3;
+  const W=240, H=40, PT=6, PB=6, PX=4; // viewBox는 넓게 잡아 카드 폭에 꽉 차게
   const lo=Math.min(...pts), hi=Math.max(...pts), rg=(hi-lo)||1;
   const n=pts.length;
-  const x=i=> P + (W-2*P)*(i/(n-1));
-  const y=v=> P + (H-2*P)*(1-(v-lo)/rg);
-  const d=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
-  const up = pts[n-1] >= pts[0];
-  const col = up ? '#e2444b' : '#3a6ff0'; // 상승=빨강, 하락=파랑 (실거래가 추세)
-  const lastX=x(n-1).toFixed(1), lastY=y(pts[n-1]).toFixed(1);
+  const X=i=> PX + (W-2*PX)*(i/(n-1));
+  const Y=v=> PT + (H-PT-PB)*(1-(v-lo)/rg);
+  const P=pts.map((v,i)=>({x:X(i),y:Y(v)}));
+  const line=smoothPath(P);
+  const area=line+` L${P[n-1].x.toFixed(1)} ${H} L${P[0].x.toFixed(1)} ${H} Z`;
+  const col=sparkColor(kind);
+  const gid='g'+Math.random().toString(36).slice(2,8);
+  const last=P[n-1];
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-    <path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="${lastX}" cy="${lastY}" r="2.6" fill="${col}"/>
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${col}" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="${col}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#${gid})" stroke="none"/>
+    <path d="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="3" fill="${col}" stroke="#fff" stroke-width="1.2"/>
   </svg>`;
 }
 // 전월세 계열(아파트/오피스텔/빌라 전월세) 판별
@@ -2653,7 +2680,7 @@ function tradeCard(it,i,kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
-      ${sparklineSVG(it) || `<div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>`}
+      ${sparklineSVG(it,kind) || `<div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>`}
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2706,7 +2733,7 @@ function aptGroupCard(it, kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.dong} · ${areaRange} · 최근 ${it.month}/${it.day}</div>
-      ${sparklineSVG(it) || `<div class="trade-bar ${barCls}"><i style="width:${it._barPct||60}%"></i></div>`}
+      ${sparklineSVG(it,kind) || `<div class="trade-bar ${barCls}"><i style="width:${it._barPct||60}%"></i></div>`}
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2729,7 +2756,7 @@ function tradeCardObj(it,kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
-      ${sparklineSVG(it) || `<div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>`}
+      ${sparklineSVG(it,kind) || `<div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>`}
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2792,7 +2819,7 @@ function openTradeList(kind){
       const curDong=searchResult.dong||'';
       const dchips=[`<span class="gugun-chip ${curDong===''?'on':''}" onclick="selectTradeDong('${kind}','')">전체 동</span>`];
       dongs.forEach(d=>{
-        dchips.push(`<span class="gugun-chip ${curDong===d?'on':''}" onclick="selectTradeDong('${kind}','${d.replace(/'/g,"")}')">${d} ${dongCount[d]}</span>`);
+        dchips.push(`<span class="gugun-chip ${curDong===d?'on':''}" onclick="selectTradeDong('${kind}','${d.replace(/'/g,"")}')">${d} (${dongCount[d]})</span>`);
       });
       dongBar=`<div class="gugun-chips" style="background:#eef4ff">${dchips.join('')}</div>`;
     }
