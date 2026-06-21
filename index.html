@@ -3377,7 +3377,7 @@ async function openTrade(kind,idx){
 // 거래 상세 (객체 기반)
 // 거래이력 상태 (단지 상세에서 면적 드롭다운·정렬)
 let HIST_DATA=null, HIST_VIEW={py:'all',sort:'new'};
-let HIST_CTX=null, HIST_SPAN=12;
+let HIST_CTX=null, HIST_SPAN=36;
 function syncSortBtn(){
   const n=document.getElementById('hs-new'), o=document.getElementById('hs-old');
   if(!n||!o) return;
@@ -3627,8 +3627,9 @@ async function openTradeWith(it,kind){
     <div class="dt-section">
       <h2 class="dt-h">이 단지 ${isRentKind(kind)?'전월세':kind==='silv'?'분양권':'매매'} 거래 이력
         <span style="display:inline-flex;gap:6px;margin-left:8px;vertical-align:middle">
-          <button class="sort-btn on" id="span-12" onclick="setHistSpan(12)">1년</button>
-          <button class="sort-btn" id="span-24" onclick="setHistSpan(24)">2년</button>
+          <button class="sort-btn ${HIST_SPAN===12?'on':''}" id="htop-12" onclick="setHistSpan(12)">1년</button>
+          <button class="sort-btn ${HIST_SPAN===36?'on':''}" id="htop-36" onclick="setHistSpan(36)">3년</button>
+          <button class="sort-btn ${HIST_SPAN===60?'on':''}" id="htop-60" onclick="setHistSpan(60)">5년</button>
         </span>
       </h2>
       <div id="trade-history"><div class="locked">📊 거래 이력을 불러오는 중입니다...</div></div>
@@ -3655,7 +3656,7 @@ async function openTradeWith(it,kind){
   window.scrollTo(0,0);
   // 거래이력 로딩 (기간 탭에서 재호출 가능하도록 분리)
   HIST_CTX={it, kind};
-  HIST_SPAN=12;
+  HIST_SPAN=36;
   loadTradeHistory();
   loadDualPriceSummary(it, kind);
 }
@@ -3732,18 +3733,19 @@ function switchHistKind(newKind, noScroll){
 // 기간 탭 전환
 function setHistSpan(months){
   HIST_SPAN=months;
-  const b12=document.getElementById('span-12'), b24=document.getElementById('span-24');
-  if(b12) b12.classList.toggle('on', months!==24);
-  if(b24) b24.classList.toggle('on', months===24);
+  [12,36,60].forEach(m=>{
+    const on = months===m;
+    ['span-'+m,'htop-'+m].forEach(id=>{ const b=document.getElementById(id); if(b) b.classList.toggle('on', on); });
+  });
   loadTradeHistory();
 }
 async function loadTradeHistory(){
   if(!HIST_CTX) return;
   const {it, kind}=HIST_CTX;
   const months=HIST_SPAN||12;
-  const yrLbl = months>=24?'2년':'1년';
+  const yrLbl = months>=60?'5년':months>=36?'3년':'1년';
   const hist=document.getElementById('trade-history');
-  if(hist) hist.innerHTML='<div class="locked">📊 최근 '+yrLbl+' 거래 이력을 불러오는 중입니다...</div>';
+  if(hist) hist.innerHTML='<div class="locked">📊 최근 '+yrLbl+' 거래 이력을 불러오는 중입니다...'+(months>=60?'<br><span style="font-size:12px;color:#aaa">5년치는 시간이 다소 걸릴 수 있습니다</span>':'')+'</div>';
   try{
     const res=await fetch('/api/trade?'+(kind!=='trade'?'kind='+kind+'&':'')+'lawd='+encodeURIComponent(it.lawd||'')+'&apt='+encodeURIComponent(it.apt)+'&months='+months);
     const json=await res.json();
@@ -3797,8 +3799,9 @@ async function loadTradeHistory(){
         <div class="trend-top">
           <div class="trend-h">📈 월별 ${isRentKind(kind)?'전월세':kind==='silv'?'분양권':'매매'} 거래 추이 <span class="trend-py" id="trend-py">전체 평형</span></div>
           <div class="trend-span">
-            <button class="span-btn ${HIST_SPAN!==24?'on':''}" id="span-12" onclick="setHistSpan(12)">1년</button>
-            <button class="span-btn ${HIST_SPAN===24?'on':''}" id="span-24" onclick="setHistSpan(24)">2년</button>
+            <button class="span-btn ${HIST_SPAN===12?'on':''}" id="span-12" onclick="setHistSpan(12)">1년</button>
+            <button class="span-btn ${HIST_SPAN===36?'on':''}" id="span-36" onclick="setHistSpan(36)">3년</button>
+            <button class="span-btn ${HIST_SPAN===60?'on':''}" id="span-60" onclick="setHistSpan(60)">5년</button>
           </div>
         </div>
         <div class="trend-ctrl">
