@@ -197,6 +197,19 @@
   .st-tab{font-size:13px;font-weight:700;padding:8px 16px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#555;cursor:pointer;transition:.12s}
   .st-tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
   .st-src{font-size:11.5px;color:var(--muted);text-align:center;margin-top:8px}
+  .sido-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  @media(max-width:560px){.sido-grid{grid-template-columns:repeat(2,1fr)}}
+  .sido-cell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:11px 6px;background:#fafbfc;border:1px solid var(--line);border-radius:10px}
+  .sido-cell .sn{font-size:12px;color:var(--muted);font-weight:600}
+  .sido-cell .sv{font-size:16px;font-weight:800;color:var(--ink)}
+  .sido-cell .sc{font-size:11px;font-weight:700}
+  .sido-cell .sc.up{color:var(--red)}.sido-cell .sc.down{color:var(--blue)}.sido-cell .sc.flat{color:var(--muted)}
+  .rk-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .rk-row:last-child{border-bottom:none}
+  .rk-no{width:20px;height:20px;flex-shrink:0;background:var(--brand-soft);color:var(--brand);font-size:12px;font-weight:800;border-radius:6px;display:flex;align-items:center;justify-content:center}
+  .rk-nm{flex:1;font-size:13.5px;font-weight:700;color:var(--ink)}
+  .rk-ch{font-size:12.5px;font-weight:800}
+  .rk-ch.up{color:var(--red)}.rk-ch.down{color:var(--blue)}.rk-ch.flat{color:var(--muted)}
   .tv-head{margin-bottom:20px}
   .tv-head h1{font-size:24px;font-weight:800;margin-bottom:6px}
   .tv-head p{font-size:14px;color:var(--muted)}
@@ -259,9 +272,15 @@
   .block-h .more:hover{color:var(--brand)}
 
   /* 실거래 신고가 TOP */
-  .trade-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:8px}
-  .trade-row .trade-col{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 16px 8px}
-  .trade-row .trade-grid{grid-template-columns:minmax(0,1fr)}
+  .trade-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:8px;align-items:start}
+  .trade-row .trade-col{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:0 0 10px;overflow:hidden}
+  .trade-row .trade-col .block-h{margin:0;padding:14px 16px 12px;background:var(--brand-soft);border-bottom:1px solid #fbe2d2;display:block}
+  .trade-row .trade-col .block-h .t{font-size:16px;border-left:none;padding-left:0;display:inline}
+  .trade-row .trade-col .block-h .ico{font-size:17px;margin-right:5px}
+  .trade-row .trade-col .block-h .cnt{margin-left:5px}
+  .trade-row .trade-col .block-h .more{font-size:12px;color:var(--brand-dark)}
+  .trade-row .trade-col .col-sub{font-size:11px;color:var(--muted);padding:8px 16px 4px;margin:0}
+  .trade-row .trade-grid{grid-template-columns:minmax(0,1fr);padding:0 12px}
   @media(max-width:900px){.trade-row{grid-template-columns:minmax(0,1fr)}}
   .trade-row .trade-col .trade-card{box-shadow:none;border-color:#eef1f6;background:#fcfdff;padding:11px 12px;gap:9px}
   .trade-row .trade-col .trade-card .trade-nm{font-size:13px}
@@ -829,21 +848,21 @@
       <!-- 실거래 신고가 (매매) -->
       <div class="block trade-col" id="b-trade">
         <div class="block-h"><span class="ico">📈</span><span class="t">이번 달 신고가 TOP</span><span class="cnt" id="trade-cnt"></span><span class="more" onclick="openTradeList('trade')">전체 →</span></div>
-        <p style="font-size:11.5px;color:var(--muted);margin:-8px 0 12px">국토부 실거래가 · 서울·수도권 고가 매매</p>
+        <p class="col-sub">국토부 실거래가 · 서울·수도권 고가 매매</p>
         <div id="trade-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div></div></div>
       </div>
 
       <!-- 분양권 신고가 -->
       <div class="block trade-col" id="b-silv">
         <div class="block-h"><span class="ico">🏗️</span><span class="t">분양권 신고가 TOP</span><span class="cnt" id="silv-cnt"></span><span class="more" onclick="openTradeList('silv')">전체 →</span></div>
-        <p style="font-size:11.5px;color:var(--muted);margin:-8px 0 12px">수도권 신도시·택지지구 분양권 전매</p>
+        <p class="col-sub">수도권 신도시·택지지구 분양권 전매</p>
         <div id="silv-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div></div></div>
       </div>
 
       <!-- 전월세 신고가 -->
       <div class="block trade-col" id="b-rent">
         <div class="block-h"><span class="ico">🔑</span><span class="t">전월세 신고가 TOP</span><span class="cnt" id="rent-cnt"></span><span class="more" onclick="openTradeList('rent')">전체 →</span></div>
-        <p style="font-size:11.5px;color:var(--muted);margin:-8px 0 12px">주요 지역 전세 보증금 최고가</p>
+        <p class="col-sub">주요 지역 전세 보증금 최고가</p>
         <div id="rent-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div></div></div>
       </div>
       </div>
@@ -1766,6 +1785,47 @@ function fmtWeek(t){
   if(s.length===8) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
   return s;
 }
+let STATS_TAB='sale'; // sale | jeonse
+function setStatsTab(t){ STATS_TAB=t; renderStats(); }
+
+// SVG 스파크라인 (추세 그래프)
+function sparkline(series, color){
+  if(!series || series.length<2) return '<div style="font-size:12px;color:#aaa;padding:20px 0;text-align:center">추세 데이터가 부족합니다.</div>';
+  const W=600,H=120,pad=8;
+  const min=Math.min(...series),max=Math.max(...series);
+  const range=(max-min)||1;
+  const dx=(W-pad*2)/(series.length-1);
+  const pts=series.map((v,i)=>({x:pad+i*dx, y:pad+(H-pad*2)*(1-(v-min)/range)}));
+  const line=pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+  const area=line+` L${pts[pts.length-1].x.toFixed(1)} ${H-pad} L${pts[0].x.toFixed(1)} ${H-pad} Z`;
+  const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:120px;display:block">
+    <defs><linearGradient id="sg-${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#sg-${color.replace('#','')})"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="4.5" fill="${color}"/>
+  </svg>`;
+}
+
+function sidoGrid(arr){
+  if(!arr||!arr.length) return '<div style="font-size:13px;color:#aaa;padding:10px 0">데이터 준비 중입니다.</div>';
+  return `<div class="sido-grid">`+arr.map(r=>{
+    const v=r.change, cls=v>0?'up':v<0?'down':'flat', sym=v>0?'▲':v<0?'▼':'–';
+    return `<div class="sido-cell"><span class="sn">${r.region}</span><span class="sv">${r.value}</span><span class="sc ${cls}">${sym}${Math.abs(v||0).toFixed(2)}</span></div>`;
+  }).join('')+`</div>`;
+}
+
+function rankList(arr,dir){
+  if(!arr||!arr.length) return '<div style="font-size:12px;color:#aaa">데이터 없음</div>';
+  return arr.map((r,i)=>{
+    const v=r.change, cls=v>0?'up':v<0?'down':'flat', sym=v>0?'▲':v<0?'▼':'–';
+    return `<div class="rk-row"><span class="rk-no">${i+1}</span><span class="rk-nm">${r.region}</span><span class="rk-ch ${cls}">${sym} ${Math.abs(v||0).toFixed(2)}p</span></div>`;
+  }).join('');
+}
+
 function renderStats(){
   const v=document.getElementById('stats-view');
   const d=STATS_DATA;
@@ -1779,17 +1839,49 @@ function renderStats(){
   } else if(d && d.error){
     body=`<div class="st-note"><span>⚠️</span><span>${d.error}<br><span style="font-size:12px;color:#999">잠시 후 다시 시도하거나, 인증키 설정을 확인해 주세요.</span></span></div>`;
   } else if(d && (d.saleIdx||d.jeonseIdx)){
+    const isSale=STATS_TAB==='sale';
+    const idx=isSale?d.saleIdx:d.jeonseIdx;
+    const sido=isSale?d.saleSido:d.jeonseSido;
+    const trend=isSale?d.saleTrend:d.jeonseTrend;
+    const up=isSale?d.saleUp:d.jeonseUp;
+    const down=isSale?d.saleDown:d.jeonseDown;
+    const color=isSale?'#ff6b1a':'#2f6fd1';
+    const label=isSale?'매매':'전세';
+    const natChg = idx&&idx[0]?idx[0].change:null;
+    const natSym = natChg>0?'▲':natChg<0?'▼':'–';
+
     body=`
       <div class="st-summary">
         <div class="lab">📈 한국부동산원 주간 아파트 가격동향</div>
         <div class="big">전국 매매 ${d.saleIdx&&d.saleIdx[0]?d.saleIdx[0].value:'-'} · 전세 ${d.jeonseIdx&&d.jeonseIdx[0]?d.jeonseIdx[0].value:'-'}</div>
         <div class="date">${fmtWeek(d.latestTime)} 기준 (기준시점 100.0 = 2026.02.02)</div>
       </div>
-      <div class="st-grid">
-        <div class="st-card"><h3>📊 주간 아파트 매매가격지수</h3>${statRows(d.saleIdx)}</div>
-        <div class="st-card"><h3>🔑 주간 아파트 전세가격지수</h3>${statRows(d.jeonseIdx)}</div>
+
+      <div class="st-tabs">
+        <div class="st-tab ${isSale?'on':''}" onclick="setStatsTab('sale')">📊 매매가격지수</div>
+        <div class="st-tab ${!isSale?'on':''}" onclick="setStatsTab('jeonse')">🔑 전세가격지수</div>
       </div>
-      <div class="st-src">자료: 한국부동산원 부동산통계정보시스템(R-ONE) 주간 아파트 가격동향 · 변동은 전주 대비 지수 포인트(p)</div>`;
+
+      <div class="st-card" style="margin-bottom:14px">
+        <h3>📈 전국 ${label}가격지수 추세 <span style="font-size:12px;color:var(--muted);font-weight:600">· 최근 12주</span></h3>
+        ${sparkline(trend, color)}
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:6px">
+          <span>12주 전</span>
+          <span style="color:${color};font-weight:800">현재 ${idx&&idx[0]?idx[0].value:'-'} (${natSym}${Math.abs(natChg||0).toFixed(2)}p)</span>
+        </div>
+      </div>
+
+      <div class="st-grid" style="margin-bottom:14px">
+        <div class="st-card"><h3>🔺 상승 TOP 5 <span style="font-size:11.5px;color:var(--muted);font-weight:600">전주 대비</span></h3>${rankList(up)}</div>
+        <div class="st-card"><h3>🔻 하락 TOP 5 <span style="font-size:11.5px;color:var(--muted);font-weight:600">전주 대비</span></h3>${rankList(down)}</div>
+      </div>
+
+      <div class="st-card" style="margin-bottom:14px">
+        <h3>🗺️ 17개 시도 ${label}가격지수</h3>
+        ${sidoGrid(sido)}
+      </div>
+
+      <div class="st-src">자료: 한국부동산원 부동산통계정보시스템(R-ONE) 주간 아파트 가격동향 · 지수는 2026.02.02=100.0 기준 · 변동은 전주 대비 지수 포인트(p)</div>`;
   } else {
     body=`<div class="st-note"><span>💡</span><span>통계를 준비 중입니다.</span></div>`;
   }
@@ -1797,7 +1889,7 @@ function renderStats(){
     <div class="wrap main-wrap">
       <div class="st-head">
         <h1>부동산 통계</h1>
-        <p>한국부동산원 주간 아파트 가격동향 — 전국·수도권·서울 매매·전세 지수</p>
+        <p>한국부동산원 주간 아파트 가격동향 — 매매·전세 지수 · 추세 · 17개 시도</p>
       </div>
       ${body}
     </div>`;
