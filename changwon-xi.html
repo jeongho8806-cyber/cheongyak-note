@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>창원자이 더 스카이 — 로얄호실 선착순 · 방문예약</title>
+<style>
+  :root{
+    --ink:#1f2430; --muted:#8b92a0; --line:#eceef2; --bg:#f4f6f9;
+    --paper:#ffffff; --brand:#ff6b1a; --brand-dark:#e85d10; --brand-soft:#fff3eb;
+    --navy:#13243f; --navy2:#1a2f52;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:640px;margin:0 auto;background:var(--paper);min-height:100vh}
+
+  /* 상단 바 */
+  .topbar{background:var(--navy);color:#fff;padding:13px 20px;display:flex;align-items:center;justify-content:space-between}
+  .topbar .home{font-size:13px;color:#cdd6e5}
+  .topbar .tel{font-size:13px;font-weight:700;color:#ffd9c2}
+
+  /* 히어로 */
+  .hero{position:relative;background:var(--navy)}
+  .hero img{width:100%;display:block}
+  .hero .badge{position:absolute;top:14px;left:14px;background:var(--brand);color:#fff;font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px}
+  .hero-cap{background:var(--navy);color:#fff;text-align:center;padding:18px 20px}
+  .hero-cap .brand{font-size:13px;color:#9db2d4;letter-spacing:2px;font-weight:700}
+  .hero-cap h1{font-size:26px;font-weight:800;margin:4px 0 6px}
+  .hero-cap .sub{font-size:13.5px;color:#b9c6dc}
+
+  /* 핵심 요약 칩 */
+  .highlight{background:var(--navy);color:#fff;text-align:center;padding:26px 20px}
+  .highlight .hl-main{margin:0 auto 10px;background:#fff;color:var(--navy);font-size:22px;font-weight:800;padding:22px 16px;border-radius:14px;max-width:380px;line-height:1.4}
+  .highlight .hl-main .big{display:block;color:var(--brand);font-size:27px;font-weight:800}
+  .highlight .hl-sub{font-size:12px;color:#9db2d4;line-height:1.6;margin-top:6px}
+  .keys{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line)}
+  .keys .k{background:#fff;padding:15px 16px}
+  .keys .k .lab{font-size:12px;color:var(--muted);font-weight:600}
+  .keys .k .val{font-size:15px;font-weight:800;color:var(--ink);margin-top:3px}
+
+  /* 본문 섹션 */
+  .sec{padding:24px 22px;border-top:8px solid var(--bg)}
+  .sec h2{font-size:18px;font-weight:800;padding-left:11px;border-left:4px solid var(--brand);margin-bottom:14px;line-height:1.2}
+  .info-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .info-row:last-child{border-bottom:none}
+  .info-row .t{width:96px;flex-shrink:0;color:var(--muted);font-weight:600}
+  .info-row .d{flex:1;font-weight:600}
+  .points{list-style:none}
+  .points li{position:relative;padding:7px 0 7px 20px;font-size:14px;border-bottom:1px solid var(--line)}
+  .points li:last-child{border-bottom:none}
+  .points li::before{content:"✓";position:absolute;left:0;color:var(--brand);font-weight:800}
+  .tag-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+  .tag{background:var(--brand-soft);color:var(--brand-dark);font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:999px}
+
+  /* 전화 CTA */
+  .merit{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .merit:last-of-type{border-bottom:none}
+  .merit .m-ico{width:38px;height:38px;flex-shrink:0;background:var(--brand-soft);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .merit .m-tx{flex:1}
+  .merit .m-t{font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.35}
+  .merit .m-d{font-size:12.5px;color:#6b7280;line-height:1.55;margin-top:3px}
+  .tel-cta{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--navy);color:#fff;padding:16px;margin:0;font-size:20px;font-weight:800;letter-spacing:.5px}
+  .tel-cta small{font-size:12px;color:#9db2d4;font-weight:600;display:block}
+
+  /* 신청 폼 */
+  .form-sec{padding:26px 22px 36px;background:var(--brand-soft);border-top:8px solid var(--bg)}
+  .form-sec h2{font-size:19px;font-weight:800;text-align:center;border:none;padding:0;margin-bottom:6px}
+  .form-sec .desc{text-align:center;font-size:13px;color:#7a6a5c;margin-bottom:20px;line-height:1.6}
+  .apply-card{background:#fff;border:1px solid #f0d9c8;border-radius:13px;padding:16px 18px;margin-bottom:16px}
+  .apply-card .ac-row{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;color:var(--ink);padding:7px 0}
+  .apply-card .ac-ico{font-size:18px;width:24px;text-align:center}
+  .priv-note{font-size:11px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.6}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:13.5px;font-weight:700;margin-bottom:6px}
+  .field label .req{color:var(--brand)}
+  .field input,.field select,.field textarea{width:100%;padding:13px 14px;border:1.5px solid #f0d9c8;border-radius:11px;font-size:14.5px;font-family:inherit;outline:none;background:#fff;transition:.13s}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand)}
+  .field textarea{resize:vertical;min-height:70px}
+  .agree-box{background:#fff;border:1px solid #f0d9c8;border-radius:11px;padding:13px 15px;font-size:11.5px;color:#777;line-height:1.7;margin-bottom:12px}
+  .agree-box b{color:var(--ink)}
+  .agree{display:flex;align-items:center;gap:9px;margin-bottom:18px;font-size:13.5px;font-weight:600}
+  .agree input{width:18px;height:18px;accent-color:var(--brand);flex-shrink:0}
+  .submit{display:block;width:100%;padding:16px;border:none;border-radius:13px;background:var(--brand);color:#fff;font-size:16px;font-weight:800;cursor:pointer;transition:.13s;text-align:center;text-decoration:none;box-sizing:border-box}
+  .submit:hover{background:var(--brand-dark)}
+  .submit:disabled{opacity:.5;cursor:not-allowed}
+  .msg{font-size:13.5px;margin-top:14px;padding:13px;border-radius:11px;display:none;text-align:center;font-weight:600}
+  .msg.err{display:block;background:#fcebeb;color:#a32d2d}
+  .msg.ok{display:block;background:#e1f5ee;color:#0f6e56}
+
+  .foot{text-align:center;padding:22px;font-size:11.5px;color:var(--muted);line-height:1.7;background:#fafbfc}
+
+  /* 스크롤 따라다니는 고정 접수 배너 */
+  .float-bar{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:14px;
+    width:calc(100% - 28px);max-width:600px;z-index:90;
+    background:var(--navy);color:#fff;border-radius:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+    display:flex;align-items:center;gap:12px;padding:12px 14px 12px 16px;
+    transition:opacity .3s, transform .3s;
+  }
+  .float-bar .fb-tx{flex:1;min-width:0}
+  .float-bar .fb-t{font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .float-bar .fb-s{font-size:11px;color:#b9c6dc;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .float-bar .fb-btn{
+    flex-shrink:0;background:var(--brand);color:#fff;border:none;
+    font-size:14px;font-weight:800;padding:12px 16px;border-radius:11px;cursor:pointer;transition:.13s;
+  }
+  .float-bar .fb-btn:hover{background:var(--brand-dark)}
+  @media(max-width:420px){
+    .float-bar{bottom:10px;padding:10px 12px;gap:8px;width:calc(100% - 20px)}
+    .float-bar .fb-t{font-size:12.5px}
+    .float-bar .fb-s{font-size:10px}
+    .float-bar .fb-btn{font-size:12.5px;padding:11px 13px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a href="index.html" class="home">‹ 전국청약지도</a>
+    <a href="tel:055-249-9633" class="tel">☎ 055-249-9633</a>
+  </div>
+
+  <!-- 히어로 -->
+  <div class="hero">
+    <span class="badge">🔥 로얄호실 선착순 진행중</span>
+    <img src="20260620_232411.png" alt="창원자이 더 스카이 투시도" onerror="this.style.display='none'">
+  </div>
+  <div class="hero-cap">
+    <div class="brand">X1 · GS건설</div>
+    <h1>창원자이 더 스카이</h1>
+    <div class="sub">성산구 중앙동 · 최고 49층 랜드마크 · 519세대</div>
+  </div>
+
+  <!-- 계약금 강조 -->
+  <div class="highlight">
+    <div class="hl-main"><span class="big">입주 시까지 계약금 5%만</span></div>
+    <div class="hl-sub">초기 자금 부담을 낮춘 조건으로 진행 중입니다 · 자세한 내용은 ☎ 055-249-9633</div>
+  </div>
+
+  <!-- 핵심 요약 -->
+  <div class="keys">
+    <div class="k"><div class="lab">세대수</div><div class="val">519세대</div></div>
+    <div class="k"><div class="lab">규모</div><div class="val">지상 45~49층</div></div>
+    <div class="k"><div class="lab">입주예정</div><div class="val">2030년 4월</div></div>
+    <div class="k"><div class="lab">주차</div><div class="val">세대당 1.48대</div></div>
+  </div>
+
+  <!-- 현장 안내 -->
+  <div class="sec">
+    <h2>현장 안내</h2>
+    <div class="info-row"><span class="t">사업지 위치</span><span class="d">경상남도 창원시 성산구 중앙동 99-4, 5, 6</span></div>
+    <div class="info-row"><span class="t">건축 규모</span><span class="d">지하 5층 ~ 지상 45~49층, 공동주택 519세대</span></div>
+    <div class="info-row"><span class="t">주차 대수</span><span class="d">769대 (세대당 1.48대)</span></div>
+    <div class="info-row"><span class="t">입주 예정</span><span class="d">2030년 4월 (예정)</span></div>
+    <div class="info-row"><span class="t">시공</span><span class="d">GS건설 (Xi 브랜드)</span></div>
+  </div>
+
+  <!-- 단지 특징 -->
+  <div class="sec">
+    <h2>단지 특징</h2>
+    <div class="tag-row">
+      <span class="tag">비규제지역</span>
+      <span class="tag">전매 가능</span>
+      <span class="tag">청약통장 미사용</span>
+      <span class="tag">다주택자 제한 없음</span>
+      <span class="tag">실거주 의무 없음</span>
+    </div>
+  </div>
+
+  <!-- 입지 안내 (사실 중심) -->
+  <div class="sec">
+    <h2>입지 안내</h2>
+    <ul class="points">
+      <li>인구 약 100만 창원특례시의 중심 성산구에 위치</li>
+      <li>성산구 중앙동 일원, 생활 인프라가 갖춰진 도심 입지</li>
+      <li>최고 49층 규모의 주거 단지</li>
+      <li>비규제지역으로 청약통장 없이 신청 가능</li>
+    </ul>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">
+      ※ 본 안내는 분양 정보 제공을 목적으로 하며, 투자 수익을 보장하지 않습니다. 시세·전매·세금 등은 시장 상황과 개인 조건에 따라 달라질 수 있으니 계약 전 반드시 직접 확인하시기 바랍니다.
+    </p>
+  </div>
+
+  <!-- 이런 점이 좋습니다 (기사 기반 사실) -->
+  <div class="sec">
+    <h2>이런 점이 좋습니다</h2>
+
+    <div class="merit">
+      <div class="m-ico">🏙️</div>
+      <div class="m-tx">
+        <div class="m-t">창원에서 가장 높은 49층 랜드마크</div>
+        <div class="m-d">옛 창원호텔 부지를 개발한 초고층 주상복합. 창원시 지구단위계획 재정비 이후 첫 번째 개발 사업으로 상징성이 높습니다.</div>
+      </div>
+    </div>
+
+    <div class="merit">
+      <div class="m-ico">🛍️</div>
+      <div class="m-tx">
+        <div class="m-t">걸어서 누리는 도심 중심 생활권</div>
+        <div class="m-d">반경 1km 내 창원광장·롯데백화점·이마트·메가박스·교보문고가 도보권. 창원시청·법원 등 관공서와 창원병원도 가깝습니다.</div>
+      </div>
+    </div>
+
+    <div class="merit">
+      <div class="m-ico">🚄</div>
+      <div class="m-tx">
+        <div class="m-t">KTX 창원중앙역으로 전국 이동</div>
+        <div class="m-d">중앙대로·창원대로·원이대로로 창원 내외 이동이 편리하고, KTX로 전국 주요 도시까지 빠르게 연결됩니다.</div>
+      </div>
+    </div>
+
+    <div class="merit">
+      <div class="m-ico">🏫</div>
+      <div class="m-tx">
+        <div class="m-t">초·중·고 인접 교육 입지</div>
+        <div class="m-d">용지초등학교를 비롯해 상남중·경원중, 경일고·경일여고·창원남고 등 학교가 가까운 교육 여건을 갖췄습니다.</div>
+      </div>
+    </div>
+
+    <div class="merit">
+      <div class="m-ico">🏗️</div>
+      <div class="m-tx">
+        <div class="m-t">3면 발코니 · 천장고 2.4m 특화 설계</div>
+        <div class="m-d">전 가구 3면 발코니로 서비스 면적을 넓히고, 일반 아파트(2.3m)보다 높은 2.4m 천장고로 개방감을 더했습니다. 대부분 4베이 4룸 구조.</div>
+      </div>
+    </div>
+
+    <div class="merit">
+      <div class="m-ico">🍸</div>
+      <div class="m-tx">
+        <div class="m-t">49층 스카이라운지 등 자이 커뮤니티</div>
+        <div class="m-d">최상층 입주민 전용 스카이라운지 '클럽 클라우드', 교보문고 큐레이션 도서관, 게스트하우스, 피트니스·필라테스·골프연습장 등이 마련됩니다.</div>
+      </div>
+    </div>
+
+    <p style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6">
+      ※ 위 내용은 GS건설 보도자료 및 언론 보도(경남신문·디지털타임스·경향신문 등)를 바탕으로 정리한 것으로, 세부 사항은 모집공고와 견본주택을 통해 확인하시기 바랍니다.
+    </p>
+  </div>
+
+  <!-- 전화 CTA -->
+  <a href="tel:055-249-9633" class="tel-cta">
+    <span>☎ 055-249-9633<small>시행사 보유분 로얄호실 직통</small></span>
+  </a>
+
+  <!-- 신청 폼 -->
+  <div class="form-sec" id="apply-form">
+    <h2>방문예약 · 상담신청</h2>
+    <p class="desc">정보를 남겨주시면 담당자가 빠르게 연락드립니다.</p>
+
+    <div class="field">
+      <label>이름 <span class="req">*</span></label>
+      <input type="text" id="f-name" placeholder="예) 홍길동">
+    </div>
+    <div class="field">
+      <label>연락처 <span class="req">*</span></label>
+      <input type="tel" id="f-phone" placeholder="예) 01012345678 (- 없이 숫자만)">
+    </div>
+    <div class="field">
+      <label>관심 평형</label>
+      <select id="f-type">
+        <option value="">선택 안 함</option>
+        <option>84㎡</option>
+        <option>106㎡</option>
+        <option>미정 / 상담 후 결정</option>
+      </select>
+    </div>
+
+    <div class="agree-box">
+      <b>[개인정보 수집·이용 동의]</b><br>
+      · 수집 항목: 이름, 연락처, 관심 평형(선택)<br>
+      · 수집 목적: 창원자이 더 스카이 분양 상담 및 방문 안내<br>
+      · 보유 기간: 상담 종료 후 6개월 이내 파기<br>
+      · 동의를 거부할 수 있으며, 거부 시 상담 신청이 제한됩니다.
+    </div>
+    <label class="agree">
+      <input type="checkbox" id="f-agree">
+      개인정보 수집·이용에 동의합니다. <span style="color:var(--brand)">(필수)</span>
+    </label>
+
+    <button class="submit" onclick="submitForm()">상담 신청하기</button>
+    <div class="msg" id="f-msg"></div>
+  </div>
+
+  <div class="foot">
+    창원자이 더 스카이 · 분양 정보 안내<br>
+    본 페이지는 분양 정보 제공을 위한 안내 페이지입니다.<br>
+    문의 ☎ 055-249-9633
+  </div>
+
+</div>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+  const SUPABASE_URL = 'https://cxhdphaqomofvoyfetsd.supabase.co'
+  const SUPABASE_KEY = 'sb_publishable_4hRhsvwH8p4Y7nlrr-9VvA_CVHy_NqM'
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+  function showMsg(t, type){
+    const m = document.getElementById('f-msg')
+    m.textContent = t; m.className = 'msg ' + type
+  }
+
+  window.submitForm = async function(){
+    const name = document.getElementById('f-name').value.trim()
+    const phone = document.getElementById('f-phone').value.trim()
+    const type = document.getElementById('f-type').value
+    const agree = document.getElementById('f-agree').checked
+
+    if(!name || !phone){ showMsg('이름과 연락처를 입력해주세요.', 'err'); return }
+    if(!/^[0-9]{9,11}$/.test(phone)){ showMsg('연락처는 숫자만 정확히 입력해주세요.', 'err'); return }
+    if(!agree){ showMsg('개인정보 수집·이용 동의(필수)에 체크해주세요.', 'err'); return }
+
+    showMsg('신청 접수 중입니다...', 'ok')
+    const btn = document.querySelector('.submit'); btn.disabled = true
+
+    try{
+      const { error } = await sb.from('leads').insert({
+        project: '창원자이 더 스카이',
+        name, phone,
+        unit_type: type || null
+      })
+      if(error){
+        showMsg('접수 중 오류가 발생했습니다. 전화(055-249-9633)로 문의해주세요.', 'err')
+        btn.disabled = false
+        return
+      }
+      showMsg('✅ 신청이 완료되었습니다! 담당자가 빠르게 연락드리겠습니다.', 'ok')
+      ;['f-name','f-phone'].forEach(id=>document.getElementById(id).value='')
+      document.getElementById('f-type').value=''
+      document.getElementById('f-agree').checked=false
+      setTimeout(()=>{ btn.disabled=false }, 2500)
+    }catch(e){
+      showMsg('접수 중 오류가 발생했습니다. 전화(055-249-9633)로 문의해주세요.', 'err')
+      btn.disabled = false
+    }
+  }
+</script>
+
+<!-- 스크롤 따라다니는 고정 접수 배너 -->
+<div class="float-bar" id="floatBar">
+  <div class="fb-tx">
+    <div class="fb-t">🔥 로얄호실 선착순 진행중</div>
+    <div class="fb-s">입주 시까지 계약금 5%만 · 지금 상담 신청</div>
+  </div>
+  <button class="fb-btn" onclick="document.getElementById('apply-form').scrollIntoView({behavior:'smooth'})">상담 신청 →</button>
+</div>
+
+<script>
+  // 신청 폼이 화면에 보이면 고정 배너 숨김
+  (function(){
+    const bar = document.getElementById('floatBar');
+    const form = document.getElementById('apply-form');
+    if(!bar || !form || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          bar.style.opacity = '0';
+          bar.style.pointerEvents = 'none';
+          bar.style.transform = 'translateX(-50%) translateY(140%)';
+        } else {
+          bar.style.opacity = '1';
+          bar.style.pointerEvents = 'auto';
+          bar.style.transform = 'translateX(-50%) translateY(0)';
+        }
+      });
+    }, { threshold: 0.15 });
+    io.observe(form);
+  })();
+</script>
+</body>
+</html>
