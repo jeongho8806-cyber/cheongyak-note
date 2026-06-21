@@ -138,17 +138,23 @@ exports.handler = async function (event) {
 
   // 특정 단지 거래이력 (kind별로 매매/전월세/분양권 모두 지원, 기간 선택)
   if (p.lawd && p.apt) {
-    // months 파라미터로 조회 기간 결정 (기본 12개월, 최대 24개월)
+    // months 파라미터로 조회 기간 결정 (기본 12개월, 최대 60개월=5년)
     let span = parseInt(p.months || "12", 10);
     if (isNaN(span) || span < 1) span = 12;
-    if (span > 24) span = 24;
+    if (span > 60) span = 60;
     const monthsHist = [];
     for (let i = 0; i >= -(span - 1); i--) monthsHist.push(ymd(i));
     try {
-      const results = await Promise.all(monthsHist.map((mm) =>
-        fetch(buildUrl(endpoint, p.lawd, mm, KEY, "300")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
-      ));
-      let rows = []; results.forEach((a) => { rows = rows.concat(a); });
+      // 한 번에 전부 병렬로 던지면 외부 API 부담 → 6개월씩 묶어 순차 처리
+      let rows = [];
+      const CHUNK = 6;
+      for (let c = 0; c < monthsHist.length; c += CHUNK) {
+        const part = monthsHist.slice(c, c + CHUNK);
+        const results = await Promise.all(part.map((mm) =>
+          fetch(buildUrl(endpoint, p.lawd, mm, KEY, "300")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
+        ));
+        results.forEach((a) => { rows = rows.concat(a); });
+      }
       const target = normName(p.apt);
       const head = target.slice(0, 4); // 앞 4글자로 느슨하게 매칭
       rows = rows.filter((it) => { const n = normName(it.apt); return n === target || n.indexOf(target) >= 0 || target.indexOf(n) >= 0 || (head && n.indexOf(head) >= 0); });
