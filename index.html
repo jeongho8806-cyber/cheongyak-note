@@ -82,6 +82,8 @@
   .lv-region{margin-bottom:28px}
   .lv-rgh{font-size:17px;font-weight:800;margin-bottom:12px;padding-left:11px;border-left:4px solid var(--brand);display:flex;align-items:center;gap:8px}
   .lv-rgh span{font-size:13px;color:var(--muted);font-weight:600}
+  .gugun-band{display:flex;align-items:center;gap:8px;background:var(--brand-soft);border-left:5px solid var(--brand);border-radius:0 9px 9px 0;padding:10px 14px;margin:0 0 12px;font-size:14.5px;font-weight:800;color:var(--brand-dark)}
+  .gugun-band .gb-cnt{font-size:12px;color:var(--brand);font-weight:700;background:#fff;padding:2px 9px;border-radius:999px}
   header{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;width:100%}
   .head{display:flex;align-items:center;gap:26px;height:60px}
   .logo{font-size:21px;font-weight:800;letter-spacing:-.5px}
@@ -302,6 +304,9 @@
   /* 지역별 화면 탭 */
   .rg-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
   .news-sort{display:flex;gap:7px;margin:-6px 0 16px}
+  .news-searching{font-size:14px;color:var(--ink);margin:0 0 14px;padding:10px 14px;background:var(--brand-soft);border-radius:9px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .news-searching b{color:var(--brand-dark)}
+  .news-searching span{font-size:12.5px;color:var(--brand);font-weight:700;cursor:pointer;background:#fff;padding:5px 11px;border-radius:999px;white-space:nowrap}
   .ns-btn{font-size:13px;font-weight:700;padding:7px 15px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#777;cursor:pointer;transition:.12s}
   .ns-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .rg-tab{font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
@@ -1929,7 +1934,7 @@ function openList(kind){
   const statusTabs=[
     ['all','전체',items.length],
     ['upcoming','분양예정',cnt.upcoming],
-    ['ongoing','진행중·줍줍',cnt.ongoing],
+    ['ongoing','청약중·줍줍',cnt.ongoing],
     ['done','청약마감',cnt.done],
   ].map(([k,label,n])=>`<span class="status-tab ${LIST_STATE.status===k?'on':''}" onclick="selectListStatus('${k}')">${label} <b>${n}</b></span>`).join('');
   const statusBar=`<div class="status-tabs">${statusTabs}</div>`;
@@ -1977,8 +1982,8 @@ function buildListBody(kind, items){
     });
     return order.map(gg=>{
       const cards=g[gg].map(s=>listCard(s)).join('');
-      return `<div style="margin-bottom:18px">
-        <div style="font-size:14px;font-weight:800;color:#444;margin:0 0 10px;padding-left:9px;border-left:3px solid var(--brand)">${gg} <span style="font-size:12px;color:var(--muted);font-weight:600">${g[gg].length}건</span></div>
+      return `<div style="margin-bottom:20px">
+        <div class="gugun-band">${gg} <span class="gb-cnt">${g[gg].length}건</span></div>
         <div class="card-grid">${cards}</div>
       </div>`;
     }).join('');
@@ -3327,16 +3332,17 @@ async function searchNationwide(kind){
 const NEWS_TABS=[
   ['all','전체'],['apt','청약·분양'],['policy','정책·대출'],['redev','재건축·재개발'],['market','시세·집값']
 ];
-let NEWS_STATE={ tab:'all', sort:'date', items:[], loading:false, shown:12 };
+let NEWS_STATE={ tab:'all', sort:'date', q:'', items:[], loading:false, shown:12 };
 const NEWS_CACHE={};
 let NEWS_RANK=[]; // 주요 뉴스 TOP (정확도순)
 const NEWS_PAGE=12; // 더보기 단위
 function openNews(tab, sort){
   NEWS_STATE.tab = tab || 'all';
   if(sort) NEWS_STATE.sort = sort;
-  NEWS_STATE.shown = NEWS_PAGE; // 탭 바꾸면 다시 12개부터
+  NEWS_STATE.q='';           // 카테고리 누르면 검색 해제
+  NEWS_STATE.shown = NEWS_PAGE;
   renderNewsView();
-  loadNews(NEWS_STATE.tab);
+  loadNews();
   loadNewsRank();
 }
 // 정렬만 바꾸기 (최신순/정확도순)
@@ -3345,7 +3351,22 @@ function setNewsSort(sort){
   NEWS_STATE.sort=sort;
   NEWS_STATE.shown=NEWS_PAGE;
   renderNewsView();
-  loadNews(NEWS_STATE.tab);
+  loadNews();
+}
+// 뉴스 키워드 검색
+function searchNews(){
+  const inp=document.getElementById('news-search-input');
+  const q=(inp?inp.value:'').trim();
+  NEWS_STATE.q=q;
+  NEWS_STATE.shown=NEWS_PAGE;
+  renderNewsView();
+  loadNews();
+}
+function clearNewsSearch(){
+  NEWS_STATE.q='';
+  NEWS_STATE.shown=NEWS_PAGE;
+  renderNewsView();
+  loadNews();
 }
 function moreNews(){
   NEWS_STATE.shown += NEWS_PAGE;
@@ -3358,7 +3379,7 @@ function renderNewsView(){
   if(NEWS_STATE.loading){
     body='<div class="locked">📰 최신 부동산 뉴스를 불러오는 중입니다...</div>';
   } else if(!NEWS_STATE.items.length){
-    body='<div class="locked">표시할 뉴스가 없습니다. 잠시 후 다시 시도해 주세요.</div>';
+    body='<div class="locked">'+(NEWS_STATE.q?("'"+NEWS_STATE.q+"' 검색 결과가 없습니다. 다른 키워드로 검색해 보세요."):'표시할 뉴스가 없습니다. 잠시 후 다시 시도해 주세요.')+'</div>';
   } else {
     const total=NEWS_STATE.items.length;
     const shown=Math.min(NEWS_STATE.shown, total);
@@ -3386,7 +3407,14 @@ function renderNewsView(){
       <span class="kb-go">입장하기 →</span>
     </a>
     ${renderNewsRank()}
-    <div class="rg-tabs">${tabs}</div>
+    <div class="searchbar-wrap" style="margin:0 0 14px">
+      <div class="searchbar" style="display:flex;align-items:center;gap:8px">
+        <span class="ico">🔍</span>
+        <input type="text" id="news-search-input" placeholder="뉴스 검색 (예: 강남 재건축, DSR, 동탄 청약)" value="${NEWS_STATE.q||''}" onkeyup="if(event.key==='Enter')searchNews()" autocomplete="off" style="flex:1">
+        <button onclick="searchNews()" style="flex-shrink:0;background:var(--brand);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">검색</button>
+      </div>
+    </div>
+    ${NEWS_STATE.q ? `<div class="news-searching">'<b>${NEWS_STATE.q}</b>' 검색 결과 <span onclick="clearNewsSearch()">✕ 검색 해제</span></div>` : `<div class="rg-tabs">${tabs}</div>`}
     <div class="news-sort">
       <button class="ns-btn ${NEWS_STATE.sort==='date'?'on':''}" onclick="setNewsSort('date')">🕒 최신순</button>
       <button class="ns-btn ${NEWS_STATE.sort==='sim'?'on':''}" onclick="setNewsSort('sim')">⭐ 정확도순</button>
@@ -3421,21 +3449,28 @@ async function loadNewsRank(){
     if(NEWS_RANK.length) renderNewsView();
   }catch(e){ NEWS_RANK=[]; }
 }
-async function loadNews(tab){
+async function loadNews(){
   const sort=NEWS_STATE.sort||'date';
-  const ck=tab+'_'+sort;
+  const q=NEWS_STATE.q||'';
+  const tab=NEWS_STATE.tab;
+  // 캐시 키: 검색이면 q 기준, 아니면 카테고리 기준
+  const ck=(q?('q:'+q):tab)+'_'+sort;
   if(NEWS_CACHE[ck]){ NEWS_STATE.items=NEWS_CACHE[ck]; NEWS_STATE.loading=false; renderNewsView(); return; }
   NEWS_STATE.loading=true; renderNewsView();
+  // 검색이면 q 파라미터, 아니면 preset(카테고리)
+  const param = q ? ('q='+encodeURIComponent(q)) : ('preset='+tab);
   try{
-    const res=await fetch('/api/news?preset='+tab+'&display=100&sort='+sort);
+    const res=await fetch('/api/news?'+param+'&display=100&sort='+sort);
     const json=await res.json();
     const items=(json&&json.items)?json.items:[];
     NEWS_CACHE[ck]=items;
-    NEWS_STATE.items=items; NEWS_STATE.loading=false;
-    if(NEWS_STATE.tab===tab) renderNewsView();
+    // 응답 도착 시점에 검색어/탭이 그대로면 반영 (빠른 연속 입력 방지)
+    if((NEWS_STATE.q||'')===q && NEWS_STATE.tab===tab){
+      NEWS_STATE.items=items; NEWS_STATE.loading=false; renderNewsView();
+    }
   }catch(e){
     NEWS_STATE.loading=false; NEWS_STATE.items=[];
-    if(NEWS_STATE.tab===tab) renderNewsView();
+    renderNewsView();
   }
 }
 // 홈 미니: 최신 뉴스 5개
