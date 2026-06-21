@@ -964,7 +964,9 @@
 const FORM_ENDPOINT = "";
 const GFORM_FIELDS = { name:"", phone:"", site:"" };
 const KAKAO_ROOM = "https://open.kakao.com/여기에카톡오픈채팅주소";
-const TODAY = new Date(2026,5,18);
+const TODAY = (()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; })();
+// 로컬 기준 YYYY-MM-DD 문자열 (toISOString의 UTC 변환으로 하루 밀리는 문제 방지)
+function localYmd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
 /* ===== 현장 데이터 (카페 사이트와 동일 구조) ===== */
 const DATA = {
@@ -1225,9 +1227,9 @@ function renderAll(){
   }
 
   // 임박 마감 (실제 접수 마감일이 오늘 이후 ~ 7일 이내인 단지)
-  const todayStr = TODAY.toISOString().slice(0,10);
+  const todayStr = localYmd(TODAY);
   const in7=new Date(TODAY); in7.setDate(in7.getDate()+7);
-  const in7Str=in7.toISOString().slice(0,10);
+  const in7Str=localYmd(in7);
   const closing = sites
     .filter(s=> s.rceptEnd && s.rceptEnd>=todayStr && s.rceptEnd<=in7Str)
     .sort((a,b)=> a.rceptEnd.localeCompare(b.rceptEnd))
