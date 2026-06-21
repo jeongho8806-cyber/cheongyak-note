@@ -1,7 +1,7 @@
 // netlify/functions/trade.js
 // 국토교통부 실거래가(XML) 중계 함수 — 매매/전세/분양권
 // 호출 예:
-//   /api/trade                         매매 신고가 TOP (주요지역)
+//   /api/trade                         매매 신고가 TOP (주요지역, 1년 추세 포함)
 //   /api/trade?kind=rent               전월세 신고가 TOP (보증금 기준)
 //   /api/trade?kind=silv               분양권 신고가 TOP
 //   /api/trade?lawd=11680&ymd=202606   특정 지역/월 (매매)
@@ -122,6 +122,9 @@ function buildUrl(endpoint, lawd, dealYmd, key, rows) {
     "&pageNo=1&numOfRows=" + encodeURIComponent(rows);
 }
 
+// 단지명 정규화 (동·괄호·특수문자 제거 후 비교)
+function normName(s){ return (s || "").replace(/\s|\(.*?\)|[0-9]+동|[~,\-]/g, ""); }
+
 exports.handler = async function (event) {
   const p = event.queryStringParameters || {};
   const KEY = process.env.APPLYHOME_KEY;
@@ -146,10 +149,9 @@ exports.handler = async function (event) {
         fetch(buildUrl(endpoint, p.lawd, mm, KEY, "300")).then((r) => r.text()).then((x) => parser(x, p.lawd)).catch(() => [])
       ));
       let rows = []; results.forEach((a) => { rows = rows.concat(a); });
-      const norm = (s) => (s || "").replace(/\s|\(.*?\)|[0-9]+동|[~,\-]/g, "");
-      const target = norm(p.apt);
+      const target = normName(p.apt);
       const head = target.slice(0, 4); // 앞 4글자로 느슨하게 매칭
-      rows = rows.filter((it) => { const n = norm(it.apt); return n === target || n.indexOf(target) >= 0 || target.indexOf(n) >= 0 || (head && n.indexOf(head) >= 0); });
+      rows = rows.filter((it) => { const n = normName(it.apt); return n === target || n.indexOf(target) >= 0 || target.indexOf(n) >= 0 || (head && n.indexOf(head) >= 0); });
       rows.sort((a, b) => (b.year + pad(b.month) + pad(b.day)).localeCompare(a.year + pad(a.month) + pad(a.day)));
       return resp(200, { items: rows });
     } catch (e) { return resp(502, { error: "단지 이력 조회 실패", detail: String(e) }); }
@@ -184,7 +186,7 @@ exports.handler = async function (event) {
     } catch (e) { return resp(502, { error: "조회 실패", detail: String(e) }); }
   }
 
-  // 기본: 주요 지역 신고가 TOP
+  // 기본: 주요 지역 신고가 TOP (+ 상위 단지 1년 추세 시계열)
   const regions = kind === "silv" ? SILV_REGIONS : MAJOR_REGIONS;
   const months = [ymd(0), ymd(-1)];
   let all = [];
@@ -195,9 +197,56 @@ exports.handler = async function (event) {
     }
     (await Promise.all(tasks)).forEach((a) => { all = all.concat(a); });
     all.sort((a, b) => b.amount - a.amount);
-    return resp(200, { items: all.slice(0, 30), totalScanned: all.length });
+    const top = all.slice(0, 30);
+
+    // ── 상위 단지들의 최근 1년 추세 시계열 붙이기 ──
+    // 화면에 실제로 보이는 단지 수만 1년치 추가 조회 (타임아웃 방지)
+    // 같은 (지역코드+단지정규명) 조합은 한 번만 조회해 재사용
+    await attachYearSeries(top, endpoint, KEY, parser, isRentKind);
+
+    return resp(200, { items: top, totalScanned: all.length });
   } catch (e) { return resp(502, { error: "집계 실패", detail: String(e) }); }
 };
+
+// 상위 단지들에 _series(최근 1년, 최고가 평형 기준 가격 흐름) 추가
+async function attachYearSeries(top, endpoint, KEY, parser, isRentKind) {
+  // 1년치는 호출이 많아 무거움 → 상위 N개 단지만, 지역별 1년치를 한 번씩만 조회해 공유
+  const LIMIT_APTS = 12;           // 1년 시계열 붙일 상위 단지 수 (화면 6개 + 여유)
+  const targets = top.slice(0, LIMIT_APTS);
+
+  // 필요한 (지역코드) 목록 — 지역별 1년치를 모아두면 그 안에서 단지별로 추려쓸 수 있음
+  const lawds = [...new Set(targets.map((t) => t.lawd).filter(Boolean))];
+  const months12 = [];
+  for (let i = 0; i >= -11; i--) months12.push(ymd(i));
+
+  // 지역코드별로 1년치 거래를 캐싱 (지역 수 × 12개월 호출)
+  // 보통 상위 단지는 강남·서초 등 소수 지역에 몰려 호출 수가 크지 않음
+  const regionCache = {};
+  await Promise.all(lawds.map(async (lawd) => {
+    let rows = [];
+    // 12개월을 3개씩 4묶음으로 나눠 순차 처리 (동시 폭주 방지)
+    for (let i = 0; i < months12.length; i += 3) {
+      const chunk = months12.slice(i, i + 3);
+      const part = await Promise.all(chunk.map((mm) =>
+        fetch(buildUrl(endpoint, lawd, mm, KEY, "1000")).then((r) => r.text()).then((x) => parser(x, lawd)).catch(() => [])
+      ));
+      part.forEach((a) => { rows = rows.concat(a); });
+    }
+    regionCache[lawd] = rows;
+  }));
+
+  // 각 상위 단지: 같은 지역 1년치에서 같은 단지+최고가 평형의 가격 흐름 추출
+  targets.forEach((t) => {
+    const pool = regionCache[t.lawd] || [];
+    const tn = normName(t.apt);
+    const repArea = Math.round(t.area);
+    const series = pool
+      .filter((x) => normName(x.apt) === tn && Math.round(x.area) === repArea)
+      .sort((a, b) => (a.year + pad(a.month) + pad(a.day)).localeCompare(b.year + pad(b.month) + pad(b.day)))
+      .map((x) => x.amount);
+    if (series.length >= 2) t._series = series.slice(-24); // 1년 + 여유(최대 24점)
+  });
+}
 
 function pad(s) { return String(s).padStart(2, "0"); }
 // 거래가 매우 많은 지역: 단지+면적별 대표(최고가) 거래만 남겨 응답 크기 축소
