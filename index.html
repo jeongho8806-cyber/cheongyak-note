@@ -470,6 +470,14 @@
   .span-btn{font-size:12px;font-weight:700;padding:5px 13px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#666;cursor:pointer;transition:.12s}
   .span-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .trend-avg{font-size:13px;color:var(--brand);font-weight:800;margin-bottom:12px}
+  /* 차트 헤더 매매/전세 + 평형 컨트롤 */
+  .trend-ctrl{display:flex;align-items:center;gap:8px;margin:8px 0 6px;flex-wrap:wrap}
+  .trend-mode{display:inline-flex;border:1.5px solid var(--line);border-radius:9px;overflow:hidden}
+  .trend-mode .mode-btn{font-size:12.5px;font-weight:700;padding:6px 16px;border:none;background:#fff;color:#666;cursor:pointer;transition:.12s}
+  .trend-mode .mode-btn+.mode-btn{border-left:1.5px solid var(--line)}
+  .trend-mode .mode-btn.on{background:var(--brand);color:#fff}
+  .trend-area-sel{border:1.5px solid var(--line);border-radius:9px;padding:6px 11px;font-size:12.5px;font-family:inherit;font-weight:600;color:var(--ink);background:#fff;outline:none;cursor:pointer;max-width:200px}
+  .trend-area-sel:focus{border-color:var(--brand)}
   .trend-svg{width:100%;height:auto;display:block}
   .trend-legend{display:flex;gap:16px;justify-content:center;margin-top:6px;font-size:11.5px;color:var(--muted)}
   .trend-legend span{display:inline-flex;align-items:center;gap:5px}
@@ -801,7 +809,7 @@
 
       <!-- 오늘 마감 -->
       <div class="block" id="b-today">
-        <div class="block-h"><span class="ico">⏰</span><span class="t">오늘 마감</span><span class="cnt" id="today-cnt"></span></div>
+        <div class="block-h"><span class="ico">⏰</span><span class="t">마감 임박</span><span class="cnt" id="today-cnt"></span><span style="font-size:11.5px;color:var(--muted);font-weight:600;margin-left:6px">7일 이내 접수 마감</span></div>
         <div class="today-grid" id="today-grid"></div>
       </div>
 
@@ -1216,16 +1224,26 @@ function renderAll(){
   }).join('');
   }
 
-  // 오늘 마감 (마감된 것 중 최근 2개를 "오늘 마감"으로 시연)
-  const done=sites.filter(s=>isDone(s.when)).slice(0,2);
-  document.getElementById('today-cnt').textContent=`(${done.length})`;
-  document.getElementById('today-grid').innerHTML=done.map(s=>`
+  // 임박 마감 (실제 접수 마감일이 오늘 이후 ~ 7일 이내인 단지)
+  const todayStr = TODAY.toISOString().slice(0,10);
+  const in7=new Date(TODAY); in7.setDate(in7.getDate()+7);
+  const in7Str=in7.toISOString().slice(0,10);
+  const closing = sites
+    .filter(s=> s.rceptEnd && s.rceptEnd>=todayStr && s.rceptEnd<=in7Str)
+    .sort((a,b)=> a.rceptEnd.localeCompare(b.rceptEnd))
+    .slice(0,4);
+  const tCntEl=document.getElementById('today-cnt');
+  const tGridEl=document.getElementById('today-grid');
+  if(tCntEl) tCntEl.textContent=`(${closing.length})`;
+  if(tGridEl) tGridEl.innerHTML=closing.map(s=>{
+    const isToday = s.rceptEnd===todayStr;
+    return `
     <div class="tcard" onclick="openSite('${s.id}')">
-      <div class="tline"><span class="st">접수 중</span><span class="ty">${s.d.type} · ${s.d.bd}</span></div>
+      <div class="tline"><span class="st">${isToday?'오늘 마감':'접수 중'}</span><span class="ty">${s.d.type} · ${s.d.bd}</span></div>
       <h3>${s.name}</h3>
       <div class="desc">${s.d.loc} · ${s.d.hh}</div>
-      <div class="ddate">접수 마감 ${TODAY.getFullYear()}-06-18</div>
-    </div>`).join('') || '<p style="color:#aaa;font-size:13px">오늘 마감 단지가 없습니다.</p>';
+      <div class="ddate">접수 마감 ${s.rceptEnd}</div>
+    </div>`;}).join('') || '<p style="color:#aaa;font-size:13px">7일 내 마감 예정 단지가 없습니다.</p>';
 
   // 이번주 일정 (진행예정 6개)
   const sched=live.slice(0,6);
@@ -2392,12 +2410,23 @@ function mapApiItem(it){
   let when = "2026년 분양예정";
   if(pblancDe){ const m=pblancDe.match(/(\d{4})-(\d{2})/); if(m) when = `${m[1]}.${m[2]} 분양`; }
   const hh = it.TOT_SUPLY_HSHLDCO ? (Number(it.TOT_SUPLY_HSHLDCO).toLocaleString()+"세대") : "-";
+  // 실제 접수 마감일: 2순위 접수일 > 1순위 접수일 > 특별공급 접수일 중 가장 늦은 날
+  const rcDates=[
+    safeDate(it.GNRL_RNK2_CRSPAREA_RCPTDE),
+    safeDate(it.GNRL_RNK2_ETC_AREA_RCPTDE),
+    safeDate(it.GNRL_RNK1_CRSPAREA_RCPTDE),
+    safeDate(it.GNRL_RNK1_ETC_AREA_RCPTDE),
+    safeDate(it.SPSPLY_RCEPT_ENDDE),
+    safeDate(it.SPSPLY_RCEPT_BGNDE)
+  ].filter(d=>d && /^\d{4}-\d{2}-\d{2}/.test(d));
+  const rceptEnd = rcDates.length ? rcDates.sort().slice(-1)[0] : "";
   return {
     id: "api-"+it.HOUSE_MANAGE_NO,
     name: it.HOUSE_NM || "(이름미상)",
     when: when,
     region: region,
     fromApi: true,
+    rceptEnd: rceptEnd,   // YYYY-MM-DD (실제 접수 마감일)
     d: {
       loc: it.HSSPLY_ADRES || region,
       hh: hh,
@@ -3353,8 +3382,16 @@ function syncSortBtn(){
   n.classList.toggle('on', HIST_VIEW.sort==='new');
   o.classList.toggle('on', HIST_VIEW.sort==='old');
 }
+// 차트 헤더 평형 드롭다운과 거래이력 평형 드롭다운 값 동기화
+function syncAreaSel(){
+  const a=document.getElementById('trend-area-sel');
+  const b=document.getElementById('hist-area-sel');
+  if(a) a.value=HIST_VIEW.py;
+  if(b) b.value=HIST_VIEW.py;
+}
 function renderTrendChart(){
   if(!HIST_DATA) return;
+  syncAreaSel();
   const {rows, groups, kind}=HIST_DATA;
   // 선택된 평형 데이터 (전체면 전체, 특정 평형이면 그 평형만)
   const sel = HIST_VIEW.py==='all' ? rows : (groups[HIST_VIEW.py]||rows);
@@ -3680,12 +3717,13 @@ async function loadDualPriceSummary(it, kind){
   if(cols[1]) cols[1].style.cursor='pointer';
 }
 // 거래이력을 매매/전세로 전환하고 그 위치로 스크롤
-function switchHistKind(newKind){
+function switchHistKind(newKind, noScroll){
   if(!HIST_CTX) return;
   if(HIST_CTX.kind!==newKind){
     HIST_CTX={it:HIST_CTX.it, kind:newKind};
     loadTradeHistory();
   }
+  if(noScroll) return;
   const el=document.getElementById('trade-history');
   if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth', block:'start'}), 100);
 }
@@ -3722,6 +3760,30 @@ async function loadTradeHistory(){
     const hiV=Math.max(...amts), loV=Math.min(...amts);
     const avgV=Math.round(amts.reduce((a,b)=>a+b,0)/amts.length);
     const sumLbl = isRentKind(kind) ? '보증금' : '거래가';
+
+    // 면적(평형)별 그룹 → 드롭다운 옵션 (헤더에서 먼저 사용)
+    const groups={};
+    rows.forEach(r=>{ const py=areaToPyeong(r.area); (groups[py]=groups[py]||[]).push(r); });
+    const pyKeys=Object.keys(groups).map(Number).sort((a,b)=>b-a);
+    const optHtml=['<option value="all">전체 ('+pyKeys.length+'개 평형)</option>']
+      .concat(pyKeys.map(py=>{
+        const areas=[...new Set(groups[py].map(r=>r.area))].sort((a,b)=>a-b);
+        const al=areas.length>1?areas[0]+'~'+areas[areas.length-1]:areas[0];
+        return `<option value="${py}">${py}평 (${al}㎡) · ${groups[py].length}건</option>`;
+      })).join('');
+
+    // 매매/전세 전환 버튼 (분양권은 제외) — 현재 건물유형 기준
+    const isOffi = kind==='offitrade'||kind==='offirent';
+    const isVilla = kind==='villatrade'||kind==='villarent';
+    const saleK = isOffi?'offitrade':isVilla?'villatrade':'trade';
+    const rentK = isOffi?'offirent':isVilla?'villarent':'rent';
+    const showSaleRent = kind!=='silv';
+    const saleRentBtns = showSaleRent ? `
+      <div class="trend-mode">
+        <button class="mode-btn ${!isRentKind(kind)?'on':''}" onclick="switchHistKind('${saleK}',true)">매매</button>
+        <button class="mode-btn ${isRentKind(kind)?'on':''}" onclick="switchHistKind('${rentK}',true)">전세</button>
+      </div>` : '';
+
     const priceSum=`
       <div class="price-sum">
         <div class="ps-card hi"><div class="lbl">최고 ${sumLbl}</div><div class="val">${wonToKor(hiV)}</div></div>
@@ -3737,20 +3799,13 @@ async function loadTradeHistory(){
             <button class="span-btn ${HIST_SPAN===24?'on':''}" id="span-24" onclick="setHistSpan(24)">2년</button>
           </div>
         </div>
+        <div class="trend-ctrl">
+          ${saleRentBtns}
+          <select class="trend-area-sel" id="trend-area-sel" onchange="HIST_VIEW.py=this.value;syncAreaSel();renderHistRows()">${optHtml}</select>
+        </div>
         <div class="trend-avg" id="trend-avg">최근 거래 평균 ${wonToKor(avgV)}</div>
         <div id="trend-container"></div>
       </div>`;
-
-    // 면적(평형)별 그룹 → 드롭다운 옵션
-    const groups={};
-    rows.forEach(r=>{ const py=areaToPyeong(r.area); (groups[py]=groups[py]||[]).push(r); });
-    const pyKeys=Object.keys(groups).map(Number).sort((a,b)=>b-a);
-    const optHtml=['<option value="all">전체 ('+pyKeys.length+'개 평형)</option>']
-      .concat(pyKeys.map(py=>{
-        const areas=[...new Set(groups[py].map(r=>r.area))].sort((a,b)=>a-b);
-        const al=areas.length>1?areas[0]+'~'+areas[areas.length-1]:areas[0];
-        return `<option value="${py}">${py}평 (${al}㎡) · ${groups[py].length}건</option>`;
-      })).join('');
 
     // 신고가 계산: 각 평형 내에서 날짜순으로 직전 최고가를 넘으면 신고가
     pyKeys.forEach(py=>{
@@ -3767,7 +3822,7 @@ async function loadTradeHistory(){
       ${priceSum}
       <div class="hist-bar">
         <span class="lbl">거래이력</span>
-        <select class="hist-sel" id="hist-area-sel" onchange="HIST_VIEW.py=this.value;renderHistRows()">${optHtml}</select>
+        <select class="hist-sel" id="hist-area-sel" onchange="HIST_VIEW.py=this.value;syncAreaSel();renderHistRows()">${optHtml}</select>
         <span class="hist-cnt" id="hist-cnt"></span>
         <div class="hist-sort">
           <button class="sort-btn on" id="hs-new" onclick="HIST_VIEW.sort='new';syncSortBtn();renderHistRows()">최신순</button>
