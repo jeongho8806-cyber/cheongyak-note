@@ -251,9 +251,11 @@
 
   /* 실거래 신고가 TOP */
   .trade-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:8px}
-  .trade-row .trade-col{margin:0}
+  .trade-row .trade-col{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 16px 8px}
   .trade-row .trade-grid{grid-template-columns:minmax(0,1fr)}
   @media(max-width:900px){.trade-row{grid-template-columns:minmax(0,1fr)}}
+  .trade-row .trade-col .trade-card{box-shadow:none;border-color:#eef1f6;background:#fcfdff}
+  .trade-row .trade-col .trade-card:hover{box-shadow:0 3px 10px rgba(20,30,50,.08)}
   .trade-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   @media(max-width:560px){.trade-grid{grid-template-columns:minmax(0,1fr)}}
   .trade-card{display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow);cursor:pointer;transition:.13s}
