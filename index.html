@@ -30,7 +30,16 @@
   /* 카톡 공유방 배너 */
   .kakao-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,#FEE500,#FFD900);border-radius:12px;padding:14px 20px;margin:18px 0 0;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
   .kakao-banner:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.12)}
-  /* 창원자이 배너 */
+  /* 창원자이 슬라이드 배너 (히어로 오른쪽) */
+  .hero-slide{position:relative;background:#13243f;display:block}
+  .slide-track{position:relative;width:100%;flex:1;min-height:200px;overflow:hidden}
+  .slide-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .7s ease}
+  .slide-img.on{opacity:1}
+  .slide-cta{background:#13243f;color:#fff;font-size:13.5px;font-weight:800;text-align:center;padding:13px 12px;line-height:1.35}
+  .hero-slide:hover .slide-cta{background:#1a2f52}
+  .slide-dots{position:absolute;bottom:54px;left:0;right:0;display:flex;gap:6px;justify-content:center;z-index:2}
+  .slide-dots .sd{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45);transition:.3s}
+  .slide-dots .sd.on{background:#fff;width:18px;border-radius:4px}
   .cw-banner{display:block;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);margin:18px 0;background:#13243f;text-decoration:none;transition:.15s}
   .cw-banner:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.16)}
   .cw-row{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}
@@ -722,8 +731,7 @@
 <header><div class="wrap head">
   <div class="logo" onclick="goHome()" style="cursor:pointer">전국청약<b>지도</b></div>
   <nav class="gnb">
-    <a onclick="openListMenu('fast')">선착순</a>
-    <a onclick="openListMenu('all-list')">청약 단지</a>
+    <a onclick="openListMenu('all-list')">청약·줍줍</a>
     <a onclick="openTradeList('trade')">아파트 실거래</a>
     <a onclick="openTradeList('silv')">분양권 실거래</a>
     <a onclick="openTradeList('rent')">전월세 실거래</a>
@@ -751,15 +759,15 @@
       <p>전국 아파트·오피스텔의 최신 모집공고를 자동 정리. 단지명·일정·세대수를 빠르게 확인하고, 중요한 청약 일정을 놓치지 마세요.</p>
       <div class="hero-stats" id="hero-stats"></div>
     </div>
-    <div class="hero-spot" style="cursor:pointer" onclick="openKakaoRoom()">
-      <div class="badge" style="background:#3a2c00;color:#FEE500">카톡 공유방</div>
-      <div class="info" style="padding:46px 20px 22px;display:flex;flex-direction:column;align-items:center;text-align:center;height:100%;justify-content:center">
-        <div style="font-size:40px;margin-bottom:10px">💬</div>
-        <h3 style="font-size:18px">전국청약지도 카톡 공유방</h3>
-        <div class="loc" style="margin:6px 0 14px">실시간 분양·청약·무순위 정보를<br>가장 먼저 받아보세요</div>
-        <div style="background:#FEE500;color:#3a2c00;font-weight:800;font-size:14px;padding:11px 22px;border-radius:9px">입장하기 →</div>
+    <a class="hero-spot hero-slide" href="changwon-xi.html" target="_blank" rel="noopener" style="cursor:pointer;text-decoration:none">
+      <div class="badge" style="background:#13243f;color:#fff;z-index:2">분양 중</div>
+      <div class="slide-track" id="slide-track">
+        <img src="20260620_232411.png" alt="창원자이 더 스카이 투시도" class="slide-img on" onerror="this.style.display='none'">
+        <img src="20260620_232404.png" alt="창원자이 더 스카이 분양 안내" class="slide-img" onerror="this.style.display='none'">
       </div>
-    </div>
+      <div class="slide-cta">🔥 요즘 뜨거운 줍줍단지, 창원자이 자세히 보기 →</div>
+      <div class="slide-dots" id="slide-dots"><span class="sd on"></span><span class="sd"></span></div>
+    </a>
   </div>
 
   <!-- 지역별 / 주제별 카톡 소통방 -->
@@ -941,7 +949,7 @@
 <!-- 모바일 하단 탭바 -->
 <nav class="mobile-tabbar">
   <div class="mtab" onclick="goHome()"><span class="mt-ico">🏠</span>홈</div>
-  <div class="mtab" onclick="openListMenu('fast')"><span class="mt-ico">🔥</span>선착순</div>
+  <div class="mtab" onclick="openListMenu('all-list')"><span class="mt-ico">🔥</span>청약·줍줍</div>
   <div class="mtab" onclick="openTradeList('trade')"><span class="mt-ico">📈</span>실거래</div>
   <div class="mtab" onclick="openStats()"><span class="mt-ico">📊</span>통계</div>
   <div class="mtab" onclick="openNews('all')"><span class="mt-ico">📰</span>뉴스</div>
@@ -1872,8 +1880,8 @@ function openList(kind){
     items=sites.filter(s=>s.fast || s.isRemain);
   }else if(kind==='all-list' || kind==='week' || kind==='region'){
     kind='all-list'; LIST_STATE.kind='all-list';
-    title='🏢 청약 단지';
-    sub='전국 분양·청약 단지입니다. 지역·상태로 좁혀보거나 검색해 보세요.';
+    title='🏢 청약·줍줍 단지';
+    sub='전국 분양·청약 단지와 줍줍(무순위·선착순) 단지입니다. 지역·상태로 좁혀보거나 검색해 보세요.';
     items=sites;
   }else{ // notice
     title='📋 전체 모집공고';
@@ -1921,7 +1929,7 @@ function openList(kind){
   const statusTabs=[
     ['all','전체',items.length],
     ['upcoming','분양예정',cnt.upcoming],
-    ['ongoing','진행중·무순위',cnt.ongoing],
+    ['ongoing','진행중·줍줍',cnt.ongoing],
     ['done','청약마감',cnt.done],
   ].map(([k,label,n])=>`<span class="status-tab ${LIST_STATE.status===k?'on':''}" onclick="selectListStatus('${k}')">${label} <b>${n}</b></span>`).join('');
   const statusBar=`<div class="status-tabs">${statusTabs}</div>`;
@@ -3926,6 +3934,18 @@ async function loadTradeHistory(){
 
 renderAll();
 renderRoomGrid();
+// 히어로 창원자이 슬라이드 자동 전환
+(function(){
+  const imgs=document.querySelectorAll('#slide-track .slide-img');
+  const dots=document.querySelectorAll('#slide-dots .sd');
+  if(imgs.length<2) return;
+  let idx=0;
+  setInterval(()=>{
+    imgs[idx].classList.remove('on'); if(dots[idx]) dots[idx].classList.remove('on');
+    idx=(idx+1)%imgs.length;
+    imgs[idx].classList.add('on'); if(dots[idx]) dots[idx].classList.add('on');
+  }, 3500);
+})();
 loadApplyhome()
   .then(()=>{ renderAll(); return loadRemain(); })
   .then(()=>renderAll());
