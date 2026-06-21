@@ -33,7 +33,9 @@
   .highlight{background:var(--navy);color:#fff;text-align:center;padding:26px 20px}
   .highlight .hl-main{margin:0 auto 10px;background:#fff;color:var(--navy);font-size:22px;font-weight:800;padding:22px 16px;border-radius:14px;max-width:380px;line-height:1.4}
   .highlight .hl-main .big{display:block;color:var(--brand);font-size:27px;font-weight:800}
-  .highlight .hl-sub{font-size:12px;color:#9db2d4;line-height:1.6;margin-top:6px}
+  .highlight .hl-sub{font-size:13px;color:#cdd9ec;line-height:1.6;margin-top:10px}
+  .highlight .hl-tel-lab{font-size:12px;color:#9db2d4;margin-top:14px}
+  .highlight .hl-tel{display:inline-block;margin-top:6px;color:#fff;font-size:20px;font-weight:800;letter-spacing:.5px;text-decoration:none;background:var(--brand);padding:8px 20px;border-radius:10px;box-shadow:0 3px 10px rgba(255,107,26,.3)}
   .keys{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line)}
   .keys .k{background:#fff;padding:15px 16px}
   .keys .k .lab{font-size:12px;color:var(--muted);font-weight:600}
@@ -60,6 +62,28 @@
   .merit .m-tx{flex:1}
   .merit .m-t{font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.35}
   .merit .m-d{font-size:12.5px;color:#6b7280;line-height:1.55;margin-top:3px}
+  .price-tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .pt-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13.5px}
+  .qual{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .q-row{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:14px 13px;border:1px solid var(--line);border-radius:12px;background:#fcfdff}
+  .q-ico{width:34px;height:34px;flex-shrink:0;background:var(--brand-soft);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .q-tx{flex:1;display:flex;flex-direction:column;gap:3px}
+  .q-tx b{font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.3}
+  .q-tx span{font-size:11.5px;color:#6b7280;line-height:1.45}
+  .q-wide{grid-column:1 / -1;flex-direction:row;align-items:center;gap:11px}
+  .pt-row:last-child{border-bottom:none}
+  .pt-self{background:var(--brand-soft)}
+  .pt-self .pt-nm{color:var(--brand-dark)}
+  .pt-self .pt-sale{color:var(--brand-dark);font-weight:800}
+  .pt-badge{display:inline-block;background:var(--brand);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:5px;vertical-align:middle}
+  .pt-when{font-size:11px;color:var(--brand-dark);font-weight:600}
+  .pt-head{background:var(--navy);color:#fff;font-weight:700;font-size:12.5px}
+  .pt-nm{flex:1.4;font-weight:700;color:var(--ink)}
+  .pt-head .pt-nm{color:#fff}
+  .pt-sale{flex:1;text-align:right;color:var(--brand-dark);font-weight:800}
+  .pt-head .pt-sale{color:#fff;font-weight:700}
+  .pt-jeon{flex:1;text-align:right;color:#3a6ff0;font-weight:700}
+  .pt-head .pt-jeon{color:#fff;font-weight:700}
   .tel-cta{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--navy);color:#fff;padding:16px;margin:0;font-size:20px;font-weight:800;letter-spacing:.5px}
   .tel-cta small{font-size:12px;color:#9db2d4;font-weight:600;display:block}
 
@@ -137,7 +161,9 @@
   <!-- 계약금 강조 -->
   <div class="highlight">
     <div class="hl-main"><span class="big">입주 시까지 계약금 5%만</span></div>
-    <div class="hl-sub">초기 자금 부담을 낮춘 조건으로 진행 중입니다 · 자세한 내용은 ☎ 055-249-9633</div>
+    <div class="hl-sub">초기 자금 부담을 낮춘 조건으로 진행 중입니다</div>
+    <div class="hl-tel-lab">자세한 내용은 로얄호실 직통번호</div>
+    <a href="tel:055-249-9633" class="hl-tel">☎ 055-249-9633</a>
   </div>
 
   <!-- 핵심 요약 -->
@@ -158,6 +184,24 @@
     <div class="info-row"><span class="t">시공</span><span class="d">GS건설 (Xi 브랜드)</span></div>
   </div>
 
+  <!-- 인근 실거래가 참고 -->
+  <div class="sec">
+    <h2>인근 단지 실거래가 참고</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.6">성산구 일대 주요 단지의 국토교통부 실거래가입니다 (전용 84㎡ 기준).</p>
+
+    <div class="price-tbl">
+      <div class="pt-row pt-head"><span class="pt-nm">단지</span><span class="pt-sale">매매 실거래가</span></div>
+      <div class="pt-row"><span class="pt-nm">창원센트럴아이파크</span><span class="pt-sale">12억 3,154만</span></div>
+      <div class="pt-row"><span class="pt-nm">용지더샵레이크파크</span><span class="pt-sale">11억 4,500만</span></div>
+      <div class="pt-row"><span class="pt-nm">용지아이파크</span><span class="pt-sale">11억 1,000만</span></div>
+      <div class="pt-row pt-self"><span class="pt-nm">창원자이 더 스카이 <span class="pt-badge">분양</span></span><span class="pt-sale">8억대 <span class="pt-when">· 4년 뒤 입주</span></span></div>
+    </div>
+
+    <p style="font-size:11px;color:var(--muted);margin-top:13px;line-height:1.6">
+      ※ 국토교통부 실거래가 공개시스템 및 언론 보도 기준이며, 거래 시점·동·층에 따라 실제 가격은 다릅니다.
+    </p>
+  </div>
+
   <!-- 단지 특징 -->
   <div class="sec">
     <h2>단지 특징</h2>
@@ -168,20 +212,6 @@
       <span class="tag">다주택자 제한 없음</span>
       <span class="tag">실거주 의무 없음</span>
     </div>
-  </div>
-
-  <!-- 입지 안내 (사실 중심) -->
-  <div class="sec">
-    <h2>입지 안내</h2>
-    <ul class="points">
-      <li>인구 약 100만 창원특례시의 중심 성산구에 위치</li>
-      <li>성산구 중앙동 일원, 생활 인프라가 갖춰진 도심 입지</li>
-      <li>최고 49층 규모의 주거 단지</li>
-      <li>비규제지역으로 청약통장 없이 신청 가능</li>
-    </ul>
-    <p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">
-      ※ 본 안내는 분양 정보 제공을 목적으로 하며, 투자 수익을 보장하지 않습니다. 시세·전매·세금 등은 시장 상황과 개인 조건에 따라 달라질 수 있으니 계약 전 반드시 직접 확인하시기 바랍니다.
-    </p>
   </div>
 
   <!-- 이런 점이 좋습니다 (기사 기반 사실) -->
@@ -238,6 +268,34 @@
 
     <p style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6">
       ※ 위 내용은 GS건설 보도자료 및 언론 보도(경남신문·디지털타임스·경향신문 등)를 바탕으로 정리한 것으로, 세부 사항은 모집공고와 견본주택을 통해 확인하시기 바랍니다.
+    </p>
+  </div>
+
+  <!-- 청약 자격·조건 -->
+  <div class="sec">
+    <h2>비규제지역 혜택</h2>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.6">창원은 <b style="color:var(--brand-dark)">비규제지역</b>이라 청약 문턱이 낮습니다.</p>
+
+    <div class="qual">
+      <div class="q-row"><span class="q-ico">📕</span><div class="q-tx"><b>청약통장 없어도 OK</b><span>통장 가입 여부와 무관하게 신청 가능합니다.</span></div></div>
+      <div class="q-row"><span class="q-ico">🏠</span><div class="q-tx"><b>다주택자도 OK</b><span>주택 수 제한이 없어 이미 집이 있어도 신청할 수 있습니다.</span></div></div>
+      <div class="q-row"><span class="q-ico">🌏</span><div class="q-tx"><b>전국 어디서나 OK</b><span>거주지 제한이 없어 전국 어디에 살든 신청 가능합니다.</span></div></div>
+      <div class="q-row"><span class="q-ico">🔁</span><div class="q-tx"><b>재당첨 제한 없음</b><span>과거 당첨 이력과 무관하게 신청할 수 있습니다.</span></div></div>
+      <div class="q-row q-wide"><span class="q-ico">💸</span><div class="q-tx"><b>전매 가능 · 실거주 의무 없음</b><span>비규제지역으로 전매가 가능하며 실거주 의무가 없습니다.</span></div></div>
+    </div>
+  </div>
+
+  <!-- 입지 안내 (사실 중심) -->
+  <div class="sec">
+    <h2>입지 안내</h2>
+    <ul class="points">
+      <li>인구 약 100만 창원특례시의 중심 성산구에 위치</li>
+      <li>성산구 중앙동 일원, 생활 인프라가 갖춰진 도심 입지</li>
+      <li>최고 49층 규모의 주거 단지</li>
+      <li>비규제지역으로 청약통장 없이 신청 가능</li>
+    </ul>
+    <p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">
+      ※ 본 안내는 분양 정보 제공을 목적으로 하며, 투자 수익을 보장하지 않습니다. 시세·전매·세금 등은 시장 상황과 개인 조건에 따라 달라질 수 있으니 계약 전 반드시 직접 확인하시기 바랍니다.
     </p>
   </div>
 
