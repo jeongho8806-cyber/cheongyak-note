@@ -46,6 +46,22 @@
   .kb-txt{font-size:13.5px;color:#3a2c00;flex:1}
   .kb-txt b{font-weight:800}
   .kb-go{font-size:13px;font-weight:800;color:#3a2c00;background:rgba(0,0,0,.08);padding:7px 14px;border-radius:8px;white-space:nowrap}
+  /* 지역별/주제별 카톡 소통방 */
+  .room-box{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px 22px;margin:18px 0}
+  .room-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+  .room-badge{font-size:12px;font-weight:800;background:#FEE500;color:#3a2c00;padding:4px 12px;border-radius:999px}
+  .room-h{font-size:18px;font-weight:800;color:var(--ink)}
+  .room-sub{font-size:13px;color:var(--muted);margin:0 0 16px;line-height:1.6}
+  .room-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+  @media(max-width:760px){.room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:430px){.room-grid{grid-template-columns:minmax(0,1fr)}}
+  .room-card{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px 14px;cursor:pointer;transition:.13s}
+  .room-card:hover{border-color:#FEE500;transform:translateY(-2px);box-shadow:0 5px 14px rgba(0,0,0,.08)}
+  .room-ico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+  .room-tx{flex:1;min-width:0}
+  .room-name{font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .room-area{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .room-go{font-size:12px;font-weight:800;color:#3a2c00;background:#FEE500;padding:6px 11px;border-radius:8px;flex-shrink:0}
   @media(max-width:560px){.kb-txt{font-size:12px}.kb-go{display:none}}
   /* 목록 뷰 */
   #list-view{padding:18px 0 50px}
@@ -276,6 +292,9 @@
   .bldg-tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
   /* 지역별 화면 탭 */
   .rg-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .news-sort{display:flex;gap:7px;margin:-6px 0 16px}
+  .ns-btn{font-size:13px;font-weight:700;padding:7px 15px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#777;cursor:pointer;transition:.12s}
+  .ns-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .rg-tab{font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;background:#eef1f6;color:#555;cursor:pointer;transition:.12s}
   .rg-tab:hover{background:#e0e5ee}
   .rg-tab.on{background:var(--brand);color:#fff}
@@ -743,6 +762,16 @@
     </div>
   </div>
 
+  <!-- 지역별 / 주제별 카톡 소통방 -->
+  <div class="room-box">
+    <div class="room-head">
+      <span class="room-badge">💬 카톡 소통방</span>
+      <div class="room-h">우리 지역 청약 정보방</div>
+    </div>
+    <p class="room-sub">내 지역 방에 들어가 실시간 분양·청약·무순위 정보와 이웃들의 생생한 후기를 나눠보세요. 원하는 주제방도 골라보세요.</p>
+    <div class="room-grid" id="room-grid"></div>
+  </div>
+
   <!-- 창원자이 더 스카이 분양 배너 -->
   <a class="cw-banner" href="changwon-xi.html" target="_blank" rel="noopener">
     <div class="cw-row">
@@ -964,6 +993,18 @@
 const FORM_ENDPOINT = "";
 const GFORM_FIELDS = { name:"", phone:"", site:"" };
 const KAKAO_ROOM = "https://open.kakao.com/여기에카톡오픈채팅주소";
+// 권역별 / 주제별 카톡 소통방 (링크는 각 방 오픈채팅 개설 후 url 채우기)
+const KAKAO_ROOMS = [
+  { key:'seoul',  name:'서울 방',          area:'서울특별시',          ico:'🏙️', bg:'#E6F1FB', url:'' },
+  { key:'gyeon',  name:'경기·인천 방',     area:'경기 · 인천',         ico:'🌆', bg:'#E1F5EE', url:'' },
+  { key:'busan',  name:'부산·울산·경남 방', area:'부산 · 울산 · 경남',  ico:'🌊', bg:'#E6F1FB', url:'' },
+  { key:'daegu',  name:'대구·경북 방',     area:'대구 · 경북',         ico:'🏞️', bg:'#FAEEDA', url:'' },
+  { key:'daejeon',name:'대전·세종·충청 방', area:'대전 · 세종 · 충청',  ico:'🌳', bg:'#EEEDFE', url:'' },
+  { key:'gwangju',name:'광주·전라 방',     area:'광주 · 전북 · 전남',  ico:'🌾', bg:'#FBEAF0', url:'' },
+  { key:'gangwon',name:'강원·제주 방',     area:'강원 · 제주',         ico:'🏔️', bg:'#EAF3DE', url:'' },
+  { key:'news',   name:'부동산 뉴스방',    area:'뉴스 · 세금 · 정책',  ico:'📰', bg:'#F1EFE8', url:'' },
+  { key:'apply',  name:'청약·분양 정보방',  area:'무순위 · 줍줍 속보',  ico:'📋', bg:'#FCEBEB', url:'' },
+];
 const TODAY = (()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; })();
 // 로컬 기준 YYYY-MM-DD 문자열 (toISOString의 UTC 변환으로 하루 밀리는 문제 방지)
 function localYmd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -1463,6 +1504,26 @@ function startTicker(){
 
 /* ===== 카톡 공유방 ===== */
 function openKakaoRoom(){ window.open(KAKAO_ROOM,'_blank'); }
+function enterRoom(key){
+  const r=KAKAO_ROOMS.find(x=>x.key===key);
+  if(!r) return;
+  if(r.url){ window.open(r.url,'_blank'); }
+  else { alert(r.name+'은 곧 오픈 예정입니다! 우선 전국 공유방으로 안내해 드릴게요.'); window.open(KAKAO_ROOM,'_blank'); }
+}
+// 지역방 그리드 렌더
+function renderRoomGrid(){
+  const box=document.getElementById('room-grid');
+  if(!box) return;
+  box.innerHTML=KAKAO_ROOMS.map(r=>`
+    <div class="room-card" onclick="enterRoom('${r.key}')">
+      <div class="room-ico" style="background:${r.bg}">${r.ico}</div>
+      <div class="room-tx">
+        <div class="room-name">${r.name}</div>
+        <div class="room-area">${r.area}</div>
+      </div>
+      <span class="room-go">입장 →</span>
+    </div>`).join('');
+}
 
 /* ===== 네이버 지도 / 로드뷰 (사이트 내 모달) ===== */
 // 좌표 캐시 (같은 단지 반복 조회 방지)
@@ -3258,16 +3319,25 @@ async function searchNationwide(kind){
 const NEWS_TABS=[
   ['all','전체'],['apt','청약·분양'],['policy','정책·대출'],['redev','재건축·재개발'],['market','시세·집값']
 ];
-let NEWS_STATE={ tab:'all', items:[], loading:false, shown:12 };
+let NEWS_STATE={ tab:'all', sort:'date', items:[], loading:false, shown:12 };
 const NEWS_CACHE={};
 let NEWS_RANK=[]; // 주요 뉴스 TOP (정확도순)
 const NEWS_PAGE=12; // 더보기 단위
-function openNews(tab){
+function openNews(tab, sort){
   NEWS_STATE.tab = tab || 'all';
+  if(sort) NEWS_STATE.sort = sort;
   NEWS_STATE.shown = NEWS_PAGE; // 탭 바꾸면 다시 12개부터
   renderNewsView();
   loadNews(NEWS_STATE.tab);
   loadNewsRank();
+}
+// 정렬만 바꾸기 (최신순/정확도순)
+function setNewsSort(sort){
+  if(NEWS_STATE.sort===sort) return;
+  NEWS_STATE.sort=sort;
+  NEWS_STATE.shown=NEWS_PAGE;
+  renderNewsView();
+  loadNews(NEWS_STATE.tab);
 }
 function moreNews(){
   NEWS_STATE.shown += NEWS_PAGE;
@@ -3301,7 +3371,7 @@ function renderNewsView(){
   }
   lv.innerHTML=`
     <div class="lv-back" onclick="closeList()">‹ 홈으로</div>
-    <div class="lv-head"><h2>📰 부동산 뉴스</h2><p>네이버 뉴스 기준 · 최신순 자동 업데이트 · 제목을 누르면 원문 기사로 이동합니다</p></div>
+    <div class="lv-head"><h2>📰 부동산 뉴스</h2><p>네이버 뉴스 기준 · 최신순/정확도순 선택 가능 · 제목을 누르면 원문 기사로 이동합니다</p></div>
     <a class="kakao-banner" href="#" onclick="openKakaoRoom();return false;" style="margin:0 0 18px">
       <span class="kb-ico">💬</span>
       <span class="kb-txt"><b>부동산 최신 뉴스 · 세금정보 공유방</b> 실시간 부동산 뉴스와 양도세·취득세·보유세 등 세금 정보를 가장 먼저 받아보세요</span>
@@ -3309,6 +3379,10 @@ function renderNewsView(){
     </a>
     ${renderNewsRank()}
     <div class="rg-tabs">${tabs}</div>
+    <div class="news-sort">
+      <button class="ns-btn ${NEWS_STATE.sort==='date'?'on':''}" onclick="setNewsSort('date')">🕒 최신순</button>
+      <button class="ns-btn ${NEWS_STATE.sort==='sim'?'on':''}" onclick="setNewsSort('sim')">⭐ 정확도순</button>
+    </div>
     ${body}`;
   document.getElementById('home-view').style.display='none';
   document.getElementById('detail-view').style.display='none';
@@ -3340,13 +3414,15 @@ async function loadNewsRank(){
   }catch(e){ NEWS_RANK=[]; }
 }
 async function loadNews(tab){
-  if(NEWS_CACHE[tab]){ NEWS_STATE.items=NEWS_CACHE[tab]; NEWS_STATE.loading=false; renderNewsView(); return; }
+  const sort=NEWS_STATE.sort||'date';
+  const ck=tab+'_'+sort;
+  if(NEWS_CACHE[ck]){ NEWS_STATE.items=NEWS_CACHE[ck]; NEWS_STATE.loading=false; renderNewsView(); return; }
   NEWS_STATE.loading=true; renderNewsView();
   try{
-    const res=await fetch('/api/news?preset='+tab+'&display=100');
+    const res=await fetch('/api/news?preset='+tab+'&display=100&sort='+sort);
     const json=await res.json();
     const items=(json&&json.items)?json.items:[];
-    NEWS_CACHE[tab]=items;
+    NEWS_CACHE[ck]=items;
     NEWS_STATE.items=items; NEWS_STATE.loading=false;
     if(NEWS_STATE.tab===tab) renderNewsView();
   }catch(e){
@@ -3849,6 +3925,7 @@ async function loadTradeHistory(){
 }
 
 renderAll();
+renderRoomGrid();
 loadApplyhome()
   .then(()=>{ renderAll(); return loadRemain(); })
   .then(()=>renderAll());
