@@ -13,6 +13,10 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{max-width:100%;overflow-x:hidden}
+  *{box-sizing:border-box}
+  .main-wrap{overflow-x:clip}
+  img,svg,video{max-width:100%;height:auto}
+  .trade-card,.scard,.pcard,.site-cell{max-width:100%;overflow:hidden}
   body{font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
   .wrap{max-width:1200px;margin:0 auto;padding:0 16px}
@@ -29,11 +33,15 @@
   /* 창원자이 배너 */
   .cw-banner{display:block;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);margin:18px 0;background:#13243f;text-decoration:none;transition:.15s}
   .cw-banner:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.16)}
-  .cw-row{display:grid;grid-template-columns:1fr 1fr;gap:0}
-  .cw-row img{display:block;width:100%;height:100%;object-fit:cover;max-height:230px}
+  .cw-row{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}
+  .cw-row img{display:block;width:100%;height:auto;object-fit:contain;background:#0f1d33}
   .cw-cta{background:#13243f;color:#fff;text-align:center;font-size:14px;font-weight:800;padding:13px;letter-spacing:-.3px}
   .cw-banner:hover .cw-cta{background:#1a2f52}
-  @media(max-width:560px){.cw-row img{max-height:170px}.cw-cta{font-size:13px;padding:11px}}
+  @media(max-width:560px){
+    .cw-row{grid-template-columns:1fr}
+    .cw-row img{height:auto}
+    .cw-cta{font-size:13px;padding:11px}
+  }
   .kb-ico{font-size:22px}
   .kb-txt{font-size:13.5px;color:#3a2c00;flex:1}
   .kb-txt b{font-weight:800}
@@ -174,7 +182,8 @@
   .cal-bk-h.h-live{background:#3a6ff0}.cal-bk-h.h-fast{background:var(--brand)}.cal-bk-h.h-done{background:#9aa0ab}
   .cal-bk-h .n{margin-left:auto;font-weight:700;opacity:.9}
   .cal-items{padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px}
-  .cal-chip{font-size:12.5px;padding:7px 11px;border-radius:7px;background:#f6f8fb;border:1px solid var(--line);cursor:pointer;transition:.12s;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cal-items .cal-chip{min-width:0;max-width:100%}
+  .cal-chip{font-size:12.5px;padding:7px 11px;border-radius:7px;background:#f6f8fb;border:1px solid var(--line);cursor:pointer;transition:.12s;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box}
   .cal-chip:hover{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
   .cal-chip .rg{font-size:11px;color:#9aa0ab;margin-left:5px}
   .cal-chip.cal-more{background:var(--brand-soft);border-color:var(--brand);color:var(--brand);font-weight:800}
@@ -200,6 +209,7 @@
   .trade-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
   /* 금액 수준 막대 (목록 내 상대 비교) */
   .trade-bar{height:5px;border-radius:3px;background:#eef1f6;margin-top:7px;overflow:hidden}
+  .spark{display:block;width:100%;height:34px;margin-top:6px}
   .trade-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffb37a,var(--brand));transition:width .4s}
   .trade-bar.rent i{background:linear-gradient(90deg,#9db4f5,var(--blue))}
   .trade-bar.silv i{background:linear-gradient(90deg,#c3aef0,#7c5fd3)}
@@ -572,8 +582,9 @@
     .hero-main{padding:22px 20px}
     .hero-main h1{font-size:22px}
     .hero-main p{font-size:12.5px}
-    .hstat{padding:10px 12px;min-width:0;flex:1}
-    .hstat .n,.hstat .n b{font-size:17px}
+    .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .hstat{padding:11px 12px;min-width:0;text-align:center}
+    .hstat .n,.hstat .n b{font-size:18px}
     /* 현장 리스트 격자 글자 */
     .site-list-h{font-size:17px;padding:14px 0 10px}
     .site-cell{padding:15px 6px}
@@ -608,7 +619,7 @@
     .cal-title{font-size:15px}
     /* 캘린더 칩: 한 줄에 하나씩, 화면 안에서 줄바꿈 */
     .cal-items{gap:5px}
-    .cal-chip{font-size:12px;padding:7px 10px;max-width:calc(100% - 2px)}
+    .cal-chip{font-size:12px;padding:7px 10px;max-width:100%;box-sizing:border-box}
     .cal-bk-h{font-size:12.5px;padding:8px 12px}
     .cal-legend{gap:8px}
     .cal-legend .lg{font-size:11px}
@@ -655,7 +666,7 @@
   <div class="head-cta" onclick="openModal('')">상담 받기 →</div>
 </div></header>
 
-<div class="wrap">
+<div class="wrap main-wrap">
 <div id="home-view">
 
   <!-- 카톡 공유방 배너 -->
@@ -1157,10 +1168,10 @@ function renderAll(){
 
   // 히어로 통계
   document.getElementById('hero-stats').innerHTML=`
-    <div class="hstat"><div class="n">${sites.length}<b>건</b></div><div class="l">등록 단지</div></div>
+    <div class="hstat"><div class="n"><b>${sites.length}</b>건</div><div class="l">등록 단지</div></div>
     <div class="hstat"><div class="n"><b>${live.length}</b>건</div><div class="l">진행예정</div></div>
-    <div class="hstat"><div class="n">${sites.length-live.length}<b>건</b></div><div class="l">청약마감</div></div>
-    <div class="hstat"><div class="n">${regions.length}<b>곳</b></div><div class="l">지역</div></div>`;
+    <div class="hstat"><div class="n"><b>${sites.length-live.length}</b>건</div><div class="l">청약마감</div></div>
+    <div class="hstat"><div class="n"><b>${regions.length}</b>곳</div><div class="l">지역</div></div>`;
 
   // 선착순/주요 분양 카드 (선착순·무순위 우선, 그다음 진행예정)
   const fastFirst=sites.filter(s=>s.fast || s.isRemain);
@@ -1856,9 +1867,10 @@ function liveSearch(){
   const clr=document.getElementById('search-clear');
   clr.style.display = q ? 'block' : 'none';
   if(!q){ box.innerHTML=''; box.classList.remove('on'); return; }
+  const order={fast:0,live:1,done:2};
   const hits=allSites().filter(s=>
     s.name.toLowerCase().includes(q) || (s.d.loc||'').toLowerCase().includes(q) || s.region.includes(q) || (s.d.bd||'').toLowerCase().includes(q)
-  ).slice(0,12);
+  ).sort((a,b)=>(order[statusOf(a)]-order[statusOf(b)])).slice(0,12);
   if(!hits.length){
     box.innerHTML=`<div class="sr-empty">'${document.getElementById('search').value.trim()}' 검색 결과가 없습니다.</div>`;
     box.classList.add('on'); return;
@@ -2551,12 +2563,16 @@ function computeRise(list){
   for(const k in groups){
     const g=groups[k];
     g.sort((a,b)=>(a.year+pad2(a.month)+pad2(a.day)).localeCompare(b.year+pad2(b.month)+pad2(b.day)));
+    // 이 그룹(같은 단지·면적)의 가격 흐름 = 스파크라인 데이터
+    const series=g.map(x=>x.amount);
     for(let i=0;i<g.length;i++){
       if(i>0){ g[i]._prev=g[i-1].amount; g[i]._rise=g[i].amount-g[i-1].amount; }
       // 전월세 갱신 거래는 preDeposit이 있으면 그걸로
       if(g[i].preDeposit && g[i].preDeposit>0 && g[i]._rise===undefined){
         g[i]._prev=g[i].preDeposit; g[i]._rise=g[i].amount-g[i].preDeposit;
       }
+      // 같은 단지 거래들의 가격 흐름 저장 (최근 12건까지)
+      g[i]._series = series.slice(-12);
     }
   }
   // preDeposit 단독 케이스(그룹에 1건뿐이어도)
@@ -2571,6 +2587,26 @@ function computeRise(list){
   list.forEach(it=>{ it._barPct = Math.round(40 + 60*(it.amount-lo)/rg); });
 }
 function pad2(s){return String(s).padStart(2,'0');}
+// 실거래가 흐름 미니 추세선(스파크라인) SVG 생성
+function sparklineSVG(it){
+  // 시계열 우선순위: _series(같은 단지 여러 거래) → [_prev, amount](직전+현재) → 없음
+  let pts = (it._series && it._series.length>=2) ? it._series.slice()
+          : (it._prev ? [it._prev, it.amount] : null);
+  if(!pts || pts.length<2) return ''; // 점 1개뿐이면 선 생략
+  const W=120, H=34, P=3;
+  const lo=Math.min(...pts), hi=Math.max(...pts), rg=(hi-lo)||1;
+  const n=pts.length;
+  const x=i=> P + (W-2*P)*(i/(n-1));
+  const y=v=> P + (H-2*P)*(1-(v-lo)/rg);
+  const d=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+  const up = pts[n-1] >= pts[0];
+  const col = up ? '#e2444b' : '#3a6ff0'; // 상승=빨강, 하락=파랑 (실거래가 추세)
+  const lastX=x(n-1).toFixed(1), lastY=y(pts[n-1]).toFixed(1);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${lastX}" cy="${lastY}" r="2.6" fill="${col}"/>
+  </svg>`;
+}
 // 전월세 계열(아파트/오피스텔/빌라 전월세) 판별
 function isRentKind(kind){ return kind==='rent'||kind==='offirent'||kind==='villarent'; }
 // 전용면적(㎡) → 공급면적 기준 평형 (84㎡≈34평). 계수 1.34로 통상 평형에 맞춤
@@ -2617,7 +2653,7 @@ function tradeCard(it,i,kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
-      <div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>
+      ${sparklineSVG(it) || `<div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>`}
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2645,6 +2681,9 @@ function groupByApt(list, kind){
     const rep=g[0];               // 최고가 대표
     rep._count=g.length;
     rep._areas=[...new Set(g.map(x=>Math.round(x.area)))].sort((a,b)=>a-b);
+    // 이 단지 거래들을 날짜순으로 정렬해 가격 흐름(스파크라인) 저장
+    const byDate=g.slice().sort((a,b)=>(a.year+pad2(a.month)+pad2(a.day)).localeCompare(b.year+pad2(b.month)+pad2(b.day)));
+    rep._series=byDate.map(x=>x.amount).slice(-12);
     return rep;
   });
   // 단지 대표 거래를 금액순 정렬
@@ -2667,7 +2706,7 @@ function aptGroupCard(it, kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.dong} · ${areaRange} · 최근 ${it.month}/${it.day}</div>
-      <div class="trade-bar ${barCls}"><i style="width:${it._barPct||60}%"></i></div>
+      ${sparklineSVG(it) || `<div class="trade-bar ${barCls}"><i style="width:${it._barPct||60}%"></i></div>`}
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
@@ -2690,7 +2729,7 @@ function tradeCardObj(it,kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
-      <div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>
+      ${sparklineSVG(it) || `<div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>`}
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
