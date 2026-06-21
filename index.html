@@ -184,8 +184,8 @@
   .gnb-tool{color:var(--brand);font-weight:800}
 
   /* 본문 그리드 */
-  .layout{display:grid;grid-template-columns:1fr 300px;gap:20px;padding-bottom:50px}
-  @media(max-width:980px){.layout{grid-template-columns:1fr}}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;padding-bottom:50px}
+  @media(max-width:980px){.layout{grid-template-columns:minmax(0,1fr)}}
   /* 청약 캘린더 */
   .cal-wrap{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:22px;box-shadow:var(--shadow)}
   .cal-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
@@ -281,8 +281,8 @@
   .rg-tab.on{background:var(--brand);color:#fff}
   .rg-tab b{font-weight:800;margin-left:3px}
   /* 부동산 뉴스 */
-  .news-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:760px){.news-list{grid-template-columns:1fr}}
+  .news-list{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+  @media(max-width:760px){.news-list{grid-template-columns:minmax(0,1fr)}}
   .news-card{display:block;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);transition:.13s}
   .news-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(20,30,50,.1);border-color:var(--brand)}
   .news-title{font-size:15px;font-weight:800;line-height:1.4;margin-bottom:7px;color:var(--ink)}
@@ -324,8 +324,8 @@
 
 
   /* 분양 카드 그리드 */
-  .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:560px){.card-grid{grid-template-columns:1fr}}
+  .card-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+  @media(max-width:560px){.card-grid{grid-template-columns:minmax(0,1fr)}}
   .pcard{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
   .pcard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,30,50,.1);border-color:#dfe3ea}
   .pcard .thumb{height:150px;position:relative;display:flex;align-items:flex-end;justify-content:flex-start}
@@ -347,8 +347,8 @@
   .pcard .meta .when{margin-left:auto;color:var(--brand);font-weight:700}
 
   /* 오늘 마감 */
-  .today-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:560px){.today-grid{grid-template-columns:1fr}}
+  .today-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+  @media(max-width:560px){.today-grid{grid-template-columns:minmax(0,1fr)}}
   .tcard{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer}
   .tcard:hover{border-color:var(--brand)}
   .tcard .tline{display:flex;gap:6px;align-items:center;margin-bottom:8px}
@@ -359,8 +359,8 @@
   .tcard .ddate{text-align:right;font-size:14px;font-weight:800;color:var(--red)}
 
   /* 이번주 일정 리스트 */
-  .sched-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:560px){.sched-grid{grid-template-columns:1fr}}
+  .sched-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+  @media(max-width:560px){.sched-grid{grid-template-columns:minmax(0,1fr)}}
   .scard{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:var(--shadow);cursor:pointer}
   .scard:hover{border-color:var(--brand)}
   .scard .sl{display:flex;gap:6px;align-items:center;margin-bottom:6px}
@@ -462,8 +462,17 @@
   /* 추이 그래프 */
   .trend-box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 16px 10px;box-shadow:var(--shadow);margin-bottom:20px}
   .trend-h{font-size:14px;font-weight:800;margin-bottom:4px}
+  .trend-py{font-size:12px;font-weight:700;color:var(--brand);background:var(--brand-soft);padding:2px 9px;border-radius:999px;margin-left:4px;white-space:nowrap}
+  .trend-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+  .trend-span{display:flex;gap:5px}
+  .span-btn{font-size:12px;font-weight:700;padding:5px 13px;border:1.5px solid var(--line);border-radius:999px;background:#fff;color:#666;cursor:pointer;transition:.12s}
+  .span-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
   .trend-avg{font-size:13px;color:var(--brand);font-weight:800;margin-bottom:12px}
   .trend-svg{width:100%;height:auto;display:block}
+  .trend-legend{display:flex;gap:16px;justify-content:center;margin-top:6px;font-size:11.5px;color:var(--muted)}
+  .trend-legend span{display:inline-flex;align-items:center;gap:5px}
+  .trend-legend .lg-dot{width:9px;height:9px;border-radius:50%}
+  .trend-legend .lg-bar{width:11px;height:8px;border-radius:2px;background:#eef0fb}
   .trend-tip{position:absolute;background:var(--navy);color:#fff;font-size:12px;font-weight:600;padding:7px 11px;border-radius:8px;pointer-events:none;white-space:nowrap;z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.18);line-height:1.4}
   .trend-tip b{color:#fff;font-weight:800}
   .trend-hot{cursor:pointer}
@@ -651,7 +660,7 @@
   }
   @media(max-width:430px){
     .trade-grid{grid-template-columns:minmax(0,1fr)}
-    .card-grid,.today-grid,.sched-grid,.notice-grid{grid-template-columns:1fr}
+    .card-grid,.today-grid,.sched-grid,.notice-grid{grid-template-columns:minmax(0,1fr)}
     .site-grid{grid-template-columns:repeat(2,1fr)}
     .hero-stats{gap:7px}
   }
@@ -795,11 +804,7 @@
         <div class="sched-grid" id="sched-grid"></div>
       </div>
 
-      <!-- 지역별 분포 -->
-      <div class="block" id="b-region">
-        <div class="block-h"><span class="ico">📊</span><span class="t">지역별 분양 한눈에</span><span class="more" onclick="openModal('')">전체 지역 →</span></div>
-        <div class="region-bars" id="region-bars"></div>
-      </div>
+      <!-- 지역별 분포 섹션 제거됨 -->
 
       <!-- 간단 계산기 (지역별 분양 아래) -->
       <div class="block" id="b-tools">
@@ -855,10 +860,6 @@
 
     <!-- 사이드바 -->
     <aside class="side">
-      <div class="swrap">
-        <div class="sh">📍 지역별 분양</div>
-        <div id="side-region"></div>
-      </div>
       <div class="side-sticky">
         <div class="side-cta">
           <h4>관심 단지 정보<br>무료로 받기</h4>
@@ -1230,18 +1231,20 @@ function renderAll(){
       <div class="row"><span>${s.d.hh}</span><span>${s.region}</span><span class="d">${s.when.replace(' 분양예정','').replace(' 순차분양','')}</span></div>
     </div>`).join('');
 
-  // 지역별 분포 바
+  // 지역별 분포 바 — 섹션 제거됨, 요소 있을 때만
   const counts=regions.map(r=>({r,n:DATA[r].length})).sort((a,b)=>b.n-a.n);
   const max=Math.max(...counts.map(c=>c.n));
-  document.getElementById('region-bars').innerHTML=counts.slice(0,10).map(c=>{
+  const rbEl=document.getElementById('region-bars');
+  if(rbEl) rbEl.innerHTML=counts.slice(0,10).map(c=>{
     const liveN=DATA[c.r].filter(s=>!isDone(s.when)).length;
     return `<div class="rbar"><span class="rn">${c.r.replace('시','').replace('도','')}</span>
       <div class="track"><div class="fill" style="width:${Math.max(12,c.n/max*100)}%"><span class="v">${c.n}</span></div></div>
       ${liveN?`<span class="extra">예정 ${liveN}</span>`:''}</div>`;
   }).join('');
 
-  // 사이드바 지역 리스트
-  document.getElementById('side-region').innerHTML=counts.map(c=>`
+  // 사이드바 지역 리스트 — 섹션 제거됨, 요소 있을 때만
+  const srEl=document.getElementById('side-region');
+  if(srEl) srEl.innerHTML=counts.map(c=>`
     <div class="srow" onclick="doSearchRegion('${c.r}')"><span class="rg">${c.r}</span><span class="ct">${c.n}건</span></div>`).join('');
 
   // 청약 예정 현장 리스트 (시도별 격자) — 진행예정(미마감) 현장 수
@@ -3344,6 +3347,35 @@ function syncSortBtn(){
   n.classList.toggle('on', HIST_VIEW.sort==='new');
   o.classList.toggle('on', HIST_VIEW.sort==='old');
 }
+function renderTrendChart(){
+  if(!HIST_DATA) return;
+  const {rows, groups, kind}=HIST_DATA;
+  // 선택된 평형 데이터 (전체면 전체, 특정 평형이면 그 평형만)
+  const sel = HIST_VIEW.py==='all' ? rows : (groups[HIST_VIEW.py]||rows);
+  const valid = sel.filter(r=>!r.cancel);
+  const base = valid.length ? valid : sel;
+  // 평형 라벨
+  const pyEl=document.getElementById('trend-py');
+  if(pyEl){
+    if(HIST_VIEW.py==='all'){
+      pyEl.textContent='전체 평형';
+    }else{
+      const areas=[...new Set((groups[HIST_VIEW.py]||[]).map(r=>r.area))].sort((a,b)=>a-b);
+      const al=areas.length>1?areas[0]+'~'+areas[areas.length-1]:areas[0];
+      pyEl.textContent=HIST_VIEW.py+'평 기준 ('+al+'㎡)';
+    }
+  }
+  // 평균 라벨
+  const avgEl=document.getElementById('trend-avg');
+  if(avgEl && base.length){
+    const a=base.map(r=>r.amount);
+    const avg=Math.round(a.reduce((x,y)=>x+y,0)/a.length);
+    avgEl.textContent='최근 거래 평균 '+wonToKor(avg);
+  }
+  // 차트
+  const box=document.getElementById('trend-container');
+  if(box) box.innerHTML=buildTrendSVG(base, kind);
+}
 function renderHistRows(){
   if(!HIST_DATA) return;
   const {rows,groups,kind,fmtAmt}=HIST_DATA;
@@ -3358,7 +3390,7 @@ function renderHistRows(){
   const kindTag = kind==='silv'?'<span class="hr-tag silv">분양권</span>':kind==='rent'?'<span class="hr-tag silv">전월세</span>':'';
   const box=document.getElementById('hist-rows');
   if(!box) return;
-  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">해당 평형 거래가 없습니다.</div>'; return; }
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">해당 평형 거래가 없습니다.</div>'; renderTrendChart(); return; }
   box.innerHTML=list.map(r=>{
     const py=areaToPyeong(r.area);
     const amtTxt=fmtAmt(r);
@@ -3372,6 +3404,7 @@ function renderHistRows(){
       <div class="hr-amt ${r._isHigh&&!r.cancel?'isHot':''}">${amtTxt}${hot}</div>
     </div>`;
   }).join('');
+  renderTrendChart();
 }
 // 월별 거래 추이 SVG 그래프 (rows → 월별 평균가 선그래프)
 function buildTrendSVG(rows, kind){
@@ -3387,50 +3420,92 @@ function buildTrendSVG(rows, kind){
     const arr=byMonth[m]; const avg=arr.reduce((a,b)=>a+b,0)/arr.length;
     return {m, avg, cnt:arr.length};
   });
-  const W=620, H=210, padL=28, padR=28, padT=24, padB=36;
+  const W=640, H=230, padL=52, padR=20, padT=22, padB=40;
   const vals=pts.map(p=>p.avg);
   const min=Math.min(...vals), max=Math.max(...vals);
   const range=(max-min)||1;
+  // 위아래 약간 여백을 줘서 곡선이 끝에 붙지 않게
+  const pad=range*0.12;
+  const lo=min-pad, hi=max+pad, rng=(hi-lo)||1;
   const x=i=> padL + (W-padL-padR) * (pts.length===1?0.5:i/(pts.length-1));
-  const y=v=> padT + (H-padT-padB) * (1-(v-min)/range);
-  // 막대(거래량) 최대
+  const y=v=> padT + (H-padT-padB) * (1-(v-lo)/rng);
+  const P=pts.map((p,i)=>({x:x(i), y:y(p.avg)}));
+  const col='#5b6ee8', soft='#eef0fb';
+
+  // 거래량 막대 (바닥)
   const maxCnt=Math.max(...pts.map(p=>p.cnt));
   const bars=pts.map((p,i)=>{
-    const bh=(H-padT-padB)*(p.cnt/maxCnt)*0.5;
-    const bx=x(i)-9;
-    return `<rect x="${bx}" y="${H-padB-bh}" width="18" height="${bh}" rx="3" fill="#eef0fb"/>`;
+    const bh=(H-padT-padB)*(p.cnt/maxCnt)*0.42;
+    const bx=x(i)-8;
+    return `<rect x="${bx.toFixed(1)}" y="${(H-padB-bh).toFixed(1)}" width="16" height="${bh.toFixed(1)}" rx="3" fill="${soft}"/>`;
   }).join('');
-  const linePts=pts.map((p,i)=>x(i)+','+y(p.avg)).join(' ');
+
+  // Y축 가격 눈금 (4단계)
+  const gid='tr'+(Math.random().toString(36).slice(2,8));
+  let yaxis='';
+  const STEPS=4;
+  for(let s=0;s<=STEPS;s++){
+    const v=lo+rng*(s/STEPS);
+    const yy=y(v);
+    yaxis+=`<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${W-padR}" y2="${yy.toFixed(1)}" stroke="#f0f2f7" stroke-width="1"/>`;
+    yaxis+=`<text x="${padL-8}" y="${(yy+3).toFixed(1)}" font-size="10" fill="#aab0bd" text-anchor="end">${wonToKor(Math.round(v))}</text>`;
+  }
+
+  // 부드러운 곡선 + 면 채우기
+  const line=smoothPath(P);
+  const area=line+` L${P[P.length-1].x.toFixed(1)} ${H-padB} L${P[0].x.toFixed(1)} ${H-padB} Z`;
+
+  // 최고가·최저가 지점
+  let hiIdx=0, loIdx=0;
+  pts.forEach((p,i)=>{ if(p.avg>pts[hiIdx].avg) hiIdx=i; if(p.avg<pts[loIdx].avg) loIdx=i; });
+  const peakDots = `
+    <circle cx="${P[loIdx].x.toFixed(1)}" cy="${P[loIdx].y.toFixed(1)}" r="4.5" fill="#3a6ff0" stroke="#fff" stroke-width="1.6"/>
+    <circle cx="${P[hiIdx].x.toFixed(1)}" cy="${P[hiIdx].y.toFixed(1)}" r="4.5" fill="var(--red)" stroke="#fff" stroke-width="1.6"/>`;
+
+  // 작은 중간 점들 (최고·최저·끝점 제외)
   const dots=pts.map((p,i)=>{
+    if(i===hiIdx||i===loIdx) return '';
     const last=i===pts.length-1;
-    return `<circle cx="${x(i)}" cy="${y(p.avg)}" r="${last?5:3.5}" fill="${last?'var(--red)':'#7b8cf0'}"/>`;
+    return `<circle cx="${P[i].x.toFixed(1)}" cy="${P[i].y.toFixed(1)}" r="${last?4:2.6}" fill="${last?col:'#9aa6ee'}" ${last?'stroke="#fff" stroke-width="1.4"':''}/>`;
   }).join('');
+
+  // X축 날짜 라벨
   const labels=pts.map((p,i)=>{
-    // 라벨 너무 빽빽하면 일부만
-    const show = pts.length<=8 || i%2===0 || i===pts.length-1;
+    const show = pts.length<=8 || i%Math.ceil(pts.length/6)===0 || i===pts.length-1;
     if(!show) return '';
     const anchor = i===0?'start' : i===pts.length-1?'end' : 'middle';
-    return `<text x="${x(i)}" y="${H-12}" font-size="10" fill="#8b92a0" text-anchor="${anchor}">${p.m.slice(2).replace('-','.')}</text>`;
+    return `<text x="${P[i].x.toFixed(1)}" y="${H-14}" font-size="10" fill="#8b92a0" text-anchor="${anchor}">${p.m.slice(2).replace('-','.')}</text>`;
   }).join('');
-  // 호버 영역 (각 점 위 투명 세로 띠) + 데이터 저장
+
+  // 호버 영역 (각 점 위 투명 세로 띠) + 데이터 저장 — 기존 툴팁 기능 유지
   const hotspots=pts.map((p,i)=>{
-    const cx=x(i), cy=y(p.avg);
-    return `<rect class="trend-hot" x="${cx-(W/pts.length)/2}" y="0" width="${W/pts.length}" height="${H}" fill="transparent"
-      data-mlabel="${p.m.slice(2).replace('-','.')}" data-avg="${Math.round(p.avg)}" data-cnt="${p.cnt}" data-cx="${cx}" data-cy="${cy}"></rect>`;
+    return `<rect class="trend-hot" x="${(P[i].x-(W/pts.length)/2).toFixed(1)}" y="0" width="${(W/pts.length).toFixed(1)}" height="${H}" fill="transparent"
+      data-mlabel="${p.m.slice(2).replace('-','.')}" data-avg="${Math.round(p.avg)}" data-cnt="${p.cnt}" data-cx="${P[i].x.toFixed(1)}" data-cy="${P[i].y.toFixed(1)}"></rect>`;
   }).join('');
-  // 컨테이너로 감싸고 툴팁 div 포함. 그래프 그릴 때마다 고유 id
-  const gid='tr'+(Math.random().toString(36).slice(2,8));
+
   setTimeout(()=>bindTrendTooltip(gid, kind), 0);
   return `<div class="trend-wrap" id="${gid}" style="position:relative">
     <svg class="trend-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <defs><linearGradient id="${gid}-fill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${col}" stop-opacity="0.20"/>
+        <stop offset="1" stop-color="${col}" stop-opacity="0"/>
+      </linearGradient></defs>
+      ${yaxis}
       ${bars}
-      <polyline points="${linePts}" fill="none" stroke="#5b6ee8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${area}" fill="url(#${gid}-fill)" stroke="none"/>
+      <path d="${line}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
       <line class="trend-vline" x1="0" y1="0" x2="0" y2="${H}" stroke="#c7cdfb" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>
       <circle class="trend-active" r="6" fill="var(--brand)" style="display:none"/>
       ${dots}
+      ${peakDots}
       ${labels}
       ${hotspots}
     </svg>
+    <div class="trend-legend">
+      <span><i class="lg-dot" style="background:var(--red)"></i>최고가</span>
+      <span><i class="lg-dot" style="background:#3a6ff0"></i>최저가</span>
+      <span><i class="lg-bar"></i>거래량</span>
+    </div>
     <div class="trend-tip" style="display:none"></div>
   </div>`;
 }
@@ -3595,8 +3670,9 @@ async function loadDualPriceSummary(it, kind){
 // 기간 탭 전환
 function setHistSpan(months){
   HIST_SPAN=months;
-  document.getElementById('span-12').classList.toggle('on', months===12);
-  document.getElementById('span-24').classList.toggle('on', months===24);
+  const b12=document.getElementById('span-12'), b24=document.getElementById('span-24');
+  if(b12) b12.classList.toggle('on', months!==24);
+  if(b24) b24.classList.toggle('on', months===24);
   loadTradeHistory();
 }
 async function loadTradeHistory(){
@@ -3632,9 +3708,15 @@ async function loadTradeHistory(){
       </div>
       <div class="ps-meta">최근 ${yrLbl} 기준 · 총 ${rows.length}건</div>
       <div class="trend-box">
-        <div class="trend-h">📈 월별 ${isRentKind(kind)?'전월세':kind==='silv'?'분양권':'매매'} 거래 추이</div>
-        <div class="trend-avg">최근 거래 평균 ${wonToKor(avgV)}</div>
-        ${buildTrendSVG(baseRows,kind)}
+        <div class="trend-top">
+          <div class="trend-h">📈 월별 ${isRentKind(kind)?'전월세':kind==='silv'?'분양권':'매매'} 거래 추이 <span class="trend-py" id="trend-py">전체 평형</span></div>
+          <div class="trend-span">
+            <button class="span-btn ${HIST_SPAN!==24?'on':''}" id="span-12" onclick="setHistSpan(12)">1년</button>
+            <button class="span-btn ${HIST_SPAN===24?'on':''}" id="span-24" onclick="setHistSpan(24)">2년</button>
+          </div>
+        </div>
+        <div class="trend-avg" id="trend-avg">최근 거래 평균 ${wonToKor(avgV)}</div>
+        <div id="trend-container"></div>
       </div>`;
 
     // 면적(평형)별 그룹 → 드롭다운 옵션
