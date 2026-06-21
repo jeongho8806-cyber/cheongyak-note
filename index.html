@@ -3044,7 +3044,12 @@ function openTradeList(kind){
     </div>
     ${gugunBar}
     ${dongBar}
-    ${body}`;
+    ${body}
+    <a class="kakao-banner" href="#" onclick="openKakaoRoom();return false;" style="margin:22px 0 0">
+      <span class="kb-ico">💬</span>
+      <span class="kb-txt"><b>실거래·시세 정보 카톡 공유방</b> 관심 단지 실거래가·분양 일정을 실시간으로 받아보세요</span>
+      <span class="kb-go">입장 →</span>
+    </a>`;
   document.getElementById('home-view').style.display='none';
   document.getElementById('detail-view').style.display='none';
   document.getElementById('tools-view').style.display='none';
