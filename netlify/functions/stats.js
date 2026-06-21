@@ -16,49 +16,64 @@ const PICK = ['전국', '수도권', '지방권', '서울', '경기', '인천'];
 
 // R-ONE 한 통계표 호출 → 최신 시점 지역별 지수 + 전주 대비 변동 계산
 async function fetchStat(statblId) {
-  // R-ONE은 한 번에 최대 행 수 제한이 있고 오래된 시점부터 줄 수 있어,
-  // 여러 페이지를 받아 전체에서 최신 시점을 정확히 고른다.
+  const PAGE_SIZE = 1000;
+
+  // 1) 먼저 전체 개수를 확인해 마지막 페이지 번호를 구한다
+  const firstUrl = `https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do`
+    + `?KEY=${REB_KEY}&STATBL_ID=${statblId}&DTACYCLE_CD=WK&Type=json&pIndex=1&pSize=${PAGE_SIZE}`;
+  const firstRes = await fetch(firstUrl);
+  const firstJson = JSON.parse(await firstRes.text());
+  const container = firstJson.SttsApiTblData;
+  if (!container || !Array.isArray(container)) throw new Error('R-ONE 형식 오류');
+  const head = (container.find(b => b && b.head) || {}).head || [];
+  const totalObj = head.find(h => h.list_total_count !== undefined);
+  const total = totalObj ? Number(totalObj.list_total_count) : 0;
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // 2) 마지막 몇 페이지(최신 시점들)를 받아온다 (뒤에서부터 3페이지)
   let allRows = [];
-  for (let page = 1; page <= 8; page++) {
+  const startPage = Math.max(1, lastPage - 2);
+  for (let page = startPage; page <= lastPage; page++) {
     const url = `https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do`
-      + `?KEY=${REB_KEY}`
-      + `&STATBL_ID=${statblId}`
-      + `&DTACYCLE_CD=WK`
-      + `&Type=json`
-      + `&pIndex=${page}&pSize=1000`;
+      + `?KEY=${REB_KEY}&STATBL_ID=${statblId}&DTACYCLE_CD=WK&Type=json&pIndex=${page}&pSize=${PAGE_SIZE}`;
     const res = await fetch(url);
-    const text = await res.text();
     let json;
-    try { json = JSON.parse(text); } catch (e) { break; }
-    const container = json.SttsApiTblData;
-    if (!container || !Array.isArray(container)) break;
-    const rowBlock = container.find(b => b && b.row);
-    const rows = rowBlock ? rowBlock.row : [];
-    if (!rows.length) break;
-    allRows = allRows.concat(rows);
-    if (rows.length < 1000) break; // 마지막 페이지
+    try { json = JSON.parse(await res.text()); } catch (e) { continue; }
+    const c = json.SttsApiTblData;
+    if (!c || !Array.isArray(c)) continue;
+    const rowBlock = c.find(b => b && b.row);
+    if (rowBlock && rowBlock.row) allRows = allRows.concat(rowBlock.row);
   }
   if (!allRows.length) throw new Error('R-ONE row 비어있음');
   return buildResult(allRows);
 }
 
 function buildResult(rows) {
-  // 각 row: { CLS_NM(지역명), WRTTIME_IDTFR_ID(시점 YYMMDD), DTA_VAL(값), ... }
+  // 시점은 WRTTIME_DESC(예: "2012-05-07" 또는 "2026-06-15")가 실제 날짜라 이걸로 정렬
   const byRegion = {};
   rows.forEach(r => {
     const region = (r.CLS_NM || '').trim();
-    const time = String(r.WRTTIME_IDTFR_ID || '');
+    const full = (r.CLS_FULLNM || '');
+    const dateStr = String(r.WRTTIME_DESC || r.WRTTIME_IDTFR_ID || '');
     const val = parseFloat(r.DTA_VAL);
-    if (!region || !time || isNaN(val)) return;
-    (byRegion[region] = byRegion[region] || []).push({ time, val });
+    if (!region || !dateStr || isNaN(val)) return;
+    // 동명 지역(중구 등) 구분: 전국/수도권/지방권/서울/경기/인천은 최상위라 FULLNM으로 식별
+    let key = null;
+    if (region === '전국' && full === '전국') key = '전국';
+    else if (region === '수도권') key = '수도권';
+    else if (region === '지방권') key = '지방권';
+    else if (region === '서울' && full === '서울') key = '서울';
+    else if (region === '경기' && full === '경기') key = '경기';
+    else if (region === '인천' && full === '인천') key = '인천';
+    if (!key) return;
+    (byRegion[key] = byRegion[key] || []).push({ date: dateStr, val });
   });
 
   const result = [];
   PICK.forEach(name => {
     const arr = byRegion[name];
     if (!arr || !arr.length) return;
-    // 시점을 숫자로 정렬 (YYMMDD → 6자리 숫자 비교)
-    arr.sort((a, b) => Number(a.time) - Number(b.time));
+    arr.sort((a, b) => a.date.localeCompare(b.date)); // "2026-06-15" 문자열 정렬 = 날짜순
     const last = arr[arr.length - 1];
     const prev = arr.length >= 2 ? arr[arr.length - 2] : null;
     const change = prev ? +(last.val - prev.val).toFixed(2) : null;
@@ -66,7 +81,7 @@ function buildResult(rows) {
       region: name,
       value: last.val.toFixed(2),
       change,
-      time: last.time,
+      time: last.date,
     });
   });
   return { rows: result, latestTime: result.length ? result[0].time : '' };
