@@ -250,6 +250,10 @@
   .block-h .more:hover{color:var(--brand)}
 
   /* 실거래 신고가 TOP */
+  .trade-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:8px}
+  .trade-row .trade-col{margin:0}
+  .trade-row .trade-grid{grid-template-columns:minmax(0,1fr)}
+  @media(max-width:900px){.trade-row{grid-template-columns:minmax(0,1fr)}}
   .trade-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   @media(max-width:560px){.trade-grid{grid-template-columns:minmax(0,1fr)}}
   .trade-card{display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:13px 15px;box-shadow:var(--shadow);cursor:pointer;transition:.13s}
@@ -785,15 +789,6 @@
     <div class="room-grid" id="room-grid"></div>
   </div>
 
-  <!-- 창원자이 더 스카이 분양 배너 -->
-  <a class="cw-banner" href="changwon-xi.html" target="_blank" rel="noopener">
-    <div class="cw-row">
-      <img src="20260620_232411.png" alt="창원자이 더 스카이 투시도" onerror="this.style.display='none'">
-      <img src="20260620_232404.png" alt="창원자이 더 스카이 분양 안내" onerror="this.style.display='none'">
-    </div>
-    <div class="cw-cta">창원자이 더 스카이 자세히 보기 →</div>
-  </a>
-
   <!-- 청약 예정 현장 리스트 (시도별) -->
   <div class="site-list-box">
     <div class="site-list-h">청약 예정 현장 리스트</div>
@@ -814,25 +809,28 @@
   <div class="layout">
     <div class="main-col">
 
+      <!-- 실거래 신고가 3열 가로 배치 -->
+      <div class="trade-row">
       <!-- 실거래 신고가 (매매) -->
-      <div class="block" id="b-trade">
-        <div class="block-h"><span class="ico">📈</span><span class="t">이번 달 신고가 TOP</span><span class="cnt" id="trade-cnt"></span><span class="more" onclick="openTradeList('trade')">전체 보기 →</span></div>
-        <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 12px">국토교통부 실거래가 기준, 서울·수도권 주요 지역 최근 고가 매매입니다.</p>
-        <div id="trade-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div></div>
+      <div class="block trade-col" id="b-trade">
+        <div class="block-h"><span class="ico">📈</span><span class="t">이번 달 신고가 TOP</span><span class="cnt" id="trade-cnt"></span><span class="more" onclick="openTradeList('trade')">전체 →</span></div>
+        <p style="font-size:11.5px;color:var(--muted);margin:-8px 0 12px">국토부 실거래가 · 서울·수도권 고가 매매</p>
+        <div id="trade-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div></div></div>
       </div>
 
       <!-- 분양권 신고가 -->
-      <div class="block" id="b-silv">
-        <div class="block-h"><span class="ico">🏗️</span><span class="t">분양권 신고가 TOP</span><span class="cnt" id="silv-cnt"></span><span class="more" onclick="openTradeList('silv')">전체 보기 →</span></div>
-        <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 12px">수도권 신도시·택지지구 분양권 전매 고가 거래입니다.</p>
+      <div class="block trade-col" id="b-silv">
+        <div class="block-h"><span class="ico">🏗️</span><span class="t">분양권 신고가 TOP</span><span class="cnt" id="silv-cnt"></span><span class="more" onclick="openTradeList('silv')">전체 →</span></div>
+        <p style="font-size:11.5px;color:var(--muted);margin:-8px 0 12px">수도권 신도시·택지지구 분양권 전매</p>
         <div id="silv-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div></div></div>
       </div>
 
       <!-- 전월세 신고가 -->
-      <div class="block" id="b-rent">
-        <div class="block-h"><span class="ico">🔑</span><span class="t">전월세 신고가 TOP</span><span class="cnt" id="rent-cnt"></span><span class="more" onclick="openTradeList('rent')">전체 보기 →</span></div>
-        <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 12px">주요 지역 전세 보증금 최고가 거래입니다.</p>
+      <div class="block trade-col" id="b-rent">
+        <div class="block-h"><span class="ico">🔑</span><span class="t">전월세 신고가 TOP</span><span class="cnt" id="rent-cnt"></span><span class="more" onclick="openTradeList('rent')">전체 →</span></div>
+        <p style="font-size:11.5px;color:var(--muted);margin:-8px 0 12px">주요 지역 전세 보증금 최고가</p>
         <div id="rent-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div></div></div>
+      </div>
       </div>
 
       <!-- 청약 캘린더 -->
@@ -1799,6 +1797,34 @@ function renderTools(){
         </div>
         <p class="tv-note">※ 실제 가점은 청약홈의 공식 산정 기준에 따라 달라질 수 있습니다. 본 계산기는 참고용이며, 정확한 자격 진단은 단지별 신청 시 1:1로 안내해 드립니다.</p>
       </div>`;
+  } else if(TOOL_TAB==='jeonse'){
+    panel=`
+      <div class="tv-panel">
+        <h2>전세 안전도 자가진단 <span style="font-size:13px;color:var(--muted);font-weight:600">(깡통전세·보증보험 위험도)</span></h2>
+        <p style="font-size:13px;color:var(--muted);margin:-4px 0 14px;line-height:1.6">등기부등본(을구)과 시세를 보고 숫자를 입력하면 보증금 위험도를 계산해 드립니다. 시세는 KB시세·실거래가·네이버 매물가를 참고하세요.</p>
+        <div class="tv-field"><label>전세 보증금 <span class="sub">(만원)</span></label><input type="number" id="js-deposit" value="30000" oninput="toolJeonse()" placeholder="예: 30000"></div>
+        <div class="tv-field"><label>주택 시세(매매가) <span class="sub">· KB시세·실거래가 (만원)</span></label><input type="number" id="js-price" value="40000" oninput="toolJeonse()" placeholder="예: 40000"></div>
+        <div class="tv-field"><label>선순위 채권 <span class="sub">· 등기부 '근저당권' 채권최고액 합 (만원)</span></label><input type="number" id="js-debt" value="0" oninput="toolJeonse()" placeholder="없으면 0"></div>
+        <div class="tv-field">
+          <label>주택 유형</label>
+          <select id="js-type" onchange="toolJeonse()">
+            <option value="apt">아파트·오피스텔</option>
+            <option value="villa">빌라·다세대·연립</option>
+          </select>
+        </div>
+        <div class="tv-out" id="js-grade-box">
+          <div class="lbl">종합 안전도 등급</div>
+          <div class="big"><span id="js-grade">-</span></div>
+          <div id="js-grade-msg" style="font-size:13px;margin-top:6px;font-weight:600"></div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="tv-break">전세가율 (보증금÷시세) <b id="js-ratio">-</b></div>
+          <div class="tv-break">선순위+보증금 비율 <b id="js-burden">-</b></div>
+          <div class="tv-break">전세보증보험 가입 <b id="js-insure">-</b></div>
+        </div>
+        <div id="js-tips" style="margin-top:16px"></div>
+        <p class="tv-note">※ 본 진단은 입력값만으로 계산한 <b>참고용 자가진단</b>입니다. 실제 안전 여부는 등기부등본 전체(갑구·을구), 임대인 신용·세금체납, 건축물대장 등을 종합해야 하며, 반드시 직접 등기부등본을 확인하고 공인중개사·전문가 상담을 받으세요. 본 결과로 인한 책임은 지지 않습니다.</p>
+      </div>`;
   } else {
     panel=`
       <div class="tv-panel">
@@ -1819,14 +1845,17 @@ function renderTools(){
       </div>`;
   }
   v.innerHTML=`
-    <div class="tv-head"><h1>청약 도구</h1><p>청약 가점과 대출 상환액을 미리 계산해보세요.</p></div>
+    <div class="tv-head"><h1>청약 도구</h1><p>청약 가점·대출 상환액·전세 안전도를 미리 확인해보세요.</p></div>
     <div class="tv-tabs">
-      <div class="tv-tab ${tabG}" onclick="openTools('gapjeom')">🏠 청약 가점 계산기</div>
-      <div class="tv-tab ${tabL}" onclick="openTools('loan')">💰 대출 계산기</div>
+      <div class="tv-tab ${tabG}" onclick="openTools('gapjeom')">🏠 청약 가점</div>
+      <div class="tv-tab ${tabL}" onclick="openTools('loan')">💰 대출 계산</div>
+      <div class="tv-tab ${TOOL_TAB==='jeonse'?'on':''}" onclick="openTools('jeonse')">🛡️ 전세 안전도</div>
     </div>
     ${panel}
     <div class="dt-back" onclick="closeTools()" style="margin-top:24px">‹ 메인으로</div>`;
-  if(TOOL_TAB==='gapjeom'){ fillGapjeomSelects('tg'); toolGapjeom(); } else { toolLoan(); }
+  if(TOOL_TAB==='gapjeom'){ fillGapjeomSelects('tg'); toolGapjeom(); }
+  else if(TOOL_TAB==='jeonse'){ toolJeonse(); }
+  else { toolLoan(); }
 }
 function toolGapjeom(){
   const hI=+document.getElementById('tg-house').value, fI=+document.getElementById('tg-family').value, bI=+document.getElementById('tg-bank').value;
@@ -1844,6 +1873,62 @@ function toolLoan(){
   document.getElementById('tl-principal').textContent=amt.toLocaleString()+'만원';
   document.getElementById('tl-interest').textContent=Math.round(interest/10000).toLocaleString()+'만원';
   document.getElementById('tl-total').textContent=Math.round(total/10000).toLocaleString()+'만원';
+}
+// 전세 안전도 자가진단
+function toolJeonse(){
+  const dep=+document.getElementById('js-deposit').value||0;   // 보증금(만원)
+  const price=+document.getElementById('js-price').value||0;   // 시세(만원)
+  const debt=+document.getElementById('js-debt').value||0;     // 선순위 채권(만원)
+  const type=document.getElementById('js-type').value;
+  const rEl=document.getElementById('js-ratio');
+  const bEl=document.getElementById('js-burden');
+  const iEl=document.getElementById('js-insure');
+  const gEl=document.getElementById('js-grade');
+  const gMsg=document.getElementById('js-grade-msg');
+  const gBox=document.getElementById('js-grade-box');
+  const tips=document.getElementById('js-tips');
+  if(!price || !dep){
+    rEl.textContent='-'; bEl.textContent='-'; iEl.textContent='-';
+    gEl.textContent='-'; gMsg.textContent='보증금과 시세를 입력하세요'; tips.innerHTML='';
+    gBox.style.background=''; gBox.style.color='';
+    return;
+  }
+  const ratio = dep/price*100;            // 전세가율
+  const burden = (dep+debt)/price*100;    // 선순위+보증금 부담률 (가장 중요)
+  rEl.textContent = ratio.toFixed(1)+'%';
+  bEl.textContent = burden.toFixed(1)+'%';
+
+  // 보증보험(HUG) 가입 가능선: (선순위채권+보증금) ≤ 시세 × (아파트 100% / 빌라 90% 보수적용)
+  // 실무상 부채비율 기준이 다양하나, 보수적으로 부담률 기준 판정
+  const insureLine = type==='apt' ? 100 : 90;
+  let insureOK, insureColor;
+  if(burden<=insureLine){ insureOK='가능성 높음'; insureColor='#1d9e75'; }
+  else if(burden<=insureLine+10){ insureOK='조건부·확인 필요'; insureColor='#ba7517'; }
+  else { insureOK='어려울 수 있음'; insureColor='#e2444b'; }
+  iEl.innerHTML=`<span style="color:${insureColor}">${insureOK}</span>`;
+
+  // 종합 등급: 부담률(선순위+보증금 비율) 기준
+  let grade, gColor, gBg, msg;
+  if(burden<=60){ grade='A'; gColor='#0f6e56'; gBg='#e1f5ee'; msg='매우 안전한 편입니다'; }
+  else if(burden<=70){ grade='B'; gColor='#1d9e75'; gBg='#e1f5ee'; msg='비교적 안전한 편입니다'; }
+  else if(burden<=80){ grade='C'; gColor='#ba7517'; gBg='#faeeda'; msg='주의가 필요합니다'; }
+  else if(burden<=90){ grade='D'; gColor='#d85a30'; gBg='#faece7'; msg='위험 신호가 있습니다'; }
+  else { grade='E'; gColor='#a32d2d'; gBg='#fcebeb'; msg='깡통전세 위험이 높습니다'; }
+  gEl.textContent=grade+' 등급';
+  gMsg.textContent=msg;
+  gMsg.style.color=gColor;
+  gBox.style.background=gBg;
+  gBox.style.color=gColor;
+
+  // 맞춤 팁
+  const t=[];
+  if(burden>80) t.push('⚠️ 선순위 채권+보증금이 시세의 80%를 넘습니다. 경매 시 보증금을 다 못 돌려받을 수 있어요.');
+  if(debt>0) t.push('🔎 등기부 을구의 근저당권(채권최고액)을 다시 확인하세요. 잔금 전 말소 조건을 특약에 넣는 것이 안전합니다.');
+  if(ratio>=80) t.push('📌 전세가율 80% 이상은 보증보험 가입이 까다로울 수 있으니 계약 전 HUG·SGI 가입 가능 여부를 확인하세요.');
+  if(type==='villa') t.push('🏘️ 빌라·다세대는 시세 산정이 어려워 깡통전세 위험이 큽니다. 공시가격·실거래가를 꼭 교차 확인하세요.');
+  t.push('✅ 계약 시 필수 특약: 「잔금일 다음날까지 근저당 등 권리변동 없을 것, 위반 시 계약 해제·보증금 반환」');
+  t.push('✅ 전입신고+확정일자를 잔금 당일 즉시 받아 대항력을 확보하세요.');
+  tips.innerHTML='<div style="background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-size:12.5px;line-height:1.7;color:#444">'+t.map(x=>'<div style="margin-bottom:5px">'+x+'</div>').join('')+'</div>';
 }
 
 /* ===== 분야별 목록 뷰 ===== */
@@ -2898,7 +2983,7 @@ function renderTradeMini(kind){
   const cards=aggregateByApt(list);                  // 단지당 1개로 합침
   document.getElementById(cfg.cnt).textContent='('+cards.length+')';
   grid.className='trade-grid';
-  grid.innerHTML=cards.slice(0,6).map((it,i)=>tradeCard(it,i,kind)).join('');
+  grid.innerHTML=cards.slice(0,4).map((it,i)=>tradeCard(it,i,kind)).join('');
   TRADE_STORE['_mini_'+kind]=cards;                  // 클릭 시 참조용
 }
 function tradeCard(it,i,kind){
