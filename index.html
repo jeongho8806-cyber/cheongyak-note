@@ -254,7 +254,10 @@
   .trade-row .trade-col{margin:0;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 16px 8px}
   .trade-row .trade-grid{grid-template-columns:minmax(0,1fr)}
   @media(max-width:900px){.trade-row{grid-template-columns:minmax(0,1fr)}}
-  .trade-row .trade-col .trade-card{box-shadow:none;border-color:#eef1f6;background:#fcfdff}
+  .trade-row .trade-col .trade-card{box-shadow:none;border-color:#eef1f6;background:#fcfdff;padding:11px 12px;gap:9px}
+  .trade-row .trade-col .trade-card .trade-nm{font-size:13px}
+  .trade-row .trade-col .trade-card .trade-price .amt{font-size:14.5px}
+  .trade-row .trade-col .trade-card .trade-rank{width:22px;font-size:14px}
   .trade-row .trade-col .trade-card:hover{box-shadow:0 3px 10px rgba(20,30,50,.08)}
   .trade-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   @media(max-width:560px){.trade-grid{grid-template-columns:minmax(0,1fr)}}
@@ -264,7 +267,7 @@
   .trade-rank.top3{color:#fff;background:var(--brand);border-radius:7px;padding:3px 0}
   .trade-info{flex:1;min-width:0}
   .trade-nm{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .trade-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .trade-meta{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* 금액 수준 막대 (목록 내 상대 비교) */
   .trade-bar{height:5px;border-radius:3px;background:#eef1f6;margin-top:7px;overflow:hidden;width:100%;max-width:100%}
   .spark{display:block;width:100%;height:38px;margin-top:7px}
@@ -272,7 +275,7 @@
   .trade-bar.rent i{background:linear-gradient(90deg,#9db4f5,var(--blue))}
   .trade-bar.silv i{background:linear-gradient(90deg,#c3aef0,#7c5fd3)}
   .trade-price{text-align:right;flex-shrink:0}
-  .trade-price .amt{font-size:16px;font-weight:800;color:var(--ink)}
+  .trade-price .amt{font-size:16px;font-weight:800;color:var(--ink);white-space:nowrap}
   .trade-price .rg{font-size:11px;color:var(--brand);font-weight:700;margin-top:2px}
   .trade-morebtn{display:inline-block;font-size:13px;font-weight:700;color:var(--brand);background:var(--brand-soft);border:1px solid var(--brand);border-radius:8px;padding:9px 20px;cursor:pointer}
   .trade-morebtn:hover{background:var(--brand);color:#fff}
@@ -747,6 +750,7 @@
     <a onclick="openTradeList('silv')">분양권 실거래</a>
     <a onclick="openTradeList('rent')">전월세 실거래</a>
     <a onclick="openNews('all')">뉴스</a>
+    <a onclick="openStats()">집값통계</a>
     <a href="community.html">커뮤니티</a>
     <a onclick="openTools()" class="gnb-tool">청약도구</a>
   </nav>
@@ -956,7 +960,7 @@
   <div class="mtab" onclick="goHome()"><span class="mt-ico">🏠</span>홈</div>
   <div class="mtab" onclick="openListMenu('all-list')"><span class="mt-ico">🔥</span>청약·줍줍</div>
   <div class="mtab" onclick="openTradeList('trade')"><span class="mt-ico">📈</span>실거래</div>
-  <div class="mtab" onclick="openStats()"><span class="mt-ico">📊</span>통계</div>
+  <div class="mtab" onclick="openStats()"><span class="mt-ico">📊</span>집값통계</div>
   <div class="mtab" onclick="openNews('all')"><span class="mt-ico">📰</span>뉴스</div>
   <div class="mtab" onclick="location.href='community.html'"><span class="mt-ico">💬</span>커뮤니티</div>
   <div class="mtab" onclick="openTools()"><span class="mt-ico">🧮</span>청약도구</div>
@@ -3023,7 +3027,7 @@ function tradeCard(it,i,kind){
     <div class="trade-rank ${rank<=3?'top3':''}">${rank}</div>
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
-      <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
+      <div class="trade-meta">${it.dong} · ${pyeong}평 · ${it.month}/${it.day}</div>
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
