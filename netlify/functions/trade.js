@@ -186,7 +186,7 @@ exports.handler = async function (event) {
     } catch (e) { return resp(502, { error: "조회 실패", detail: String(e) }); }
   }
 
-  // 기본: 주요 지역 신고가 TOP (+ 상위 단지 1년 추세 시계열)
+  // 기본: 주요 지역 신고가 TOP
   const regions = kind === "silv" ? SILV_REGIONS : MAJOR_REGIONS;
   const months = [ymd(0), ymd(-1)];
   let all = [];
@@ -199,14 +199,33 @@ exports.handler = async function (event) {
     all.sort((a, b) => b.amount - a.amount);
     const top = all.slice(0, 30);
 
-    // ── 상위 단지들의 최근 1년 추세 시계열 붙이기 ──
-    // 화면에 실제로 보이는 단지 수만 1년치 추가 조회 (타임아웃 방지)
-    // 같은 (지역코드+단지정규명) 조합은 한 번만 조회해 재사용
-    await attachYearSeries(top, endpoint, KEY, parser, isRentKind);
+    // 추가 호출 없이, 이미 받은 데이터(최근 2개월)에서 단지·평형별 가벼운 시계열만 부착
+    attachLightSeries(top, all);
+
+    // series=1 일 때만 상위 단지 최근 1년 추세를 추가 조회 (무거움 → 옵션)
+    if (p.series === "1") {
+      await attachYearSeries(top, endpoint, KEY, parser, isRentKind);
+    }
 
     return resp(200, { items: top, totalScanned: all.length });
   } catch (e) { return resp(502, { error: "집계 실패", detail: String(e) }); }
 };
+
+// 추가 API 호출 없이, 이미 가져온 거래들로 단지·최고가평형별 짧은 시계열 부착
+function attachLightSeries(top, all) {
+  // 단지명별로 모으기
+  const byApt = {};
+  all.forEach((x) => { const k = normName(x.apt); (byApt[k] = byApt[k] || []).push(x); });
+  top.forEach((t) => {
+    const pool = byApt[normName(t.apt)] || [];
+    const repArea = Math.round(t.area);
+    const series = pool
+      .filter((x) => Math.round(x.area) === repArea)
+      .sort((a, b) => (a.year + pad(a.month) + pad(a.day)).localeCompare(b.year + pad(b.month) + pad(b.day)))
+      .map((x) => x.amount);
+    if (series.length >= 2) t._series = series.slice(-12);
+  });
+}
 
 // 상위 단지들에 _series(최근 1년, 최고가 평형 기준 가격 흐름) 추가
 async function attachYearSeries(top, endpoint, KEY, parser, isRentKind) {
