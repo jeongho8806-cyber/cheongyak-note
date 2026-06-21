@@ -445,7 +445,9 @@
   /* 매매·전세 동시 요약 (2번 레퍼런스) */
   .dual-sum{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
   @media(max-width:560px){.dual-sum{grid-template-columns:1fr}}
-  .dual-col{border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .dual-col{border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:.13s}
+  .dual-col:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(20,30,50,.12)}
+  .dual-col-h .go{margin-left:auto;font-size:11px;font-weight:700;opacity:.85}
   .dual-col-h{font-size:14px;font-weight:800;color:#fff;padding:11px 16px;display:flex;align-items:center;gap:7px}
   .dual-col-h.sale{background:linear-gradient(135deg,#ff7a2e,#e85d10)}
   .dual-col-h.rent{background:linear-gradient(135deg,#4a7af0,#2a55c8)}
@@ -532,6 +534,11 @@
   .dp-card b{font-size:14px}
   .dp-card p{font-size:12.5px;color:#666;margin-top:4px;line-height:1.6}
   .locked{background:#f7f9fc;border:1px dashed #cfd6e0;border-radius:10px;padding:24px;text-align:center;color:#8b92a0;font-size:13.5px}
+  /* 로딩 스켈레톤 */
+  .skel-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  @media(max-width:560px){.skel-grid{grid-template-columns:minmax(0,1fr)}}
+  .skel-card{height:78px;border-radius:10px;background:linear-gradient(100deg,#f0f2f7 30%,#f7f9fc 50%,#f0f2f7 70%);background-size:200% 100%;animation:skel 1.2s ease-in-out infinite}
+  @keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
   .locked.map{margin-top:0}
   .map-btn-row{display:flex;gap:8px;margin-bottom:14px}
   .map-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:14px;font-weight:700;color:#333;cursor:pointer;font-family:inherit;transition:.12s}
@@ -761,21 +768,21 @@
       <div class="block" id="b-trade">
         <div class="block-h"><span class="ico">📈</span><span class="t">이번 달 신고가 TOP</span><span class="cnt" id="trade-cnt"></span><span class="more" onclick="openTradeList('trade')">전체 보기 →</span></div>
         <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 12px">국토교통부 실거래가 기준, 서울·수도권 주요 지역 최근 고가 매매입니다.</p>
-        <div id="trade-grid"><div class="locked">📊 실거래가를 불러오는 중입니다...</div></div>
+        <div id="trade-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div></div>
       </div>
 
       <!-- 분양권 신고가 -->
       <div class="block" id="b-silv">
         <div class="block-h"><span class="ico">🏗️</span><span class="t">분양권 신고가 TOP</span><span class="cnt" id="silv-cnt"></span><span class="more" onclick="openTradeList('silv')">전체 보기 →</span></div>
         <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 12px">수도권 신도시·택지지구 분양권 전매 고가 거래입니다.</p>
-        <div id="silv-grid"><div class="locked">📊 분양권 실거래가를 불러오는 중입니다...</div></div>
+        <div id="silv-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div></div></div>
       </div>
 
       <!-- 전월세 신고가 -->
       <div class="block" id="b-rent">
         <div class="block-h"><span class="ico">🔑</span><span class="t">전월세 신고가 TOP</span><span class="cnt" id="rent-cnt"></span><span class="more" onclick="openTradeList('rent')">전체 보기 →</span></div>
         <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 12px">주요 지역 전세 보증금 최고가 거래입니다.</p>
-        <div id="rent-grid"><div class="locked">📊 전월세 실거래가를 불러오는 중입니다...</div></div>
+        <div id="rent-grid"><div class="skel-grid"><div class="skel-card"></div><div class="skel-card"></div></div></div>
       </div>
 
       <!-- 청약 캘린더 -->
@@ -1331,7 +1338,7 @@ function drawMonthPanel(list){
   const nowMonth=TODAY.getMonth()+1;
   let order=[['fast','선착순·무순위','h-fast'],['live','진행예정','h-live'],['done','청약완료','h-done']];
   if(CAL_MONTH>nowMonth){ order=order.filter(o=>o[0]!=='done'); }
-  const LIMIT=15;
+  const LIMIT=10;
   let html='<div class="cal-daygrid">';
   order.forEach(([key,label,cls])=>{
     if(!buckets[key].length) return;
@@ -3658,7 +3665,7 @@ async function loadDualPriceSummary(it, kind){
     }
     const cntTxt=stat?stat.n+'건':'';
     return `<div class="dual-col">
-      <div class="dual-col-h ${cls}">${title}<span class="cnt">${cntTxt}</span></div>
+      <div class="dual-col-h ${cls}">${title}<span class="cnt">${cntTxt}</span><span class="go">전체보기 →</span></div>
       ${inner}
     </div>`;
   }
@@ -3666,6 +3673,22 @@ async function loadDualPriceSummary(it, kind){
     ${col('💰 매매','sale',saleStat,false)}
     ${col('🔑 전세','rent',rentStat,true)}
   </div>`;
+  // 매매/전세 박스 클릭 → 해당 거래이력으로 전환 + 스크롤
+  const cols=box.querySelectorAll('.dual-col');
+  if(cols[0]) cols[0].onclick=()=>switchHistKind(saleKind);
+  if(cols[1]) cols[1].onclick=()=>switchHistKind(rentK);
+  if(cols[0]) cols[0].style.cursor='pointer';
+  if(cols[1]) cols[1].style.cursor='pointer';
+}
+// 거래이력을 매매/전세로 전환하고 그 위치로 스크롤
+function switchHistKind(newKind){
+  if(!HIST_CTX) return;
+  if(HIST_CTX.kind!==newKind){
+    HIST_CTX={it:HIST_CTX.it, kind:newKind};
+    loadTradeHistory();
+  }
+  const el=document.getElementById('trade-history');
+  if(el) setTimeout(()=>el.scrollIntoView({behavior:'smooth', block:'start'}), 100);
 }
 // 기간 탭 전환
 function setHistSpan(months){
