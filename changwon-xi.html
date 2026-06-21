@@ -24,18 +24,18 @@
   .hero{position:relative;background:var(--navy)}
   .hero img{width:100%;display:block}
   .hero .badge{position:absolute;top:14px;left:14px;background:var(--brand);color:#fff;font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px}
-  .hero-cap{background:var(--navy);color:#fff;text-align:center;padding:18px 20px}
+  .hero-cap{background:var(--navy);color:#fff;text-align:center;padding:22px 20px 8px}
   .hero-cap .brand{font-size:13px;color:#9db2d4;letter-spacing:2px;font-weight:700}
-  .hero-cap h1{font-size:26px;font-weight:800;margin:4px 0 6px}
-  .hero-cap .sub{font-size:13.5px;color:#b9c6dc}
+  .hero-cap h1{font-size:26px;font-weight:800;margin:6px 0 8px}
+  .hero-cap .sub{font-size:13.5px;color:#b9c6dc;line-height:1.5}
 
-  /* 핵심 요약 칩 */
-  .highlight{background:var(--navy);color:#fff;text-align:center;padding:26px 20px}
-  .highlight .hl-main{margin:0 auto 10px;background:#fff;color:var(--navy);font-size:22px;font-weight:800;padding:22px 16px;border-radius:14px;max-width:380px;line-height:1.4}
-  .highlight .hl-main .big{display:block;color:var(--brand);font-size:27px;font-weight:800}
-  .highlight .hl-sub{font-size:13px;color:#cdd9ec;line-height:1.6;margin-top:10px}
-  .highlight .hl-tel-lab{font-size:12px;color:#9db2d4;margin-top:14px}
-  .highlight .hl-tel{display:inline-block;margin-top:6px;color:#fff;font-size:20px;font-weight:800;letter-spacing:.5px;text-decoration:none;background:var(--brand);padding:8px 20px;border-radius:10px;box-shadow:0 3px 10px rgba(255,107,26,.3)}
+  /* 계약금 강조 */
+  .highlight{background:var(--navy);color:#fff;text-align:center;padding:18px 20px 28px}
+  .highlight .hl-main{margin:0 auto 16px;background:#fff;color:var(--navy);font-size:22px;font-weight:800;padding:20px 16px;border-radius:14px;max-width:340px;line-height:1.4}
+  .highlight .hl-main .big{display:block;color:var(--brand);font-size:26px;font-weight:800}
+  .highlight .hl-sub{font-size:13px;color:#cdd9ec;line-height:1.5;margin:0 auto;max-width:340px}
+  .highlight .hl-tel-lab{font-size:12px;color:#9db2d4;margin-top:18px}
+  .highlight .hl-tel{display:inline-block;margin-top:8px;color:#fff;font-size:20px;font-weight:800;letter-spacing:.5px;text-decoration:none;background:var(--brand);padding:11px 28px;border-radius:11px;box-shadow:0 3px 10px rgba(255,107,26,.3)}
   .keys{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line)}
   .keys .k{background:#fff;padding:15px 16px}
   .keys .k .lab{font-size:12px;color:var(--muted);font-weight:600}
@@ -427,6 +427,26 @@
       });
     }, { threshold: 0.15 });
     io.observe(form);
+  })();
+</script>
+<script>
+  // 전화 걸기는 모바일에서만 동작. PC(넓은 화면 + 터치 불가)에서는 클릭 막음.
+  (function(){
+    function isMobile(){
+      const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+      const narrow = window.matchMedia('(max-width: 820px)').matches;
+      const ua = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      return ua || (touch && narrow);
+    }
+    if(!isMobile()){
+      document.querySelectorAll('a[href^="tel:"]').forEach(function(a){
+        a.addEventListener('click', function(e){
+          e.preventDefault(); // PC에서는 전화 앱 연결 창이 뜨지 않게
+        });
+        a.style.cursor = 'default';
+        a.setAttribute('title', '휴대폰에서 누르면 바로 전화 연결됩니다');
+      });
+    }
   })();
 </script>
 </body>
