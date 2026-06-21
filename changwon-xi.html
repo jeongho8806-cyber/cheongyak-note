@@ -52,6 +52,12 @@
   .points li{position:relative;padding:7px 0 7px 20px;font-size:14px;border-bottom:1px solid var(--line)}
   .points li:last-child{border-bottom:none}
   .points li::before{content:"✓";position:absolute;left:0;color:var(--brand);font-weight:800}
+  .loc-img{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .loc-img img{width:100%;display:block}
+  .loc-img .loc-cap{display:block;font-size:11.5px;color:var(--muted);text-align:center;padding:8px;background:#fafbfc}
+  .vid-h{font-size:15px;font-weight:800;color:var(--ink);margin:22px 0 12px}
+  .vid-wrap{position:relative;width:100%;padding-bottom:56.25%;height:0;margin-bottom:12px;border-radius:12px;overflow:hidden;background:#000}
+  .vid-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
   .tag-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
   .tag{background:var(--brand-soft);color:var(--brand-dark);font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:999px}
 
@@ -294,6 +300,24 @@
       <li>최고 49층 규모의 주거 단지</li>
       <li>비규제지역으로 청약통장 없이 신청 가능</li>
     </ul>
+
+    <div class="loc-img">
+      <img src="location-aerial.jpg" alt="창원자이 더 스카이 항공 입지도" onerror="this.parentNode.style.display='none'">
+      <span class="loc-cap">단지 주변 항공 입지도</span>
+    </div>
+    <div class="loc-img">
+      <img src="location-map.jpg" alt="창원자이 더 스카이 위치도" onerror="this.parentNode.style.display='none'">
+      <span class="loc-cap">단지 위치 및 견본주택 안내도</span>
+    </div>
+
+    <h3 class="vid-h">🎬 영상으로 보는 창원자이 더 스카이</h3>
+    <div class="vid-wrap">
+      <iframe src="https://www.youtube.com/embed/aOO12SMMFCM" title="창원자이 더 스카이 영상 1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+    </div>
+    <div class="vid-wrap">
+      <iframe src="https://www.youtube.com/embed/QgIalnEzszU" title="창원자이 더 스카이 영상 2" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+    </div>
+
     <p style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">
       ※ 본 안내는 분양 정보 제공을 목적으로 하며, 투자 수익을 보장하지 않습니다. 시세·전매·세금 등은 시장 상황과 개인 조건에 따라 달라질 수 있으니 계약 전 반드시 직접 확인하시기 바랍니다.
     </p>
