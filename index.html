@@ -2811,7 +2811,6 @@ function tradeCard(it,i,kind){
     <div class="trade-info">
       <div class="trade-nm">${it.apt}</div>
       <div class="trade-meta">${it.region} ${it.dong} · ${it.area}㎡ ${pyeong}평 · ${it.floor}층 · ${it.month}/${it.day}</div>
-      ${sparklineSVG(it,kind) || `<div class="trade-bar ${isRentKind(kind)?'rent':kind==='silv'?'silv':''}"><i style="width:${it._barPct||60}%"></i></div>`}
     </div>
     <div class="trade-price">
       <div class="amt">${amtTxt}</div>
